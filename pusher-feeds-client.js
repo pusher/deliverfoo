@@ -1048,8 +1048,6 @@ var TokenProvider = function () {
   return TokenProvider;
 }();
 
-// IGNORE just testing deployment, needed a change!
-
 var PusherFeeds = function () {
   function PusherFeeds() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
