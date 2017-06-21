@@ -1048,8 +1048,8 @@ var TokenProvider = function () {
   return TokenProvider;
 }();
 
-var PusherFeeds = function () {
-  function PusherFeeds() {
+var Feeds = function () {
+  function Feeds() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
         serviceId = _ref.serviceId,
         cluster = _ref.cluster,
@@ -1057,7 +1057,7 @@ var PusherFeeds = function () {
         authData = _ref$authData === undefined ? {} : _ref$authData,
         authEndpoint = _ref.authEndpoint;
 
-    classCallCheck(this, PusherFeeds);
+    classCallCheck(this, Feeds);
 
     this.authData = authData;
     this.authEndpoint = authEndpoint;
@@ -1081,7 +1081,7 @@ var PusherFeeds = function () {
     this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster });
   }
 
-  createClass(PusherFeeds, [{
+  createClass(Feeds, [{
     key: "list",
     value: function list() {
       var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
@@ -1123,10 +1123,10 @@ var PusherFeeds = function () {
       }));
     }
   }]);
-  return PusherFeeds;
+  return Feeds;
 }();
 
-return PusherFeeds;
+return Feeds;
 
 })));
 //# sourceMappingURL=pusher-feeds-client.js.map
