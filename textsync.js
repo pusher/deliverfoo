@@ -4,9 +4,9 @@
 	else if(typeof define === 'function' && define.amd)
 		define([], factory);
 	else if(typeof exports === 'object')
-		exports["textsync"] = factory();
+		exports["TextSync"] = factory();
 	else
-		root["textsync"] = factory();
+		root["TextSync"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 10);
+/******/ 	return __webpack_require__(__webpack_require__.s = 19);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -11988,10 +11988,41 @@ module.exports = __webpack_require__(62);
 /***/ })
 /******/ ]);
 });
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8).Buffer))
 
 /***/ }),
 /* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(9);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(13)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../node_modules/css-loader/index.js!./badge-styles.css", function() {
+			var newContent = require("!!../../node_modules/css-loader/index.js!./badge-styles.css");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12038,7 +12069,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var logoot_1 = __webpack_require__(0);
 var logoot_2 = __webpack_require__(0);
-var wire_format_1 = __webpack_require__(11);
+var wire_format_1 = __webpack_require__(20);
 var LogootDoc = (function (_super) {
     __extends(LogootDoc, _super);
     function LogootDoc(siteId) {
@@ -12188,7 +12219,7 @@ exports.default = LogootDoc;
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12353,7 +12384,7 @@ exports.QuillAttributes = QuillAttributes;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12362,6 +12393,9 @@ exports.QuillAttributes = QuillAttributes;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+var collaborators_1 = __webpack_require__(16);
+var controller_1 = __webpack_require__(17);
+var badges_1 = __webpack_require__(15);
 var BASE_SERVICE_PATH = "/services/textsync/v1";
 var TextsyncDoc = (function () {
     function TextsyncDoc(logoot, pusher, docId, siteId) {
@@ -12370,6 +12404,28 @@ var TextsyncDoc = (function () {
         this.docId = docId;
         this.siteId = siteId;
     }
+    TextsyncDoc.encodeQueryStringVals = function (userInfo) {
+        var name = userInfo.name.replace(new RegExp(' ', 'g'), '%20');
+        var email = userInfo.email.replace('@', '%40');
+        return { name: name, email: email };
+    };
+    /**
+     * To be removed when JWT auth is implemented
+     */
+    TextsyncDoc.getFormValues = function (caller) {
+        var form = document.querySelector('form');
+        form.style.display = 'none';
+        var name = document.querySelector('[name=name]').value;
+        var email = document.querySelector('[name=email]').value;
+        console.log("name", name, "email", email);
+        if (name || email) {
+            caller.userInfo = { name: name, email: email };
+            caller.subscribe(caller.userInfo);
+        }
+        else {
+            caller.subscribe(null);
+        }
+    };
     TextsyncDoc.prototype.insertText = function (index, content, attributes) {
         this.sendOps(this.logoot.insertText(index, content, attributes));
     };
@@ -12379,18 +12435,53 @@ var TextsyncDoc = (function () {
     TextsyncDoc.prototype.deleteText = function (index, length) {
         this.sendOps(this.logoot.deleteText(index, length));
     };
+    TextsyncDoc.prototype.initBadges = function () {
+        this.collaborators = new collaborators_1.default();
+        this.badges = new badges_1.default();
+        this.controller = new controller_1.default(this.collaborators, this.badges);
+    };
     TextsyncDoc.prototype.start = function (adaptor) {
-        var _this = this;
         this.adaptor = adaptor;
+        this.initBadges();
+        // if user wants badges, run function that does this
+        // attach here or onto window
+        /**
+         * To be removed when JWT auth is implemented
+         * Replace with subscribe()
+         */
+        TextsyncDoc.getFormValues(this);
+    };
+    TextsyncDoc.prototype.subscribe = function (userInfo) {
+        var _this = this;
+        var path = BASE_SERVICE_PATH + "/docs/" + this.docId + "?siteId=" + this.siteId;
+        if (userInfo !== null) {
+            var _a = TextsyncDoc.encodeQueryStringVals(userInfo), name_1 = _a.name, email = _a.email; // clean name?
+            path += "&name=" + name_1 + "&email=" + email;
+        }
         this.pusher.subscribe({
-            path: BASE_SERVICE_PATH + "/docs/" + this.docId + "/subscription",
+            path: path,
             onEvent: function (event) {
-                console.log(JSON.stringify(event.body));
-                _this.receiveOps(event.body);
+                console.info(JSON.stringify(event.body));
+                if (event.body.presOps && event.body.presOps.length > 0) {
+                    var presentCollaborators = event.body.presOps.filter(function (op) { return op.type !== 2; });
+                    var absentCollaborators = event.body.presOps.filter(function (op) { return op.type === 2; });
+                    if (presentCollaborators.length > 0) {
+                        _this.collaborators.add(presentCollaborators);
+                    }
+                    if (absentCollaborators.length > 0) {
+                        _this.collaborators.remove(absentCollaborators);
+                    }
+                }
+                if (event.body.docOps && event.body.docOps.length > 0) {
+                    _this.receiveOps({
+                        docOps: event.body.docOps,
+                        siteId: event.body.siteId
+                    });
+                }
             },
-            onOpen: function () { console.log("subscription opened"); },
+            onOpen: function () { console.info("subscription opened"); },
             onEnd: function () { _this.logError({ info: "subscription ended" }); },
-            onError: function (err) { _this.logError(err); },
+            onError: this.logError
         });
     };
     TextsyncDoc.prototype.initialContent = function (content) {
@@ -12398,7 +12489,7 @@ var TextsyncDoc = (function () {
     };
     TextsyncDoc.prototype.sendOps = function (ops) {
         var _this = this;
-        var body = { ops: ops, siteId: this.siteId };
+        var body = { docOps: ops, siteId: this.siteId };
         console.log(JSON.stringify(body));
         this.pusher.request({
             method: "POST",
@@ -12412,7 +12503,7 @@ var TextsyncDoc = (function () {
         if (data.siteId === this.siteId) {
             return;
         }
-        var deltas = this.logoot.applyOps(data.ops);
+        var deltas = this.logoot.applyOps(data.docOps);
         for (var _i = 0, deltas_1 = deltas; _i < deltas_1.length; _i++) {
             var d = deltas_1[_i];
             if (d.insert !== undefined && d.insert !== null) {
@@ -12433,17 +12524,6 @@ var TextsyncDoc = (function () {
     };
     TextsyncDoc.prototype.logError = function (error) {
         console.log(error);
-        //     if (this.feedback != null) {
-        //       let text: string;
-        //       if (error.info != "") {
-        //         text = error.info;
-        //       } else if (error.statusCode == 0) {
-        //         text = "could not contact server";
-        //       } else {
-        //         text = "unknown error";
-        //       }
-        //       this.feedback(text);
-        //     }
     };
     return TextsyncDoc;
 }());
@@ -12451,7 +12531,7 @@ exports.default = TextsyncDoc;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12572,7 +12652,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12586,9 +12666,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(6)
-var ieee754 = __webpack_require__(8)
-var isArray = __webpack_require__(9)
+var base64 = __webpack_require__(7)
+var ieee754 = __webpack_require__(11)
+var isArray = __webpack_require__(12)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -14366,10 +14446,106 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)))
 
 /***/ }),
-/* 8 */
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(10)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n     -moz-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n          box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n}\n\n.badge.in {\n  opacity: 1;\n}\n\n.badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n}\n\n.badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.badge-wrapper .tooltip {\n  position: absolute;\n  width: 150px;\n  color: #FFFFFF;\n  background: #191919;\n  height: 43px;\n  line-height: 43px;\n  text-align: center;\n  visibility: hidden;\n  /*border-radius: 25px;*/\n}\n.badge-wrapper .tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.badge-wrapper:hover .tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function(useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map(function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if(item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		}).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map(function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+		});
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+
+/***/ }),
+/* 11 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -14459,7 +14635,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 9 */
+/* 12 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -14470,7 +14646,663 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 10 */
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize(function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+});
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(selector) {
+		if (typeof memo[selector] === "undefined") {
+			memo[selector] = fn.call(this, selector);
+		}
+
+		return memo[selector]
+	};
+})(function (target) {
+	return document.querySelector(target)
+});
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(14);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton) options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+	if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else {
+		throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	options.attrs.type = "text/css";
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	options.attrs.type = "text/css";
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach(function (key) {
+		el.setAttribute(key, attrs[key]);
+	});
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports) {
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+  // get current location
+  var location = typeof window !== "undefined" && window.location;
+
+  if (!location) {
+    throw new Error("fixUrls requires window.location");
+  }
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+	  return css;
+  }
+
+  var baseUrl = location.protocol + "//" + location.host;
+  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+	This regular expression is just a way to recursively match brackets within
+	a string.
+
+	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+	   (  = Start a capturing group
+	     (?:  = Start a non-capturing group
+	         [^)(]  = Match anything that isn't a parentheses
+	         |  = OR
+	         \(  = Match a start parentheses
+	             (?:  = Start another non-capturing groups
+	                 [^)(]+  = Match anything that isn't a parentheses
+	                 |  = OR
+	                 \(  = Match a start parentheses
+	                     [^)(]*  = Match anything that isn't a parentheses
+	                 \)  = Match a end parentheses
+	             )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+	 \)  = Match a close parens
+
+	 /gi  = Get all matches, not the first.  Be case insensitive.
+	 */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl
+			.trim()
+			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
+			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
+		  return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+		  	//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	});
+
+	// send back the fixed css
+	return fixedCss;
+};
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Badges = (function () {
+    function Badges() {
+        this.targetElement = document.querySelector('#presence-container'); // or something else from user
+        this.addBadges = this.addBadges.bind(this);
+        this.addToDOM = this.addToDOM.bind(this);
+        this.removeBadge = this.removeBadge.bind(this);
+        this.removeFromDOM = this.removeFromDOM.bind(this);
+        this.findBadgeInDOM = this.findBadgeInDOM.bind(this);
+    }
+    Badges.prototype.addBadges = function (data) {
+        for (var i = 0; i < data.length; i++) {
+            this.addToDOM(data[i], i);
+        }
+    };
+    Badges.prototype.addToDOM = function (data, index) {
+        console.log("someone joined");
+        var badgeWrapper = this.createBadge(data);
+        // if people use custom templates, catch for carriage returns...
+        this.targetElement.appendChild(badgeWrapper);
+        // transition
+        setTimeout(function () {
+            var badge = badgeWrapper.children[0];
+            badge.classList.add('in');
+        }, 100 + (100 * index));
+    };
+    Badges.prototype.removeBadge = function (leavingSiteId) {
+        var index = this.findBadgeInDOM(leavingSiteId);
+        if (index > -1) {
+            this.removeFromDOM(index);
+        }
+        else {
+            console.error(new RangeError("Badge for siteId " + leavingSiteId + " not found in DOM."));
+        }
+    };
+    Badges.prototype.removeFromDOM = function (index) {
+        console.log("someone left");
+        var badges = Array.from(document.querySelectorAll('.badge-wrapper'));
+        var toRemove = badges[index];
+        this.targetElement.removeChild(toRemove);
+    };
+    Badges.prototype.findBadgeInDOM = function (leavingSiteId) {
+        var badges = Array.from(document.querySelectorAll(".badge-wrapper"));
+        for (var i = 0; i < badges.length; i++) {
+            if (badges[i].dataset.siteId === leavingSiteId.toString()) {
+                return i;
+            }
+        }
+        return -1;
+    };
+    Badges.prototype.createBadge = function (data) {
+        var badgeWrapper = document.createElement('span');
+        badgeWrapper.className = "badge-wrapper";
+        badgeWrapper.dataset.siteId = data.siteId.toString();
+        var badge = document.createElement('div');
+        badge.style.backgroundImage = "url(\"" + data.avatar + "\")";
+        badge.className = "badge";
+        var tooltip = document.createElement('span');
+        tooltip.className = "tooltip";
+        tooltip.innerText = data.name;
+        badgeWrapper.appendChild(badge);
+        badgeWrapper.appendChild(tooltip);
+        return badgeWrapper;
+    };
+    return Badges;
+}());
+exports.default = Badges;
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var event_dispatcher_1 = __webpack_require__(18);
+var Collaborators = (function () {
+    function Collaborators() {
+        this._data = [];
+        this.joinedEvent = new event_dispatcher_1.default(this);
+        this.leftEvent = new event_dispatcher_1.default(this);
+    }
+    /**
+     * Adds new collaborators
+     * @param {AddOp[]} joining - array of 'add collaborator' operations
+     * @returns {void}
+     */
+    Collaborators.prototype.add = function (joining) {
+        if (!Array.isArray(joining) || joining.length === 0) {
+            console.error(new TypeError("expected an array of AddOp"));
+            return;
+        }
+        var existing = this._data.length;
+        this._data = this._data.concat(joining);
+        this.joinedEvent.notify(joining, existing);
+    };
+    /**
+     * Removes existing collaborators
+     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
+     * @returns {void}
+     */
+    Collaborators.prototype.remove = function (leaving) {
+        var _this = this;
+        if (!Array.isArray(leaving) || leaving.length === 0) {
+            console.error(new TypeError("expected an array of RemoveOp"));
+            return;
+        }
+        leaving.forEach(function (leavingPerson) {
+            _this._data = _this._data.filter(function (collab) { return collab.siteId !== leavingPerson.siteId; });
+        });
+        var leavingSiteIds = leaving.reduce(function (acc, collab) {
+            return acc.push(collab.siteId);
+        }, []);
+        this.leftEvent.notify(leavingSiteIds);
+    };
+    /**
+     * Gets the current list of collaborators
+     * @returns {AddOp[]} - array of collaborators
+     */
+    Collaborators.prototype.getData = function () {
+        return this._data.slice(0);
+    };
+    return Collaborators;
+}());
+exports.default = Collaborators;
+
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Controller = (function () {
+    function Controller(collaborators, badges) {
+        this.collaborators = collaborators;
+        this.badges = badges;
+        this.attachListeners();
+    }
+    Controller.prototype.attachListeners = function () {
+        var _this = this;
+        this.collaborators.joinedEvent.attach(function (sender, joining) {
+            joining.sort(function (a, b) {
+                if (a.timestamp > b.timestamp) {
+                    return 1;
+                }
+                else if (a.timestamp < b.timestamp) {
+                    return -1;
+                }
+                else {
+                    return 0;
+                }
+            });
+            _this.badges.addBadges(joining);
+        });
+        this.collaborators.leftEvent.attach(function (sender, leavingSiteIds) {
+            leavingSiteIds.forEach(function (siteId, i) {
+                _this.badges.removeBadge(siteId);
+            });
+        });
+    };
+    return Controller;
+}());
+exports.default = Controller;
+
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var PresenceEvent = (function () {
+    function PresenceEvent(sender) {
+        this._sender = sender;
+        this._listeners = [];
+    }
+    PresenceEvent.prototype.attach = function (listener) {
+        this._listeners.push(listener);
+    };
+    PresenceEvent.prototype.notify = function () {
+        var _this = this;
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._listeners.forEach(function (listener) { return listener.apply(void 0, [_this._sender].concat(args)); });
+    };
+    return PresenceEvent;
+}());
+exports.default = PresenceEvent;
+
+
+/***/ }),
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14482,29 +15314,30 @@ module.exports = Array.isArray || function (arr) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Quill = __webpack_require__(2);
 var pusher_platform_js_1 = __webpack_require__(1);
-var logoot_doc_1 = __webpack_require__(3);
-var textsync_doc_1 = __webpack_require__(5);
-var quill_adaptor_1 = __webpack_require__(4);
+var logoot_doc_1 = __webpack_require__(4);
+var textsync_doc_1 = __webpack_require__(6);
+var quill_adaptor_1 = __webpack_require__(5);
+__webpack_require__(3);
 var TextsyncQuill = (function () {
     /**
      * Starts a Textsync session and creates an instance of QuillJs.
-     * @param config {object} the configuration object. See https://pusher-mimir.herokuapp.com/textsync/reference/js#textsync-javascript-reference for options
+     * @param config {object} the configuration object. See documentation for options
      */
     function TextsyncQuill(config) {
         //Initial setup and fake news prevention 👀
         if (!config)
-            throw new Error("Config must be present to initialise Textsync. https://pusher-mimir.herokuapp.com/textsync/reference/js#textsync-javascript-reference");
+            throw new Error("Config must be present to initialise Textsync. ");
         if (!config.appId)
-            throw new Error("appId must be present in config when initialising Textsync. https://pusher-mimir.herokuapp.com/textsync/reference/js#textsync-javascript-reference");
+            throw new Error("appId must be present in config when initialising Textsync. ");
         var appId = config.appId;
         if (!config.cluster)
-            throw new Error("cluster must be present in config when initialising Textsync. https://pusher-mimir.herokuapp.com/textsync/reference/js#textsync-javascript-reference");
+            throw new Error("cluster must be present in config when initialising Textsync. ");
         var cluster = config.cluster;
         if (!config.docId)
-            throw new Error("docId must be present in config when initialising Textsync. https://pusher-mimir.herokuapp.com/textsync/reference/js#textsync-javascript-reference");
+            throw new Error("docId must be present in config when initialising Textsync. ");
         var docId = config.docId;
         if (!config.quillElementId)
-            throw new Error("quillElementId must be present in config when initialising Textsync. https://pusher-mimir.herokuapp.com/textsync/reference/js#textsync-javascript-reference");
+            throw new Error("quillElementId must be present in config when initialising Textsync. ");
         var quillElementId = config.quillElementId;
         var quillOptions = {};
         if (config.quillOptions)
@@ -14522,10 +15355,22 @@ var TextsyncQuill = (function () {
             link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
             document.getElementsByTagName("head")[0].appendChild(link);
         }
+        quillOptions.formats = [
+            'background',
+            'bold',
+            'color',
+            'italic',
+            'link',
+            'size',
+            'strike',
+            'underline',
+            'header',
+            'list'
+        ];
         //Logoot setup ✨
         var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
         var logootDoc = new logoot_doc_1.default(siteId);
-        var app = new pusher_platform_js_1.App({ appId: appId, cluster: cluster });
+        var app = new pusher_platform_js_1.default.App({ appId: appId, cluster: cluster });
         var textsyncDoc = new textsync_doc_1.default(logootDoc, app, docId, siteId);
         //All together now! 🙌
         this.quill = new Quill(quillElementId, quillOptions);
@@ -14538,7 +15383,7 @@ exports.TextsyncQuill = TextsyncQuill;
 
 
 /***/ }),
-/* 11 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14553,7 +15398,7 @@ var OpType;
 
 
 /***/ }),
-/* 12 */
+/* 21 */
 /***/ (function(module, exports) {
 
 var g;
