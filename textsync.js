@@ -12228,8 +12228,8 @@ exports.default = LogootDoc;
  * Binding between the textsync document model and that of Quilljs
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var TextsyncQuillAdaptor = (function () {
-    function TextsyncQuillAdaptor(quill, textsync, docId) {
+var QuillAdaptor = (function () {
+    function QuillAdaptor(quill, textsync, docId) {
         this.siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
         this.docId = docId;
         this.quill = quill;
@@ -12240,10 +12240,10 @@ var TextsyncQuillAdaptor = (function () {
         this.quill.setText('');
         this.quill.on('text-change', this.editorChange.bind(this));
     }
-    TextsyncQuillAdaptor.prototype.displayError = function (error) {
+    QuillAdaptor.prototype.displayError = function (error) {
         console.log(error);
     };
-    TextsyncQuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
+    QuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
         var changeIndex = 0;
         for (var _i = 0, _a = delta.ops; _i < _a.length; _i++) {
             var deltaOp = _a[_i];
@@ -12296,24 +12296,24 @@ var TextsyncQuillAdaptor = (function () {
             }
         }
     };
-    TextsyncQuillAdaptor.prototype.insertText = function (index, text, attributes) {
+    QuillAdaptor.prototype.insertText = function (index, text, attributes) {
         this.quill.insertText(index, text, QuillAttributes.fromWireAttributes(attributes), 'silent');
     };
-    TextsyncQuillAdaptor.prototype.insertImage = function (index, data) {
+    QuillAdaptor.prototype.insertImage = function (index, data) {
         this.quill.insertEmbed(index, 'image', data, 'silent');
     };
-    TextsyncQuillAdaptor.prototype.deleteText = function (index, length) {
+    QuillAdaptor.prototype.deleteText = function (index, length) {
         this.quill.deleteText(index, length, 'silent');
     };
-    TextsyncQuillAdaptor.prototype.moveText = function (index, length, dest) {
+    QuillAdaptor.prototype.moveText = function (index, length, dest) {
         var keep = this.quill.getContents(index, length);
         this.quill.deleteText(index, length, 'silent');
         // Assumes that the delta contains only one op.
         this.quill.insertText(dest, keep.ops[0].insert, QuillAttributes.fromDeltaAttributes(keep.ops[0].attributes), 'silent');
     };
-    return TextsyncQuillAdaptor;
+    return QuillAdaptor;
 }());
-exports.default = TextsyncQuillAdaptor;
+exports.default = QuillAdaptor;
 var QuillAttributes = (function () {
     function QuillAttributes() {
         this.bold = false;
@@ -12397,14 +12397,14 @@ var collaborators_1 = __webpack_require__(16);
 var controller_1 = __webpack_require__(17);
 var badges_1 = __webpack_require__(15);
 var BASE_SERVICE_PATH = "/services/textsync/v1";
-var TextsyncDoc = (function () {
-    function TextsyncDoc(logoot, pusher, docId, siteId) {
+var TextSync = (function () {
+    function TextSync(logoot, pusher, docId, siteId) {
         this.logoot = logoot;
         this.pusher = pusher;
         this.docId = docId;
         this.siteId = siteId;
     }
-    TextsyncDoc.encodeQueryStringVals = function (userInfo) {
+    TextSync.encodeQueryStringVals = function (userInfo) {
         var name = userInfo.name.replace(new RegExp(' ', 'g'), '%20');
         var email = userInfo.email.replace('@', '%40');
         return { name: name, email: email };
@@ -12412,7 +12412,7 @@ var TextsyncDoc = (function () {
     /**
      * To be removed when JWT auth is implemented
      */
-    TextsyncDoc.getFormValues = function (caller) {
+    TextSync.getFormValues = function (caller) {
         var form = document.querySelector('form');
         form.style.display = 'none';
         var name = document.querySelector('[name=name]').value;
@@ -12426,21 +12426,21 @@ var TextsyncDoc = (function () {
             caller.subscribe(null);
         }
     };
-    TextsyncDoc.prototype.insertText = function (index, content, attributes) {
+    TextSync.prototype.insertText = function (index, content, attributes) {
         this.sendOps(this.logoot.insertText(index, content, attributes));
     };
-    TextsyncDoc.prototype.insertObject = function (index, content, attributes) {
+    TextSync.prototype.insertObject = function (index, content, attributes) {
         this.sendOps(this.logoot.insertObject(index, content, attributes));
     };
-    TextsyncDoc.prototype.deleteText = function (index, length) {
+    TextSync.prototype.deleteText = function (index, length) {
         this.sendOps(this.logoot.deleteText(index, length));
     };
-    TextsyncDoc.prototype.initBadges = function () {
+    TextSync.prototype.initBadges = function () {
         this.collaborators = new collaborators_1.default();
-        this.badges = new badges_1.default();
+        this.badges = new badges_1.default(this.siteId);
         this.controller = new controller_1.default(this.collaborators, this.badges);
     };
-    TextsyncDoc.prototype.start = function (adaptor) {
+    TextSync.prototype.start = function (adaptor) {
         this.adaptor = adaptor;
         this.initBadges();
         // if user wants badges, run function that does this
@@ -12449,13 +12449,13 @@ var TextsyncDoc = (function () {
          * To be removed when JWT auth is implemented
          * Replace with subscribe()
          */
-        TextsyncDoc.getFormValues(this);
+        TextSync.getFormValues(this);
     };
-    TextsyncDoc.prototype.subscribe = function (userInfo) {
+    TextSync.prototype.subscribe = function (userInfo) {
         var _this = this;
         var path = BASE_SERVICE_PATH + "/docs/" + this.docId + "?siteId=" + this.siteId;
         if (userInfo !== null) {
-            var _a = TextsyncDoc.encodeQueryStringVals(userInfo), name_1 = _a.name, email = _a.email; // clean name?
+            var _a = TextSync.encodeQueryStringVals(userInfo), name_1 = _a.name, email = _a.email; // clean name?
             path += "&name=" + name_1 + "&email=" + email;
         }
         this.pusher.subscribe({
@@ -12484,10 +12484,10 @@ var TextsyncDoc = (function () {
             onError: this.logError
         });
     };
-    TextsyncDoc.prototype.initialContent = function (content) {
+    TextSync.prototype.initialContent = function (content) {
         this.logoot.initialContent(content.length);
     };
-    TextsyncDoc.prototype.sendOps = function (ops) {
+    TextSync.prototype.sendOps = function (ops) {
         var _this = this;
         var body = { docOps: ops, siteId: this.siteId };
         console.log(JSON.stringify(body));
@@ -12499,7 +12499,7 @@ var TextsyncDoc = (function () {
             _this.logError(error);
         });
     };
-    TextsyncDoc.prototype.receiveOps = function (data) {
+    TextSync.prototype.receiveOps = function (data) {
         if (data.siteId === this.siteId) {
             return;
         }
@@ -12522,12 +12522,12 @@ var TextsyncDoc = (function () {
             }
         }
     };
-    TextsyncDoc.prototype.logError = function (error) {
+    TextSync.prototype.logError = function (error) {
         console.log(error);
     };
-    return TextsyncDoc;
+    return TextSync;
 }());
-exports.default = TextsyncDoc;
+exports.default = TextSync;
 
 
 /***/ }),
@@ -14457,7 +14457,7 @@ exports = module.exports = __webpack_require__(10)(undefined);
 
 
 // module
-exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n     -moz-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n          box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n}\n\n.badge.in {\n  opacity: 1;\n}\n\n.badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n}\n\n.badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.badge-wrapper .tooltip {\n  position: absolute;\n  width: 150px;\n  color: #FFFFFF;\n  background: #191919;\n  height: 43px;\n  line-height: 43px;\n  text-align: center;\n  visibility: hidden;\n  /*border-radius: 25px;*/\n}\n.badge-wrapper .tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.badge-wrapper:hover .tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
+exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n     -moz-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n          box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n}\n\n.badge.in {\n  opacity: 1;\n}\n\n.badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n}\n\n.badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.badge-wrapper .tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px;\n}\n.badge-wrapper .tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.badge-wrapper:hover .tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
 
 // exports
 
@@ -15107,7 +15107,8 @@ module.exports = function (css) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Badges = (function () {
-    function Badges() {
+    function Badges(siteId) {
+        this.siteId = siteId;
         this.targetElement = document.querySelector('#presence-container'); // or something else from user
         this.addBadges = this.addBadges.bind(this);
         this.addToDOM = this.addToDOM.bind(this);
@@ -15165,6 +15166,9 @@ var Badges = (function () {
         var tooltip = document.createElement('span');
         tooltip.className = "tooltip";
         tooltip.innerText = data.name;
+        if (this.siteId === data.siteId) {
+            tooltip.innerText += " (you)";
+        }
         badgeWrapper.appendChild(badge);
         badgeWrapper.appendChild(tooltip);
         return badgeWrapper;
@@ -15217,7 +15221,8 @@ var Collaborators = (function () {
             _this._data = _this._data.filter(function (collab) { return collab.siteId !== leavingPerson.siteId; });
         });
         var leavingSiteIds = leaving.reduce(function (acc, collab) {
-            return acc.push(collab.siteId);
+            acc.push(collab.siteId);
+            return acc;
         }, []);
         this.leftEvent.notify(leavingSiteIds);
     };
@@ -15308,78 +15313,74 @@ exports.default = PresenceEvent;
 "use strict";
 
 /**
- * Outward facing facade for Textsync of a Quilljs document.
+ * Outward facing facade for TextSync of a Quilljs document.
  * It is intended to replace an existing
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var Quill = __webpack_require__(2);
 var PusherPlatform = __webpack_require__(1);
 var logoot_doc_1 = __webpack_require__(4);
-var textsync_doc_1 = __webpack_require__(6);
+var textsync_1 = __webpack_require__(6);
 var quill_adaptor_1 = __webpack_require__(5);
 __webpack_require__(3);
-var TextsyncQuill = (function () {
-    /**
-     * Starts a Textsync session and creates an instance of QuillJs.
-     * @param config {object} the configuration object. See documentation for options
-     */
-    function TextsyncQuill(config) {
-        //Initial setup and fake news prevention 👀
-        if (!config)
-            throw new Error("Config must be present to initialise Textsync. ");
-        if (!config.appId)
-            throw new Error("appId must be present in config when initialising Textsync. ");
-        var appId = config.appId;
-        if (!config.cluster)
-            throw new Error("cluster must be present in config when initialising Textsync. ");
-        var cluster = config.cluster;
-        if (!config.docId)
-            throw new Error("docId must be present in config when initialising Textsync. ");
-        var docId = config.docId;
-        if (!config.quillElementId)
-            throw new Error("quillElementId must be present in config when initialising Textsync. ");
-        var quillElementId = config.quillElementId;
-        var quillOptions = {};
-        if (config.quillOptions)
-            quillOptions = config.quillOptions;
-        if (quillOptions.modules == null)
-            quillOptions.modules = {};
-        quillOptions.modules.history = {
-            delay: 2000, maxStack: 500, userOnly: true
-        };
-        if (quillOptions.theme == null) {
-            quillOptions.theme = "snow";
-            var link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.type = "text/css";
-            link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
-            document.getElementsByTagName("head")[0].appendChild(link);
-        }
-        quillOptions.formats = [
-            'background',
-            'bold',
-            'color',
-            'italic',
-            'link',
-            'size',
-            'strike',
-            'underline',
-            'header',
-            'list'
-        ];
-        //Logoot setup ✨
-        var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
-        var logootDoc = new logoot_doc_1.default(siteId);
-        var app = new PusherPlatform.App({ appId: appId, cluster: cluster });
-        var textsyncDoc = new textsync_doc_1.default(logootDoc, app, docId, siteId);
-        //All together now! 🙌
-        this.quill = new Quill(quillElementId, quillOptions);
-        var quillAdaptor = new quill_adaptor_1.default(this.quill, textsyncDoc, docId);
-        textsyncDoc.start(quillAdaptor);
+function createEditor(config) {
+    if (!config) {
+        throw new Error("Config must be present to initialise TextSync. ");
     }
-    return TextsyncQuill;
-}());
-exports.TextsyncQuill = TextsyncQuill;
+    if (!config.appId) {
+        throw new Error("appId must be present in config when initialising TextSync. ");
+    }
+    if (!config.cluster) {
+        throw new Error("cluster must be present in config when initialising TextSync. ");
+    }
+    if (!config.docId) {
+        throw new Error("docId must be present in config when initialising TextSync. ");
+    }
+    if (!config.quillElementId) {
+        throw new Error("quillElementId must be present in config when initialising TextSync. ");
+    }
+    var appId = config.appId;
+    var cluster = config.cluster;
+    var docId = config.docId;
+    var quillElementId = config.quillElementId;
+    var quillOptions = {};
+    if (config.quillOptions)
+        quillOptions = config.quillOptions;
+    if (quillOptions.modules == null)
+        quillOptions.modules = {};
+    quillOptions.modules.history = {
+        delay: 2000, maxStack: 500, userOnly: true
+    };
+    if (quillOptions.theme == null) {
+        quillOptions.theme = "snow";
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.type = "text/css";
+        link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
+        document.getElementsByTagName("head")[0].appendChild(link);
+    }
+    quillOptions.formats = [
+        'background',
+        'bold',
+        'color',
+        'italic',
+        'link',
+        'size',
+        'strike',
+        'underline',
+        'header',
+        'list'
+    ];
+    var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
+    var logootDoc = new logoot_doc_1.default(siteId);
+    var app = new PusherPlatform.App({ appId: appId, cluster: cluster });
+    var textsyncDoc = new textsync_1.default(logootDoc, app, docId, siteId);
+    var quill = new Quill(quillElementId, quillOptions);
+    var quillAdaptor = new quill_adaptor_1.default(quill, textsyncDoc, docId);
+    textsyncDoc.start(quillAdaptor);
+    return { quill: quill };
+}
+exports.createEditor = createEditor;
 
 
 /***/ }),
