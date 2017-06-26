@@ -15313,7 +15313,7 @@ exports.default = PresenceEvent;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var Quill = __webpack_require__(2);
-var pusher_platform_js_1 = __webpack_require__(1);
+var PusherPlatform = __webpack_require__(1);
 var logoot_doc_1 = __webpack_require__(4);
 var textsync_doc_1 = __webpack_require__(6);
 var quill_adaptor_1 = __webpack_require__(5);
@@ -15370,7 +15370,7 @@ var TextsyncQuill = (function () {
         //Logoot setup ✨
         var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
         var logootDoc = new logoot_doc_1.default(siteId);
-        var app = new pusher_platform_js_1.default.App({ appId: appId, cluster: cluster });
+        var app = new PusherPlatform.App({ appId: appId, cluster: cluster });
         var textsyncDoc = new textsync_doc_1.default(logootDoc, app, docId, siteId);
         //All together now! 🙌
         this.quill = new Quill(quillElementId, quillOptions);
