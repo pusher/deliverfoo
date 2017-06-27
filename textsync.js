@@ -1018,7 +1018,6 @@ var App = (function () {
         }
     };
     App.prototype.subscribe = function (options) {
-			console.log(options)
         options.path = this.absPath(options.path);
         options.logger = this.logger;
         var subscription = this.client.newSubscription(options);
@@ -1184,7 +1183,6 @@ exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
 /***/ })
 /******/ ]);
 });
-
 
 /***/ }),
 /* 2 */
@@ -12418,6 +12416,7 @@ var QuillAdaptor = (function () {
     };
     QuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
         var changeIndex = 0;
+        console.debug("received event from editor:", JSON.stringify(delta));
         for (var _i = 0, _a = delta.ops; _i < _a.length; _i++) {
             var deltaOp = _a[_i];
             if (deltaOp.hasOwnProperty('retain')) {
@@ -12579,18 +12578,18 @@ var TextSync = (function () {
     /**
      * To be removed when JWT auth is implemented
      */
-    TextSync.getFormValues = function (caller) {
+    TextSync.prototype.getFormValues = function () {
         var form = document.querySelector('form');
         form.style.display = 'none';
         var name = document.querySelector('[name=name]').value;
         var email = document.querySelector('[name=email]').value;
         console.log("name", name, "email", email);
         if (name || email) {
-            caller.userInfo = { name: name, email: email };
-            caller.subscribe(caller.userInfo);
+            var userInfo = { name: name, email: email };
+            this.subscribe(userInfo);
         }
         else {
-            caller.subscribe(null);
+            this.subscribe(null);
         }
     };
     TextSync.prototype.insertText = function (index, content, attributes) {
@@ -12616,7 +12615,7 @@ var TextSync = (function () {
          * To be removed when JWT auth is implemented
          * Replace with subscribe()
          */
-        TextSync.getFormValues(this);
+        this.getFormValues();
     };
     TextSync.prototype.subscribe = function (userInfo) {
         var _this = this;
@@ -12628,7 +12627,7 @@ var TextSync = (function () {
         this.pusher.subscribe({
             path: path,
             onEvent: function (event) {
-                console.info(JSON.stringify(event.body));
+                console.debug("event received from server:", JSON.stringify(event.body));
                 if (event.body.presOps && event.body.presOps.length > 0) {
                     var presentCollaborators = event.body.presOps.filter(function (op) { return op.type !== 2; });
                     var absentCollaborators = event.body.presOps.filter(function (op) { return op.type === 2; });
@@ -12657,7 +12656,7 @@ var TextSync = (function () {
     TextSync.prototype.sendOps = function (ops) {
         var _this = this;
         var body = { docOps: ops, siteId: this.siteId };
-        console.log(JSON.stringify(body));
+        console.debug("dispatching event to server:", JSON.stringify(body));
         this.pusher.request({
             method: "POST",
             path: BASE_SERVICE_PATH + "/docs/" + this.docId,
@@ -14624,7 +14623,7 @@ exports = module.exports = __webpack_require__(10)(undefined);
 
 
 // module
-exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n     -moz-box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n          box-shadow: 10px 10px 33px 0px rgba(224,221,224,1);\n}\n\n.badge.in {\n  opacity: 1;\n}\n\n.badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n}\n\n.badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.badge-wrapper .tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px;\n}\n.badge-wrapper .tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.badge-wrapper:hover .tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
+exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n     -moz-box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n          box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n}\n\n.badge.in {\n  opacity: 1;\n}\n\n.badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n}\n\n.badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.badge-wrapper .tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px;\n}\n.badge-wrapper .tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.badge-wrapper:hover .tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
 
 // exports
 
