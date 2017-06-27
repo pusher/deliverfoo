@@ -15494,8 +15494,8 @@ function createEditor(config) {
     if (!config) {
         throw new Error("Config must be present to initialise TextSync. ");
     }
-    if (!config.appId) {
-        throw new Error("appId must be present in config when initialising TextSync. ");
+    if (!config.serviceId) {
+        throw new Error("serviceId must be present in config when initialising TextSync. ");
     }
     if (!config.cluster) {
         throw new Error("cluster must be present in config when initialising TextSync. ");
@@ -15506,7 +15506,7 @@ function createEditor(config) {
     if (!config.quillElementId) {
         throw new Error("quillElementId must be present in config when initialising TextSync. ");
     }
-    var appId = config.appId;
+    var serviceId = config.serviceId;
     var cluster = config.cluster;
     var docId = config.docId;
     var quillElementId = config.quillElementId;
@@ -15540,7 +15540,7 @@ function createEditor(config) {
     ];
     var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
     var logootDoc = new logoot_doc_1.default(siteId);
-    var app = new pusher_platform_js_1.default.App({ appId: appId, cluster: cluster });
+    var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
     var textsyncDoc = new textsync_1.default(logootDoc, app, docId, siteId);
     var quill = new Quill(quillElementId, quillOptions);
     var quillAdaptor = new quill_adaptor_1.default(quill, textsyncDoc, docId);
