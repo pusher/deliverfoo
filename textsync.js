@@ -12564,34 +12564,18 @@ var controller_1 = __webpack_require__(17);
 var badges_1 = __webpack_require__(15);
 var BASE_SERVICE_PATH = "/services/textsync/v1";
 var TextSync = (function () {
-    function TextSync(logoot, pusher, docId, siteId) {
+    function TextSync(logoot, pusher, docId, siteId, name, email) {
+        if (name === void 0) { name = ""; }
+        if (email === void 0) { email = ""; }
         this.logoot = logoot;
         this.pusher = pusher;
         this.docId = docId;
         this.siteId = siteId;
+        // Remove when we have JWT
+        console.log(name, email);
+        this.name = name;
+        this.email = email;
     }
-    TextSync.encodeQueryStringVals = function (userInfo) {
-        var name = userInfo.name.replace(new RegExp(' ', 'g'), '%20');
-        var email = userInfo.email.replace('@', '%40');
-        return { name: name, email: email };
-    };
-    /**
-     * To be removed when JWT auth is implemented
-     */
-    TextSync.prototype.getFormValues = function () {
-        var form = document.querySelector('form');
-        form.style.display = 'none';
-        var name = document.querySelector('[name=name]').value;
-        var email = document.querySelector('[name=email]').value;
-        console.log("name", name, "email", email);
-        if (name || email) {
-            var userInfo = { name: name, email: email };
-            this.subscribe(userInfo);
-        }
-        else {
-            this.subscribe(null);
-        }
-    };
     TextSync.prototype.insertText = function (index, content, attributes) {
         this.sendOps(this.logoot.insertText(index, content, attributes));
     };
@@ -12611,19 +12595,15 @@ var TextSync = (function () {
         this.initBadges();
         // if user wants badges, run function that does this
         // attach here or onto window
-        /**
-         * To be removed when JWT auth is implemented
-         * Replace with subscribe()
-         */
-        this.getFormValues();
+        this.subscribe(this.name, this.email);
     };
-    TextSync.prototype.subscribe = function (userInfo) {
+    TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
         var path = BASE_SERVICE_PATH + "/docs/" + this.docId + "?siteId=" + this.siteId;
-        if (userInfo !== null) {
-            var _a = TextSync.encodeQueryStringVals(userInfo), name_1 = _a.name, email = _a.email; // clean name?
-            path += "&name=" + name_1 + "&email=" + email;
-        }
+        // Remove when we have JWT
+        var encodedName = encodeURIComponent(name);
+        var encodedEmail = encodeURIComponent(email);
+        path += "&name=" + encodedName + "&email=" + encodedEmail;
         this.pusher.subscribe({
             path: path,
             onEvent: function (event) {
@@ -15509,6 +15489,9 @@ function createEditor(config) {
     var cluster = config.cluster;
     var docId = config.docId;
     var quillElementId = config.quillElementId;
+    // Remove when we have JWT
+    var name = config.name;
+    var email = config.email;
     var quillOptions = {};
     if (config.quillOptions)
         quillOptions = config.quillOptions;
@@ -15540,7 +15523,7 @@ function createEditor(config) {
     var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
     var logootDoc = new logoot_doc_1.default(siteId);
     var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
-    var textsyncDoc = new textsync_1.default(logootDoc, app, docId, siteId);
+    var textsyncDoc = new textsync_1.default(logootDoc, app, docId, siteId, name, email);
     var quill = new Quill(quillElementId, quillOptions);
     var quillAdaptor = new quill_adaptor_1.default(quill, textsyncDoc, docId);
     textsyncDoc.start(quillAdaptor);
