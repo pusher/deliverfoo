@@ -73,11 +73,25 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 19);
+/******/ 	return __webpack_require__(__webpack_require__.s = 21);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 0] = "Insert";
+    OpType[OpType["Delete"] = 1] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+
+
+/***/ }),
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -340,7 +354,22 @@ exports.default = Logoot;
 
 
 /***/ }),
-/* 1 */
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+    OpType[OpType["Split"] = 3] = "Split";
+})(OpType = exports.OpType || (exports.OpType = {}));
+
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -1185,7 +1214,7 @@ exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
 });
 
 /***/ }),
-/* 2 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -12165,16 +12194,16 @@ module.exports = __webpack_require__(62);
 /***/ })
 /******/ ]);
 });
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10).Buffer))
 
 /***/ }),
-/* 3 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(9);
+var content = __webpack_require__(11);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -12182,7 +12211,7 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(13)(content, options);
+var update = __webpack_require__(15)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -12199,7 +12228,7 @@ if(false) {
 }
 
 /***/ }),
-/* 4 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12244,9 +12273,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var logoot_1 = __webpack_require__(0);
-var logoot_2 = __webpack_require__(0);
-var wire_format_1 = __webpack_require__(20);
+var logoot_1 = __webpack_require__(1);
+var logoot_2 = __webpack_require__(1);
+var wire_format_1 = __webpack_require__(2);
 var LogootDoc = (function (_super) {
     __extends(LogootDoc, _super);
     function LogootDoc(siteId) {
@@ -12268,19 +12297,7 @@ var LogootDoc = (function (_super) {
             var _a = this.getSurroundingAtoms(index + i), before_1 = _a[0], after_1 = _a[1];
             var newAtom = this.newAtomBetween(before_1, after_1);
             var newOp = { type: wire_format_1.OpType.Insert, ident: newAtom.ident.toWire(), content: { text: content[i], attributes: attributes } };
-            this.applyOps([newOp]);
-            ops.push(newOp); // to be batch-sent to server
-        }
-        return ops;
-    };
-    LogootDoc.prototype.insertObject = function (index, content, attributes) {
-        var ops = [];
-        // should be one op per atom
-        for (var i = 0; i < content.length; i++) {
-            var _a = this.getSurroundingAtoms(index + i), before_2 = _a[0], after_2 = _a[1];
-            var newAtom = this.newAtomBetween(before_2, after_2);
-            var newOp = { type: wire_format_1.OpType.Insert, ident: newAtom.ident.toWire(), content: { text: content[i], attributes: attributes } };
-            this.applyOps([newOp]);
+            this.applyInsertText(newOp);
             ops.push(newOp); // to be batch-sent to server
         }
         return ops;
@@ -12298,31 +12315,14 @@ var LogootDoc = (function (_super) {
         var ops = [];
         var atoms = this.getAtomsToDelete(index, length);
         for (var i = 0; i < length; i++) {
-            ops.push({
+            var deleteOp = {
                 type: wire_format_1.OpType.Delete,
                 ident: atoms[i].ident.toWire()
-            });
+            };
+            this.applyDelete(deleteOp);
+            ops.push(deleteOp);
         }
-        this.applyOps(ops);
         return ops;
-    };
-    LogootDoc.prototype.applyOps = function (ops) {
-        var deltas = [];
-        for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
-            var op = ops_1[_i];
-            if (op.type == wire_format_1.OpType.Insert) {
-                if (op.content && op.content.text) {
-                    deltas.push(this.applyInsertText(op));
-                }
-                else {
-                    deltas.push(this.applyInsertObject(op));
-                }
-            }
-            else if (op.type == wire_format_1.OpType.Delete) {
-                deltas.push(this.applyDelete(op));
-            }
-        }
-        return deltas;
     };
     LogootDoc.prototype.charIndexOf = function (atom) {
         for (var i = 0; i < this.seq.length; i++) {
@@ -12337,28 +12337,13 @@ var LogootDoc = (function (_super) {
     LogootDoc.prototype.applyInsertText = function (op) {
         var atom = logoot_2.Atom.fromWire(op.ident);
         this.insertAtom(atom);
-        var v = {
-            insert: this.charIndexOf(atom),
-            content: op.content.text,
-            attributes: op.content.attributes,
-        };
-        return v;
-    };
-    LogootDoc.prototype.applyInsertObject = function (op) {
-        var atom = logoot_2.Atom.fromWire(op.ident);
-        this.insertAtom(atom);
-        var v = {
-            insert: this.charIndexOf(atom),
-            content: op.content.data,
-            type: 'image',
-        };
-        return v;
+        return this.charIndexOf(atom);
     };
     LogootDoc.prototype.applyDelete = function (op) {
         var atom = logoot_2.Atom.fromWire(op.ident);
         var index = this.charIndexOf(atom);
         this.deleteAtom(atom);
-        return { delete: index };
+        return index;
     };
     /**
      * Finds the atoms which will precede and follow another atom in the document
@@ -12390,7 +12375,7 @@ exports.default = LogootDoc;
 
 
 /***/ }),
-/* 5 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12399,6 +12384,7 @@ exports.default = LogootDoc;
  * Binding between the textsync document model and that of Quilljs
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+var editorAdaptor = __webpack_require__(0);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
         this.siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
@@ -12411,6 +12397,19 @@ var QuillAdaptor = (function () {
         this.quill.setText('');
         this.quill.on('text-change', this.editorChange.bind(this));
     }
+    QuillAdaptor.prototype.applyOperations = function (operations) {
+        for (var _i = 0, operations_1 = operations; _i < operations_1.length; _i++) {
+            var operation = operations_1[_i];
+            switch (operation.opType) {
+                case editorAdaptor.OpType.Insert:
+                    this.quill.insertText(operation.index, operation.content, operation.attributes, 'silent');
+                    break;
+                case editorAdaptor.OpType.Delete:
+                    this.quill.deleteText(operation.index, 1, 'silent');
+                    break;
+            }
+        }
+    };
     QuillAdaptor.prototype.displayError = function (error) {
         console.log(error);
     };
@@ -12452,30 +12451,14 @@ var QuillAdaptor = (function () {
                 }
             }
             else if (deltaOp.hasOwnProperty('insert')) {
-                // "insert"s come in two flavours: text and object
-                if (typeof deltaOp.insert === "string") {
-                    this.textsync.insertText(changeIndex, deltaOp.insert, QuillAttributes.toWireAttributes(deltaOp.attributes));
-                    changeIndex += deltaOp.insert.length;
-                }
-                else {
-                    this.textsync.insertObject(changeIndex, deltaOp.insert, QuillAttributes.toWireAttributes(deltaOp.attributes));
-                    changeIndex += 1;
-                }
+                this.textsync.insertText(changeIndex, deltaOp.insert, QuillAttributes.toWireAttributes(deltaOp.attributes));
+                changeIndex += deltaOp.insert.length;
             }
             else if (deltaOp.hasOwnProperty('delete')) {
                 this.textsync.deleteText(changeIndex, deltaOp.delete);
                 changeIndex += deltaOp.delete;
             }
         }
-    };
-    QuillAdaptor.prototype.insertText = function (index, text, attributes) {
-        this.quill.insertText(index, text, QuillAttributes.fromWireAttributes(attributes), 'silent');
-    };
-    QuillAdaptor.prototype.insertImage = function (index, data) {
-        this.quill.insertEmbed(index, 'image', data, 'silent');
-    };
-    QuillAdaptor.prototype.deleteText = function (index) {
-        this.quill.deleteText(index, 1, 'silent');
     };
     return QuillAdaptor;
 }());
@@ -12550,7 +12533,7 @@ exports.QuillAttributes = QuillAttributes;
 
 
 /***/ }),
-/* 6 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12559,28 +12542,33 @@ exports.QuillAttributes = QuillAttributes;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var collaborators_1 = __webpack_require__(16);
-var controller_1 = __webpack_require__(17);
-var badges_1 = __webpack_require__(15);
+var wireFormat = __webpack_require__(2);
+var editorAdaptor = __webpack_require__(0);
+var collaborators_1 = __webpack_require__(18);
+var controller_1 = __webpack_require__(19);
+var badges_1 = __webpack_require__(17);
 var BASE_SERVICE_PATH = "/services/textsync/v1";
+var MIN_BROADCAST_PERIOD_MS = 200;
+var MAX_BROADCAST_PERIOD_MS = 10000;
+var BROADCAST_BACKOFF = 1.2;
 var TextSync = (function () {
-    function TextSync(logoot, pusher, docId, siteId, name, email) {
+    function TextSync(logoot, pusher, docId, siteId, presenceConfig, name, email) {
         if (name === void 0) { name = ""; }
         if (email === void 0) { email = ""; }
         this.logoot = logoot;
         this.pusher = pusher;
         this.docId = docId;
         this.siteId = siteId;
+        this.presenceConfig = presenceConfig;
+        this.outstandingOps = [];
+        this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
+        this.broadcastOps();
         // Remove when we have JWT
-        console.log(name, email);
         this.name = name;
         this.email = email;
     }
     TextSync.prototype.insertText = function (index, content, attributes) {
         this.sendOps(this.logoot.insertText(index, content, attributes));
-    };
-    TextSync.prototype.insertObject = function (index, content, attributes) {
-        this.sendOps(this.logoot.insertObject(index, content, attributes));
     };
     TextSync.prototype.deleteText = function (index, length) {
         this.sendOps(this.logoot.deleteText(index, length));
@@ -12592,9 +12580,9 @@ var TextSync = (function () {
     };
     TextSync.prototype.start = function (adaptor) {
         this.adaptor = adaptor;
-        this.initBadges();
-        // if user wants badges, run function that does this
-        // attach here or onto window
+        if (this.presenceConfig.showBadges) {
+            this.initBadges();
+        }
         this.subscribe(this.name, this.email);
     };
     TextSync.prototype.subscribe = function (name, email) {
@@ -12609,14 +12597,7 @@ var TextSync = (function () {
             onEvent: function (event) {
                 console.debug("event received from server:", JSON.stringify(event.body));
                 if (event.body.presOps && event.body.presOps.length > 0) {
-                    var presentCollaborators = event.body.presOps.filter(function (op) { return op.type !== 2; });
-                    var absentCollaborators = event.body.presOps.filter(function (op) { return op.type === 2; });
-                    if (presentCollaborators.length > 0) {
-                        _this.collaborators.add(presentCollaborators);
-                    }
-                    if (absentCollaborators.length > 0) {
-                        _this.collaborators.remove(absentCollaborators);
-                    }
+                    _this.applyPresOps(event.body.presOps);
                 }
                 if (event.body.docOps && event.body.docOps.length > 0) {
                     _this.receiveOps({
@@ -12633,40 +12614,94 @@ var TextSync = (function () {
     TextSync.prototype.initialContent = function (content) {
         this.logoot.initialContent(content.length);
     };
-    TextSync.prototype.sendOps = function (ops) {
-        var _this = this;
-        var body = { docOps: ops, siteId: this.siteId };
-        console.debug("dispatching event to server:", JSON.stringify(body));
-        this.pusher.request({
-            method: "POST",
-            path: BASE_SERVICE_PATH + "/docs/" + this.docId,
-            body: body
-        }).catch(function (error) {
-            _this.logError(error);
+    TextSync.prototype.applyPresOps = function (presOps) {
+        var presOpsCopy = JSON.parse(JSON.stringify(presOps));
+        var presentCollaborators = presOpsCopy
+            .filter(function (op) { return op.type !== 2; })
+            .map(function (op) {
+            delete op.type;
+            return op;
         });
+        var absentCollaborators = presOpsCopy
+            .filter(function (op) { return op.type === 2; })
+            .map(function (op) {
+            delete op.type;
+            return op;
+        });
+        if (this.presenceConfig.callback) {
+            this.presenceConfig.callback({
+                joined: presentCollaborators,
+                left: absentCollaborators
+            });
+        }
+        if (this.presenceConfig.showBadges) {
+            if (presentCollaborators.length > 0) {
+                this.collaborators.add(presentCollaborators);
+            }
+            if (absentCollaborators.length > 0) {
+                this.collaborators.remove(absentCollaborators);
+            }
+        }
     };
-    TextSync.prototype.receiveOps = function (data) {
-        if (data.siteId === this.siteId) {
+    TextSync.prototype.sendOps = function (ops) {
+        this.outstandingOps = this.outstandingOps.concat(ops);
+    };
+    TextSync.prototype.broadcastOps = function () {
+        var _this = this;
+        if (this.outstandingOps.length > 0) {
+            var body_1 = {
+                docOps: this.outstandingOps,
+                siteId: this.siteId,
+            };
+            this.outstandingOps = [];
+            console.debug("Broadcasting operations to server:", JSON.stringify(body_1));
+            this.pusher.request({
+                method: "POST",
+                path: BASE_SERVICE_PATH + "/docs/" + this.docId,
+                body: body_1
+            }).then(function () {
+                _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
+            }).catch(function (error) {
+                _this.logError(error);
+                _this.outstandingOps = body_1.docOps.concat(_this.outstandingOps);
+                var newBroadcastPeriod = _this.broadcastPeriod * BROADCAST_BACKOFF;
+                if (newBroadcastPeriod < MAX_BROADCAST_PERIOD_MS) {
+                    _this.broadcastPeriod = newBroadcastPeriod;
+                }
+            });
+        }
+        setTimeout(function () { _this.broadcastOps(); }, this.broadcastPeriod);
+    };
+    TextSync.prototype.receiveOps = function (wireMessage) {
+        if (wireMessage.siteId === this.siteId) {
             return;
         }
-        var deltas = this.logoot.applyOps(data.docOps);
-        for (var _i = 0, deltas_1 = deltas; _i < deltas_1.length; _i++) {
-            var d = deltas_1[_i];
-            if (d.insert !== undefined && d.insert !== null) {
-                if (typeof d.content === "string") {
-                    this.adaptor.insertText(d.insert, d.content, d.attributes);
-                }
-                else {
-                    this.adaptor.insertImage(d.insert, d.content.image);
-                }
-            }
-            else if (d.delete !== undefined && d.delete !== null) {
-                this.adaptor.deleteText(d.delete);
-            }
-            else {
-                this.logError("Unknown logoot doc delta: " + JSON.stringify(d));
+        var editorOps = [];
+        for (var _i = 0, _a = wireMessage.docOps; _i < _a.length; _i++) {
+            var wireOp = _a[_i];
+            var index = void 0;
+            switch (wireOp.type) {
+                case wireFormat.OpType.Insert:
+                    index = this.logoot.applyInsertText(wireOp);
+                    var insertTextOp = {
+                        "opType": editorAdaptor.OpType.Insert,
+                        "index": index,
+                        "content": wireOp.content.text,
+                        "attributes": wireOp.content.attributes,
+                    };
+                    editorOps.push(insertTextOp);
+                    break;
+                case wireFormat.OpType.Delete:
+                    index = this.logoot.applyDelete(wireOp);
+                    var deleteTextOp = {
+                        "opType": editorAdaptor.OpType.Delete,
+                        "index": index,
+                    };
+                    editorOps.push(deleteTextOp);
+                    break;
             }
         }
+        this.adaptor.applyOperations(editorOps);
     };
     TextSync.prototype.logError = function (error) {
         console.log(error);
@@ -12677,7 +12712,7 @@ exports.default = TextSync;
 
 
 /***/ }),
-/* 7 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12798,7 +12833,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12812,9 +12847,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(7)
-var ieee754 = __webpack_require__(11)
-var isArray = __webpack_require__(12)
+var base64 = __webpack_require__(9)
+var ieee754 = __webpack_require__(13)
+var isArray = __webpack_require__(14)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -14592,13 +14627,13 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22)))
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(10)(undefined);
+exports = module.exports = __webpack_require__(12)(undefined);
 // imports
 
 
@@ -14609,7 +14644,7 @@ exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s 
 
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports) {
 
 /*
@@ -14691,7 +14726,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -14781,7 +14816,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -14792,7 +14827,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -14838,7 +14873,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(14);
+var	fixUrls = __webpack_require__(16);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -15151,7 +15186,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports) {
 
 
@@ -15246,7 +15281,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15325,13 +15360,13 @@ exports.default = Badges;
 
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var event_dispatcher_1 = __webpack_require__(18);
+var event_dispatcher_1 = __webpack_require__(20);
 var Collaborators = (function () {
     function Collaborators() {
         this._data = [];
@@ -15385,7 +15420,7 @@ exports.default = Collaborators;
 
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15425,7 +15460,7 @@ exports.default = Controller;
 
 
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15453,7 +15488,7 @@ exports.default = PresenceEvent;
 
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15463,52 +15498,58 @@ exports.default = PresenceEvent;
  * It is intended to replace an existing
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var Quill = __webpack_require__(2);
-var pusher_platform_js_1 = __webpack_require__(1);
-var logoot_doc_1 = __webpack_require__(4);
-var textsync_1 = __webpack_require__(6);
-var quill_adaptor_1 = __webpack_require__(5);
-__webpack_require__(3);
-function createEditor(config) {
-    if (!config) {
-        throw new Error("Config must be present to initialise TextSync. ");
+var Quill = __webpack_require__(4);
+var pusher_platform_js_1 = __webpack_require__(3);
+var logoot_doc_1 = __webpack_require__(6);
+var textsync_1 = __webpack_require__(8);
+var quill_adaptor_1 = __webpack_require__(7);
+__webpack_require__(5);
+function createEditor(appConfig, userConfig) {
+    if (!appConfig) {
+        throw new Error("Config must be present to initialise TextSync.");
     }
-    if (!config.serviceId) {
-        throw new Error("serviceId must be present in config when initialising TextSync. ");
+    if (!appConfig.serviceId) {
+        throw new Error("serviceId must be present in config when initialising TextSync.");
     }
-    if (!config.cluster) {
-        throw new Error("cluster must be present in config when initialising TextSync. ");
+    if (!appConfig.cluster) {
+        throw new Error("cluster must be present in config when initialising TextSync.");
     }
-    if (!config.docId) {
-        throw new Error("docId must be present in config when initialising TextSync. ");
+    if (!appConfig.docId) {
+        throw new Error("docId must be present in config when initialising TextSync.");
     }
-    if (!config.quillElementId) {
-        throw new Error("quillElementId must be present in config when initialising TextSync. ");
+    if (!appConfig.element) {
+        throw new Error("element must be present in config when initialising TextSync.");
     }
-    var serviceId = config.serviceId;
-    var cluster = config.cluster;
-    var docId = config.docId;
-    var quillElementId = config.quillElementId;
+    if (appConfig.presenceConfig && appConfig.presenceConfig.callback) {
+        if (typeof appConfig.presenceConfig.callback !== 'function') {
+            throw new Error("presenceConfig.callback must be a function.");
+        }
+    }
+    var serviceId = appConfig.serviceId;
+    var cluster = appConfig.cluster;
+    var docId = appConfig.docId;
+    var element = appConfig.element;
+    var presenceConfig = appConfig.presenceConfig || { showBadges: true };
     // Remove when we have JWT
-    var name = config.name;
-    var email = config.email;
-    var quillOptions = {};
-    if (config.quillOptions)
-        quillOptions = config.quillOptions;
-    if (quillOptions.modules == null)
-        quillOptions.modules = {};
-    quillOptions.modules.history = {
+    var name = userConfig.name;
+    var email = userConfig.email;
+    var quillConfig = {};
+    if (appConfig.quillConfig)
+        quillConfig = appConfig.quillConfig;
+    if (quillConfig.modules == null)
+        quillConfig.modules = {};
+    quillConfig.modules.history = {
         delay: 2000, maxStack: 500, userOnly: true
     };
-    if (quillOptions.theme == null) {
-        quillOptions.theme = "snow";
+    if (quillConfig.theme == null) {
+        quillConfig.theme = "snow";
         var link = document.createElement("link");
         link.rel = "stylesheet";
         link.type = "text/css";
         link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
         document.getElementsByTagName("head")[0].appendChild(link);
     }
-    quillOptions.formats = [
+    quillConfig.formats = [
         'background',
         'bold',
         'color',
@@ -15523,32 +15564,17 @@ function createEditor(config) {
     var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
     var logootDoc = new logoot_doc_1.default(siteId);
     var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
-    var textsyncDoc = new textsync_1.default(logootDoc, app, docId, siteId, name, email);
-    var quill = new Quill(quillElementId, quillOptions);
-    var quillAdaptor = new quill_adaptor_1.default(quill, textsyncDoc, docId);
-    textsyncDoc.start(quillAdaptor);
+    var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
+    var quill = new Quill(element, quillConfig);
+    var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
+    textSyncInstance.start(quillAdaptor);
     return { quill: quill };
 }
 exports.createEditor = createEditor;
 
 
 /***/ }),
-/* 20 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-    OpType[OpType["Split"] = 3] = "Split";
-})(OpType = exports.OpType || (exports.OpType = {}));
-
-
-/***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 var g;
