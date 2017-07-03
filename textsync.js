@@ -15505,6 +15505,7 @@ var textsync_1 = __webpack_require__(8);
 var quill_adaptor_1 = __webpack_require__(7);
 __webpack_require__(5);
 function createEditor(appConfig, userConfig) {
+    if (userConfig === void 0) { userConfig = {}; }
     if (!appConfig) {
         throw new Error("Config must be present to initialise TextSync.");
     }
