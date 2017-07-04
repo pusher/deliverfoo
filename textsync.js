@@ -655,14 +655,15 @@ var Subscription = (function () {
                     var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
                     _this.assertState(['OPEN', 'ENDING']);
                     if (err != null) {
-                        _this.xhr.abort();
+                        _this.state = SubscriptionState.ENDED;
+                        if (err.statusCode != 204) {
+                            if (_this.options.onError) {
+                                _this.options.onError(err);
+                            }
+                        }
                         // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
                         // and so we will not call the event handler again.
                         // Finish with options.onError instead of the options.onEnd.
-                        _this.state = SubscriptionState.ENDED;
-                        if (_this.options.onError) {
-                            _this.options.onError(err);
-                        }
                     }
                     else {
                         // We consumed some response text, and all's fine. We expect more text.
@@ -686,11 +687,18 @@ var Subscription = (function () {
                     var err = _this.onChunk();
                     if (err !== null && err !== undefined) {
                         _this.state = SubscriptionState.ENDED;
-                        if (_this.options.onError) {
-                            _this.options.onError(err);
+                        if (err.statusCode === 204) {
+                            if (_this.options.onEnd) {
+                                _this.options.onEnd();
+                            }
+                        }
+                        else {
+                            if (_this.options.onError) {
+                                _this.options.onError(err);
+                            }
                         }
                     }
-                    else if (_this.state !== SubscriptionState.ENDING) {
+                    else if (_this.state <= SubscriptionState.ENDING) {
                         if (_this.options.onError) {
                             _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
                         }
@@ -713,11 +721,6 @@ var Subscription = (function () {
                         _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
                     }
                 }
-            }
-        };
-        xhr.onerror = function (event) {
-            if (_this.options.onError) {
-                _this.options.onError(new base_client_1.NetworkError(event));
             }
         };
     }
@@ -903,7 +906,14 @@ var ResumableSubscription = (function () {
             onError: function (error) {
                 _this.state = ResumableSubscriptionState.OPENING;
                 _this.retryStrategy.attemptRetry(error)
-                    .then(function () { _this.tryNow; })
+                    .then(function () {
+                    if (_this.options.onRetry !== null) {
+                        _this.options.onRetry();
+                    }
+                    else {
+                        _this.tryNow();
+                    }
+                })
                     .catch(function (error) {
                     _this.state = ResumableSubscriptionState.ENDED;
                     if (_this.options.onError) {
@@ -1017,13 +1027,14 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_client_1 = __webpack_require__(0);
 var logger_1 = __webpack_require__(3);
-var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
+var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
 var App = (function () {
     function App(options) {
         this.serviceId = options.serviceId;
         this.tokenProvider = options.tokenProvider;
         this.client = options.client || new base_client_1.BaseClient({
-            cluster: options.cluster || DEFAULT_CLUSTER,
+            cluster: options.cluster ?
+                sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
             encrypted: options.encrypted
         });
         if (options.logger) {
@@ -1080,6 +1091,11 @@ var App = (function () {
     return App;
 }());
 exports.default = App;
+function sanitizeCluster(cluster) {
+    return cluster
+        .replace(/^[^\/:]*:\/\//, "") // remove schema
+        .replace(/\/$/, ""); // remove trailing slash
+}
 
 
 /***/ }),
@@ -1090,14 +1106,18 @@ exports.default = App;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var app_1 = __webpack_require__(4);
+exports.App = app_1.default;
 var base_client_1 = __webpack_require__(0);
+exports.BaseClient = base_client_1.BaseClient;
 var resumable_subscription_1 = __webpack_require__(2);
+exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
 var subscription_1 = __webpack_require__(1);
+exports.Subscription = subscription_1.Subscription;
 exports.default = {
     App: app_1.default,
     BaseClient: base_client_1.BaseClient,
     ResumableSubscription: resumable_subscription_1.ResumableSubscription,
-    Subscription: subscription_1.Subscription
+    Subscription: subscription_1.Subscription,
 };
 
 
@@ -1108,7 +1128,6 @@ exports.default = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
 var logger_1 = __webpack_require__(3);
 var Retry = (function () {
     function Retry(waitTimeMilis) {
@@ -1181,18 +1200,8 @@ var ExponentialBackoffRetryStrategy = (function () {
     };
     ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
         var retryable = {
-            isRetryable: false
+            isRetryable: true
         };
-        //We allow network errors
-        if (error instanceof base_client_1.NetworkError)
-            retryable.isRetryable = true;
-        else if (error instanceof base_client_1.ErrorResponse) {
-            //Only retry after is allowed
-            if (error.headers["retry-after"]) {
-                retryable.isRetryable = true;
-                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
-            }
-        }
         return retryable;
     };
     ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
@@ -12551,6 +12560,12 @@ var BASE_SERVICE_PATH = "/services/textsync/v1";
 var MIN_BROADCAST_PERIOD_MS = 200;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
+var ConnectionState;
+(function (ConnectionState) {
+    ConnectionState[ConnectionState["connected"] = 0] = "connected";
+    ConnectionState[ConnectionState["connecting"] = 1] = "connecting";
+    ConnectionState[ConnectionState["disconnected"] = 2] = "disconnected";
+})(ConnectionState || (ConnectionState = {}));
 var TextSync = (function () {
     function TextSync(logoot, pusher, docId, siteId, presenceConfig, name, email) {
         if (name === void 0) { name = ""; }
@@ -12560,6 +12575,7 @@ var TextSync = (function () {
         this.docId = docId;
         this.siteId = siteId;
         this.presenceConfig = presenceConfig;
+        this.lastEventID = null;
         this.outstandingOps = [];
         this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
         this.broadcastOps();
@@ -12587,15 +12603,18 @@ var TextSync = (function () {
     };
     TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
+        console.info("Connecting to server...");
         var path = BASE_SERVICE_PATH + "/docs/" + this.docId + "?siteId=" + this.siteId;
         // Remove when we have JWT
         var encodedName = encodeURIComponent(name);
         var encodedEmail = encodeURIComponent(email);
         path += "&name=" + encodedName + "&email=" + encodedEmail;
-        this.pusher.subscribe({
+        this.pusher.resumableSubscribe({
             path: path,
+            lastEventId: this.lastEventID,
             onEvent: function (event) {
                 console.debug("event received from server:", JSON.stringify(event.body));
+                _this.lastEventID = event.eventId;
                 if (event.body.presOps && event.body.presOps.length > 0) {
                     _this.applyPresOps(event.body.presOps);
                 }
@@ -12606,9 +12625,21 @@ var TextSync = (function () {
                     });
                 }
             },
-            onOpen: function () { console.info("subscription opened"); },
-            onEnd: function () { _this.logError({ info: "subscription ended" }); },
-            onError: this.logError
+            onOpen: function () {
+                console.info("subscription opened successfully");
+            },
+            onEnd: function () {
+                _this.logError({ info: "subscription terminated by server" });
+            },
+            onError: function (error) {
+                _this.logError({
+                    info: "subscription closed due to error",
+                    error: error,
+                });
+            },
+            onRetry: function () {
+                _this.subscribe(_this.name, _this.email);
+            },
         });
     };
     TextSync.prototype.initialContent = function (content) {
@@ -12628,6 +12659,15 @@ var TextSync = (function () {
             delete op.type;
             return op;
         });
+        // This is kinda hacky but should be uneccessary once we have proper auth - Jonathan Lloyd
+        if (this.name === "") {
+            for (var _i = 0, presentCollaborators_1 = presentCollaborators; _i < presentCollaborators_1.length; _i++) {
+                var collaborator = presentCollaborators_1[_i];
+                if (collaborator.siteId === this.siteId) {
+                    this.name = collaborator.name;
+                }
+            }
+        }
         if (this.presenceConfig.callback) {
             this.presenceConfig.callback({
                 joined: presentCollaborators,
@@ -15370,6 +15410,7 @@ var event_dispatcher_1 = __webpack_require__(20);
 var Collaborators = (function () {
     function Collaborators() {
         this._data = [];
+        this._presentCollaboratorIds = {};
         this.joinedEvent = new event_dispatcher_1.default(this);
         this.leftEvent = new event_dispatcher_1.default(this);
     }
@@ -15379,10 +15420,12 @@ var Collaborators = (function () {
      * @returns {void}
      */
     Collaborators.prototype.add = function (joining) {
-        if (!Array.isArray(joining) || joining.length === 0) {
-            console.error(new TypeError("expected an array of AddOp"));
+        var _this = this;
+        if (joining.length === 0) {
             return;
         }
+        joining = joining.filter(function (op) { return !_this._presentCollaboratorIds.hasOwnProperty(op.siteId); });
+        joining.forEach(function (op) { _this._presentCollaboratorIds[op.siteId] = true; });
         var existing = this._data.length;
         this._data = this._data.concat(joining);
         this.joinedEvent.notify(joining, existing);
@@ -15394,11 +15437,11 @@ var Collaborators = (function () {
      */
     Collaborators.prototype.remove = function (leaving) {
         var _this = this;
-        if (!Array.isArray(leaving) || leaving.length === 0) {
-            console.error(new TypeError("expected an array of RemoveOp"));
+        if (leaving.length === 0) {
             return;
         }
         leaving.forEach(function (leavingPerson) {
+            delete _this._presentCollaboratorIds[leavingPerson.siteId];
             _this._data = _this._data.filter(function (collab) { return collab.siteId !== leavingPerson.siteId; });
         });
         var leavingSiteIds = leaving.reduce(function (acc, collab) {
@@ -15504,19 +15547,7 @@ var logoot_doc_1 = __webpack_require__(6);
 var textsync_1 = __webpack_require__(8);
 var quill_adaptor_1 = __webpack_require__(7);
 __webpack_require__(5);
-var DEFAULT_QUILL_CONFIG = {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
-            ['link', { 'header': [1, 2, 3, 4, 5, false] }],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }]
-        ]
-    }
-};
 function createEditor(appConfig, userConfig) {
-    if (userConfig === void 0) { userConfig = {}; }
     if (!appConfig) {
         throw new Error("Config must be present to initialise TextSync.");
     }
@@ -15546,12 +15577,8 @@ function createEditor(appConfig, userConfig) {
     var name = userConfig.name;
     var email = userConfig.email;
     var quillConfig = {};
-    if (appConfig.quillConfig) {
+    if (appConfig.quillConfig)
         quillConfig = appConfig.quillConfig;
-    }
-    else {
-        quillConfig = DEFAULT_QUILL_CONFIG;
-    }
     if (quillConfig.modules == null)
         quillConfig.modules = {};
     quillConfig.modules.history = {
