@@ -15504,6 +15504,17 @@ var logoot_doc_1 = __webpack_require__(6);
 var textsync_1 = __webpack_require__(8);
 var quill_adaptor_1 = __webpack_require__(7);
 __webpack_require__(5);
+var DEFAULT_QUILL_CONFIG = {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['link', { 'header': [1, 2, 3, 4, 5, false] }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'size': ['small', false, 'large', 'huge'] }]
+        ]
+    }
+};
 function createEditor(appConfig, userConfig) {
     if (userConfig === void 0) { userConfig = {}; }
     if (!appConfig) {
@@ -15535,8 +15546,12 @@ function createEditor(appConfig, userConfig) {
     var name = userConfig.name;
     var email = userConfig.email;
     var quillConfig = {};
-    if (appConfig.quillConfig)
+    if (appConfig.quillConfig) {
         quillConfig = appConfig.quillConfig;
+    }
+    else {
+        quillConfig = DEFAULT_QUILL_CONFIG;
+    }
     if (quillConfig.modules == null)
         quillConfig.modules = {};
     quillConfig.modules.history = {
