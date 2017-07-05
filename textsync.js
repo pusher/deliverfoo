@@ -12560,12 +12560,6 @@ var BASE_SERVICE_PATH = "/services/textsync/v1";
 var MIN_BROADCAST_PERIOD_MS = 200;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
-var ConnectionState;
-(function (ConnectionState) {
-    ConnectionState[ConnectionState["connected"] = 0] = "connected";
-    ConnectionState[ConnectionState["connecting"] = 1] = "connecting";
-    ConnectionState[ConnectionState["disconnected"] = 2] = "disconnected";
-})(ConnectionState || (ConnectionState = {}));
 var TextSync = (function () {
     function TextSync(logoot, pusher, docId, siteId, presenceConfig, name, email) {
         if (name === void 0) { name = ""; }
@@ -12575,7 +12569,6 @@ var TextSync = (function () {
         this.docId = docId;
         this.siteId = siteId;
         this.presenceConfig = presenceConfig;
-        this.lastEventID = null;
         this.outstandingOps = [];
         this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
         this.broadcastOps();
@@ -12603,18 +12596,15 @@ var TextSync = (function () {
     };
     TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
-        console.info("Connecting to server...");
         var path = BASE_SERVICE_PATH + "/docs/" + this.docId + "?siteId=" + this.siteId;
         // Remove when we have JWT
         var encodedName = encodeURIComponent(name);
         var encodedEmail = encodeURIComponent(email);
         path += "&name=" + encodedName + "&email=" + encodedEmail;
-        this.pusher.resumableSubscribe({
+        this.pusher.subscribe({
             path: path,
-            lastEventId: this.lastEventID,
             onEvent: function (event) {
                 console.debug("event received from server:", JSON.stringify(event.body));
-                _this.lastEventID = event.eventId;
                 if (event.body.presOps && event.body.presOps.length > 0) {
                     _this.applyPresOps(event.body.presOps);
                 }
@@ -12625,21 +12615,9 @@ var TextSync = (function () {
                     });
                 }
             },
-            onOpen: function () {
-                console.info("subscription opened successfully");
-            },
-            onEnd: function () {
-                _this.logError({ info: "subscription terminated by server" });
-            },
-            onError: function (error) {
-                _this.logError({
-                    info: "subscription closed due to error",
-                    error: error,
-                });
-            },
-            onRetry: function () {
-                _this.subscribe(_this.name, _this.email);
-            },
+            onOpen: function () { console.info("subscription opened"); },
+            onEnd: function () { _this.logError({ info: "subscription ended" }); },
+            onError: this.logError
         });
     };
     TextSync.prototype.initialContent = function (content) {
@@ -12659,15 +12637,6 @@ var TextSync = (function () {
             delete op.type;
             return op;
         });
-        // This is kinda hacky but should be uneccessary once we have proper auth - Jonathan Lloyd
-        if (this.name === "") {
-            for (var _i = 0, presentCollaborators_1 = presentCollaborators; _i < presentCollaborators_1.length; _i++) {
-                var collaborator = presentCollaborators_1[_i];
-                if (collaborator.siteId === this.siteId) {
-                    this.name = collaborator.name;
-                }
-            }
-        }
         if (this.presenceConfig.callback) {
             this.presenceConfig.callback({
                 joined: presentCollaborators,
@@ -15410,7 +15379,6 @@ var event_dispatcher_1 = __webpack_require__(20);
 var Collaborators = (function () {
     function Collaborators() {
         this._data = [];
-        this._presentCollaboratorIds = {};
         this.joinedEvent = new event_dispatcher_1.default(this);
         this.leftEvent = new event_dispatcher_1.default(this);
     }
@@ -15420,12 +15388,10 @@ var Collaborators = (function () {
      * @returns {void}
      */
     Collaborators.prototype.add = function (joining) {
-        var _this = this;
-        if (joining.length === 0) {
+        if (!Array.isArray(joining) || joining.length === 0) {
+            console.error(new TypeError("expected an array of AddOp"));
             return;
         }
-        joining = joining.filter(function (op) { return !_this._presentCollaboratorIds.hasOwnProperty(op.siteId); });
-        joining.forEach(function (op) { _this._presentCollaboratorIds[op.siteId] = true; });
         var existing = this._data.length;
         this._data = this._data.concat(joining);
         this.joinedEvent.notify(joining, existing);
@@ -15437,11 +15403,11 @@ var Collaborators = (function () {
      */
     Collaborators.prototype.remove = function (leaving) {
         var _this = this;
-        if (leaving.length === 0) {
+        if (!Array.isArray(leaving) || leaving.length === 0) {
+            console.error(new TypeError("expected an array of RemoveOp"));
             return;
         }
         leaving.forEach(function (leavingPerson) {
-            delete _this._presentCollaboratorIds[leavingPerson.siteId];
             _this._data = _this._data.filter(function (collab) { return collab.siteId !== leavingPerson.siteId; });
         });
         var leavingSiteIds = leaving.reduce(function (acc, collab) {
@@ -15547,7 +15513,19 @@ var logoot_doc_1 = __webpack_require__(6);
 var textsync_1 = __webpack_require__(8);
 var quill_adaptor_1 = __webpack_require__(7);
 __webpack_require__(5);
+var DEFAULT_QUILL_CONFIG = {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['link', { 'header': [1, 2, 3, 4, 5, false] }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'size': ['small', false, 'large', 'huge'] }]
+        ]
+    }
+};
 function createEditor(appConfig, userConfig) {
+    if (userConfig === void 0) { userConfig = {}; }
     if (!appConfig) {
         throw new Error("Config must be present to initialise TextSync.");
     }
@@ -15577,8 +15555,12 @@ function createEditor(appConfig, userConfig) {
     var name = userConfig.name;
     var email = userConfig.email;
     var quillConfig = {};
-    if (appConfig.quillConfig)
+    if (appConfig.quillConfig) {
         quillConfig = appConfig.quillConfig;
+    }
+    else {
+        quillConfig = DEFAULT_QUILL_CONFIG;
+    }
     if (quillConfig.modules == null)
         quillConfig.modules = {};
     quillConfig.modules.history = {
