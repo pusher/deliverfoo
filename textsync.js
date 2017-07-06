@@ -15514,10 +15514,6 @@ var DEFAULT_QUILL_CONFIG = {
         ]
     }
 };
-if (getDocId()) {
-    document.getElementById("form").style.display = "none";
-    // get creds, run createEditor
-}
 function createEditor(appConfig, userConfig) {
     if (userConfig === void 0) { userConfig = {}; }
     var containerElement;
@@ -15552,7 +15548,7 @@ function createEditor(appConfig, userConfig) {
     }
     var serviceId = appConfig.serviceId;
     var cluster = appConfig.cluster;
-    var docId = getDocId() || appConfig.docId;
+    var docId = appConfig.docId;
     var presenceConfig = appConfig.presenceConfig || { showBadges: true };
     // Remove when we have JWT
     var name = userConfig.name;
@@ -15617,13 +15613,6 @@ function injectQuillCss(quillConfig) {
     link.type = "text/css";
     link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
     document.getElementsByTagName("head")[0].appendChild(link);
-}
-function getDocId() {
-    var location = window.location.href;
-    var chunks = location.split('?');
-    if (chunks.length > 0) {
-        return chunks[1].replace('docId=', '');
-    }
 }
 
 
