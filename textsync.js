@@ -15568,7 +15568,7 @@ function createEditor(appConfig, userConfig) {
 }
 exports.createEditor = createEditor;
 function initEditor(element, quillConfig, appConfig) {
-    if (appConfig.presenceConfig.showBadges) {
+    if (appConfig.presenceConfig && appConfig.presenceConfig.showBadges) {
         __webpack_require__(5);
         var presenceContainer = document.createElement('div');
         presenceContainer.id = 'tsync-presence-container';
