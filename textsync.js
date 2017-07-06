@@ -655,15 +655,14 @@ var Subscription = (function () {
                     var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
                     _this.assertState(['OPEN', 'ENDING']);
                     if (err != null) {
-                        _this.state = SubscriptionState.ENDED;
-                        if (err.statusCode != 204) {
-                            if (_this.options.onError) {
-                                _this.options.onError(err);
-                            }
-                        }
+                        _this.xhr.abort();
                         // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
                         // and so we will not call the event handler again.
                         // Finish with options.onError instead of the options.onEnd.
+                        _this.state = SubscriptionState.ENDED;
+                        if (_this.options.onError) {
+                            _this.options.onError(err);
+                        }
                     }
                     else {
                         // We consumed some response text, and all's fine. We expect more text.
@@ -687,18 +686,11 @@ var Subscription = (function () {
                     var err = _this.onChunk();
                     if (err !== null && err !== undefined) {
                         _this.state = SubscriptionState.ENDED;
-                        if (err.statusCode === 204) {
-                            if (_this.options.onEnd) {
-                                _this.options.onEnd();
-                            }
-                        }
-                        else {
-                            if (_this.options.onError) {
-                                _this.options.onError(err);
-                            }
+                        if (_this.options.onError) {
+                            _this.options.onError(err);
                         }
                     }
-                    else if (_this.state <= SubscriptionState.ENDING) {
+                    else if (_this.state !== SubscriptionState.ENDING) {
                         if (_this.options.onError) {
                             _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
                         }
@@ -721,6 +713,11 @@ var Subscription = (function () {
                         _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
                     }
                 }
+            }
+        };
+        xhr.onerror = function (event) {
+            if (_this.options.onError) {
+                _this.options.onError(new base_client_1.NetworkError(event));
             }
         };
     }
@@ -906,14 +903,7 @@ var ResumableSubscription = (function () {
             onError: function (error) {
                 _this.state = ResumableSubscriptionState.OPENING;
                 _this.retryStrategy.attemptRetry(error)
-                    .then(function () {
-                    if (_this.options.onRetry !== null) {
-                        _this.options.onRetry();
-                    }
-                    else {
-                        _this.tryNow();
-                    }
-                })
+                    .then(function () { _this.tryNow; })
                     .catch(function (error) {
                     _this.state = ResumableSubscriptionState.ENDED;
                     if (_this.options.onError) {
@@ -1027,14 +1017,13 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_client_1 = __webpack_require__(0);
 var logger_1 = __webpack_require__(3);
-var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
+var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
 var App = (function () {
     function App(options) {
         this.serviceId = options.serviceId;
         this.tokenProvider = options.tokenProvider;
         this.client = options.client || new base_client_1.BaseClient({
-            cluster: options.cluster ?
-                sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
+            cluster: options.cluster || DEFAULT_CLUSTER,
             encrypted: options.encrypted
         });
         if (options.logger) {
@@ -1091,11 +1080,6 @@ var App = (function () {
     return App;
 }());
 exports.default = App;
-function sanitizeCluster(cluster) {
-    return cluster
-        .replace(/^[^\/:]*:\/\//, "") // remove schema
-        .replace(/\/$/, ""); // remove trailing slash
-}
 
 
 /***/ }),
@@ -1106,18 +1090,14 @@ function sanitizeCluster(cluster) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var app_1 = __webpack_require__(4);
-exports.App = app_1.default;
 var base_client_1 = __webpack_require__(0);
-exports.BaseClient = base_client_1.BaseClient;
 var resumable_subscription_1 = __webpack_require__(2);
-exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
 var subscription_1 = __webpack_require__(1);
-exports.Subscription = subscription_1.Subscription;
 exports.default = {
     App: app_1.default,
     BaseClient: base_client_1.BaseClient,
     ResumableSubscription: resumable_subscription_1.ResumableSubscription,
-    Subscription: subscription_1.Subscription,
+    Subscription: subscription_1.Subscription
 };
 
 
@@ -1128,6 +1108,7 @@ exports.default = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
 var logger_1 = __webpack_require__(3);
 var Retry = (function () {
     function Retry(waitTimeMilis) {
@@ -1200,8 +1181,18 @@ var ExponentialBackoffRetryStrategy = (function () {
     };
     ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
         var retryable = {
-            isRetryable: true
+            isRetryable: false
         };
+        //We allow network errors
+        if (error instanceof base_client_1.NetworkError)
+            retryable.isRetryable = true;
+        else if (error instanceof base_client_1.ErrorResponse) {
+            //Only retry after is allowed
+            if (error.headers["retry-after"]) {
+                retryable.isRetryable = true;
+                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
+            }
+        }
         return retryable;
     };
     ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
@@ -12217,7 +12208,7 @@ if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
 
-var options = {}
+var options = {"insertAt":"top"}
 options.transform = transform
 // add the styles to the DOM
 var update = __webpack_require__(15)(content, options);
@@ -14647,7 +14638,7 @@ exports = module.exports = __webpack_require__(12)(undefined);
 
 
 // module
-exports.push([module.i, "\n.badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n     -moz-box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n          box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n}\n\n.badge.in {\n  opacity: 1;\n}\n\n.badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n}\n\n.badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.badge-wrapper .tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px;\n}\n.badge-wrapper .tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.badge-wrapper:hover .tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
+exports.push([module.i, "\n.tsync-badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: rgb(73, 207, 187);\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n\n  -webkit-box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n     -moz-box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n          box-shadow: 1px 1px 3px 0px rgba(0,0,0,0.2);\n}\n\n.tsync-badge.in {\n  opacity: 1;\n}\n\n.tsync-badge:hover {\n  border-color: rgb(62, 61, 89);\n}\n\n#tsync-presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n  height: 40px;\n}\n\n.tsync-badge-wrapper {\n  position: relative;\n  display: inline;\n}\n.tsync-badge-wrapper .tsync-tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px;\n}\n.tsync-badge-wrapper .tsync-tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0; height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent;\n}\n.tsync-badge-wrapper:hover .tsync-tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999;\n}\n", ""]);
 
 // exports
 
@@ -15299,7 +15290,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Badges = (function () {
     function Badges(siteId) {
         this.siteId = siteId;
-        this.targetElement = document.querySelector('#presence-container'); // or something else from user
+        this.targetElement = document.querySelector('#tsync-presence-container');
         this.addBadges = this.addBadges.bind(this);
         this.addToDOM = this.addToDOM.bind(this);
         this.removeBadge = this.removeBadge.bind(this);
@@ -15333,12 +15324,12 @@ var Badges = (function () {
     };
     Badges.prototype.removeFromDOM = function (index) {
         console.log("someone left");
-        var badges = Array.from(document.querySelectorAll('.badge-wrapper'));
+        var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
         var toRemove = badges[index];
         this.targetElement.removeChild(toRemove);
     };
     Badges.prototype.findBadgeInDOM = function (leavingSiteId) {
-        var badges = Array.from(document.querySelectorAll(".badge-wrapper"));
+        var badges = Array.from(document.querySelectorAll(".tsync-badge-wrapper"));
         for (var i = 0; i < badges.length; i++) {
             if (badges[i].dataset.siteId === leavingSiteId.toString()) {
                 return i;
@@ -15348,13 +15339,13 @@ var Badges = (function () {
     };
     Badges.prototype.createBadge = function (data) {
         var badgeWrapper = document.createElement('span');
-        badgeWrapper.className = "badge-wrapper";
+        badgeWrapper.className = "tsync-badge-wrapper";
         badgeWrapper.dataset.siteId = data.siteId.toString();
         var badge = document.createElement('div');
         badge.style.backgroundImage = "url(\"" + data.avatar + "\")";
-        badge.className = "badge";
+        badge.className = "tsync-badge";
         var tooltip = document.createElement('span');
-        tooltip.className = "tooltip";
+        tooltip.className = "tsync-tooltip";
         tooltip.innerText = data.name;
         if (this.siteId === data.siteId) {
             tooltip.innerText += " (you)";
@@ -15512,7 +15503,6 @@ var pusher_platform_js_1 = __webpack_require__(3);
 var logoot_doc_1 = __webpack_require__(6);
 var textsync_1 = __webpack_require__(8);
 var quill_adaptor_1 = __webpack_require__(7);
-__webpack_require__(5);
 var DEFAULT_QUILL_CONFIG = {
     theme: 'snow',
     modules: {
@@ -15526,6 +15516,7 @@ var DEFAULT_QUILL_CONFIG = {
 };
 function createEditor(appConfig, userConfig) {
     if (userConfig === void 0) { userConfig = {}; }
+    var containerElement;
     if (!appConfig) {
         throw new Error("Config must be present to initialise TextSync.");
     }
@@ -15546,14 +15537,49 @@ function createEditor(appConfig, userConfig) {
             throw new Error("presenceConfig.callback must be a function.");
         }
     }
+    if (appConfig.element instanceof Element) {
+        containerElement = appConfig.element;
+    }
+    else if (document.querySelector(appConfig.element)) {
+        containerElement = document.querySelector(appConfig.element);
+    }
+    else {
+        throw new Error("Could not find element " + appConfig.element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
+    }
     var serviceId = appConfig.serviceId;
     var cluster = appConfig.cluster;
     var docId = appConfig.docId;
-    var element = appConfig.element;
     var presenceConfig = appConfig.presenceConfig || { showBadges: true };
     // Remove when we have JWT
     var name = userConfig.name;
     var email = userConfig.email;
+    var quillConfig = buildQuillConfig(appConfig);
+    if (quillConfig.theme == null) {
+        injectQuillCss(quillConfig);
+    }
+    var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
+    var logootDoc = new logoot_doc_1.default(siteId);
+    var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
+    var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
+    var quill = initEditor(containerElement, quillConfig, appConfig);
+    var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
+    textSyncInstance.start(quillAdaptor);
+    return { quill: quill };
+}
+exports.createEditor = createEditor;
+function initEditor(element, quillConfig, appConfig) {
+    if (appConfig.presenceConfig.showBadges) {
+        __webpack_require__(5);
+        var presenceContainer = document.createElement('div');
+        presenceContainer.id = 'tsync-presence-container';
+        element.appendChild(presenceContainer);
+    }
+    var editor = document.createElement('div');
+    editor.id = 'tsync-editor';
+    element.appendChild(editor);
+    return new Quill(editor, quillConfig);
+}
+function buildQuillConfig(appConfig) {
     var quillConfig = {};
     if (appConfig.quillConfig) {
         quillConfig = appConfig.quillConfig;
@@ -15566,14 +15592,6 @@ function createEditor(appConfig, userConfig) {
     quillConfig.modules.history = {
         delay: 2000, maxStack: 500, userOnly: true
     };
-    if (quillConfig.theme == null) {
-        quillConfig.theme = "snow";
-        var link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.type = "text/css";
-        link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
-        document.getElementsByTagName("head")[0].appendChild(link);
-    }
     quillConfig.formats = [
         'background',
         'bold',
@@ -15586,16 +15604,16 @@ function createEditor(appConfig, userConfig) {
         'header',
         'list'
     ];
-    var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
-    var logootDoc = new logoot_doc_1.default(siteId);
-    var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
-    var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
-    var quill = new Quill(element, quillConfig);
-    var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
-    textSyncInstance.start(quillAdaptor);
-    return { quill: quill };
+    return quillConfig;
 }
-exports.createEditor = createEditor;
+function injectQuillCss(quillConfig) {
+    quillConfig.theme = "snow";
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
+    document.getElementsByTagName("head")[0].appendChild(link);
+}
 
 
 /***/ }),
