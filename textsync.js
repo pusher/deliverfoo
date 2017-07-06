@@ -15514,6 +15514,10 @@ var DEFAULT_QUILL_CONFIG = {
         ]
     }
 };
+if (getDocId()) {
+    document.getElementById("form").style.display = "none";
+    // get creds, run createEditor
+}
 function createEditor(appConfig, userConfig) {
     if (userConfig === void 0) { userConfig = {}; }
     var containerElement;
@@ -15548,7 +15552,7 @@ function createEditor(appConfig, userConfig) {
     }
     var serviceId = appConfig.serviceId;
     var cluster = appConfig.cluster;
-    var docId = appConfig.docId;
+    var docId = getDocId() || appConfig.docId;
     var presenceConfig = appConfig.presenceConfig || { showBadges: true };
     // Remove when we have JWT
     var name = userConfig.name;
@@ -15561,14 +15565,14 @@ function createEditor(appConfig, userConfig) {
     var logootDoc = new logoot_doc_1.default(siteId);
     var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
     var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
-    var quill = initEditor(containerElement, quillConfig, appConfig);
+    var quill = initEditor(containerElement, quillConfig, appConfig, presenceConfig);
     var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
     textSyncInstance.start(quillAdaptor);
     return { quill: quill };
 }
 exports.createEditor = createEditor;
-function initEditor(element, quillConfig, appConfig) {
-    if (appConfig.presenceConfig && appConfig.presenceConfig.showBadges) {
+function initEditor(element, quillConfig, appConfig, presenceConfig) {
+    if (presenceConfig.showBadges) {
         __webpack_require__(5);
         var presenceContainer = document.createElement('div');
         presenceContainer.id = 'tsync-presence-container';
@@ -15613,6 +15617,13 @@ function injectQuillCss(quillConfig) {
     link.type = "text/css";
     link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
     document.getElementsByTagName("head")[0].appendChild(link);
+}
+function getDocId() {
+    var location = window.location.href;
+    var chunks = location.split('?');
+    if (chunks.length > 0) {
+        return chunks[1].replace('docId=', '');
+    }
 }
 
 
