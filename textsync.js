@@ -80,6 +80,912 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(true)
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["PusherPlatform"] = factory();
+	else
+		root["PusherPlatform"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// identity function for calling harmony imports with the correct context
+/******/ 	__webpack_require__.i = function(value) { return value; };
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var subscription_1 = __webpack_require__(2);
+var resumable_subscription_1 = __webpack_require__(3);
+function responseHeadersObj(headerStr) {
+    var headers = {};
+    if (!headerStr) {
+        return headers;
+    }
+    var headerPairs = headerStr.split('\u000d\u000a');
+    for (var i = 0; i < headerPairs.length; i++) {
+        var headerPair = headerPairs[i];
+        var index = headerPair.indexOf('\u003a\u0020');
+        if (index > 0) {
+            var key = headerPair.substring(0, index);
+            var val = headerPair.substring(index + 2);
+            headers[key] = val;
+        }
+    }
+    return headers;
+}
+exports.responseHeadersObj = responseHeadersObj;
+var ErrorResponse = (function (_super) {
+    __extends(ErrorResponse, _super);
+    function ErrorResponse(statusCode, headers, info) {
+        var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
+        _this.statusCode = statusCode;
+        _this.headers = headers;
+        _this.info = info;
+        return _this;
+    }
+    ErrorResponse.fromXHR = function (xhr) {
+        return new ErrorResponse(xhr.status, responseHeadersObj(xhr.getAllResponseHeaders()), xhr.responseText);
+    };
+    return ErrorResponse;
+}(Error));
+exports.ErrorResponse = ErrorResponse;
+var NetworkError = (function (_super) {
+    __extends(NetworkError, _super);
+    function NetworkError(error) {
+        var _this = _super.call(this, error) || this;
+        Object.setPrototypeOf(_this, NetworkError.prototype);
+        _this.error = error;
+        return _this;
+    }
+    return NetworkError;
+}(Error));
+exports.NetworkError = NetworkError;
+// Follows https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
+var XhrReadyState;
+(function (XhrReadyState) {
+    XhrReadyState[XhrReadyState["UNSENT"] = 0] = "UNSENT";
+    XhrReadyState[XhrReadyState["OPENED"] = 1] = "OPENED";
+    XhrReadyState[XhrReadyState["HEADERS_RECEIVED"] = 2] = "HEADERS_RECEIVED";
+    XhrReadyState[XhrReadyState["LOADING"] = 3] = "LOADING";
+    XhrReadyState[XhrReadyState["DONE"] = 4] = "DONE";
+})(XhrReadyState = exports.XhrReadyState || (exports.XhrReadyState = {}));
+var BaseClient = (function () {
+    function BaseClient(options) {
+        this.options = options;
+        var cluster = options.cluster.replace(/\/$/, '');
+        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + cluster;
+        this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
+    }
+    BaseClient.prototype.request = function (options) {
+        var xhr = this.createXHR(this.baseURL, options);
+        return new Promise(function (resolve, reject) {
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        resolve(xhr.responseText);
+                    }
+                    else {
+                        reject(ErrorResponse.fromXHR(xhr));
+                    }
+                }
+            };
+            xhr.send(JSON.stringify(options.body));
+        });
+    };
+    BaseClient.prototype.newSubscription = function (subOptions) {
+        return new subscription_1.Subscription(this.createXHR(this.baseURL, {
+            method: "SUBSCRIBE",
+            path: subOptions.path,
+            headers: {},
+            body: null,
+        }), subOptions);
+    };
+    BaseClient.prototype.newResumableSubscription = function (subOptions) {
+        var _this = this;
+        return new resumable_subscription_1.ResumableSubscription(function () {
+            return _this.createXHR(_this.baseURL, {
+                method: "SUBSCRIBE",
+                path: subOptions.path,
+                headers: {},
+                body: null,
+            });
+        }, subOptions);
+    };
+    BaseClient.prototype.createXHR = function (baseURL, options) {
+        var XMLHttpRequest = this.XMLHttpRequest;
+        var xhr = new XMLHttpRequest();
+        var path = options.path.replace(/^\/+/, "");
+        var endpoint = baseURL + "/" + path;
+        xhr.open(options.method.toUpperCase(), endpoint, true);
+        if (options.body) {
+            xhr.setRequestHeader("content-type", "application/json");
+        }
+        if (options.jwt) {
+            xhr.setRequestHeader("authorization", "Bearer " + options.jwt);
+        }
+        for (var key in options.headers) {
+            xhr.setRequestHeader(key, options.headers[key]);
+        }
+        return xhr;
+    };
+    return BaseClient;
+}());
+exports.BaseClient = BaseClient;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var LogLevel;
+(function (LogLevel) {
+    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
+    LogLevel[LogLevel["INFO"] = 3] = "INFO";
+    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
+    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
+})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
+/**
+ * Default implementation of the Logger. Wraps standards console calls.
+ * Logs only calls that are at or above the threshold (verbose/debug/info/warn/error)
+ * If error is passed, it will append the message to the error object.
+ */
+var ConsoleLogger = (function () {
+    function ConsoleLogger(threshold) {
+        if (threshold === void 0) { threshold = 2; }
+        this.threshold = threshold;
+    }
+    ConsoleLogger.prototype.log = function (logFunction, level, message, error) {
+        if (level >= this.threshold) {
+            var loggerSignature = "Logger." + LogLevel[level];
+            if (error) {
+                console.group();
+                logFunction(loggerSignature + ": " + message);
+                logFunction(error);
+                console.groupEnd();
+            }
+            else {
+                logFunction(loggerSignature + ": " + message);
+            }
+        }
+    };
+    ConsoleLogger.prototype.verbose = function (message, error) {
+        this.log(console.log, LogLevel.VERBOSE, message, error);
+    };
+    ConsoleLogger.prototype.debug = function (message, error) {
+        this.log(console.log, LogLevel.DEBUG, message, error);
+    };
+    ConsoleLogger.prototype.info = function (message, error) {
+        this.log(console.info, LogLevel.INFO, message, error);
+    };
+    ConsoleLogger.prototype.warn = function (message, error) {
+        this.log(console.warn, LogLevel.WARNING, message, error);
+    };
+    ConsoleLogger.prototype.error = function (message, error) {
+        this.log(console.error, LogLevel.ERROR, message, error);
+    };
+    return ConsoleLogger;
+}());
+exports.ConsoleLogger = ConsoleLogger;
+var EmptyLogger = (function () {
+    function EmptyLogger() {
+    }
+    EmptyLogger.prototype.verbose = function (message, error) { };
+    ;
+    EmptyLogger.prototype.debug = function (message, error) { };
+    ;
+    EmptyLogger.prototype.info = function (message, error) { };
+    ;
+    EmptyLogger.prototype.warn = function (message, error) { };
+    ;
+    EmptyLogger.prototype.error = function (message, error) { };
+    ;
+    return EmptyLogger;
+}());
+exports.EmptyLogger = EmptyLogger;
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
+var SubscriptionState;
+(function (SubscriptionState) {
+    SubscriptionState[SubscriptionState["UNOPENED"] = 0] = "UNOPENED";
+    SubscriptionState[SubscriptionState["OPENING"] = 1] = "OPENING";
+    SubscriptionState[SubscriptionState["OPEN"] = 2] = "OPEN";
+    SubscriptionState[SubscriptionState["ENDING"] = 3] = "ENDING";
+    SubscriptionState[SubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
+})(SubscriptionState = exports.SubscriptionState || (exports.SubscriptionState = {}));
+// Asserts that the subscription state is one of the specified values,
+// otherwise logs the current value.
+function assertState(stateEnum, states) {
+    var _this = this;
+    if (states === void 0) { states = []; }
+    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
+    var expected = states.join(', ');
+    var actual = stateEnum[this.state];
+    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
+    if (!check) {
+        console.trace();
+    }
+}
+exports.assertState = assertState;
+;
+// Callback pattern: (onOpen onEvent* (onEnd|onError)) | onError
+// A call to `unsubscribe()` will call `options.onEnd()`;
+// a call to `unsubscribe(someError)` will call `options.onError(someError)`.
+var Subscription = (function () {
+    function Subscription(xhr, options) {
+        var _this = this;
+        this.xhr = xhr;
+        this.options = options;
+        this.state = SubscriptionState.UNOPENED;
+        this.gotEOS = false;
+        this.lastNewlineIndex = 0;
+        this.assertState = assertState.bind(this, SubscriptionState);
+        if (options.lastEventId) {
+            this.xhr.setRequestHeader("Last-Event-Id", options.lastEventId);
+        }
+        this.xhr.onreadystatechange = function () {
+            if (_this.xhr.readyState === base_client_1.XhrReadyState.UNSENT ||
+                _this.xhr.readyState === base_client_1.XhrReadyState.OPENED ||
+                _this.xhr.readyState === base_client_1.XhrReadyState.HEADERS_RECEIVED) {
+                // Too early for us to do anything.
+                _this.assertState(['OPENING']);
+            }
+            else if (_this.xhr.readyState === base_client_1.XhrReadyState.LOADING) {
+                // The headers have loaded and we have partial body text.
+                // We can get this one multiple times.
+                _this.assertState(['OPENING', 'OPEN', 'ENDING']);
+                if (_this.xhr.status === 200) {
+                    // We've received a successful response header.
+                    // The partial body text is a partial JSON message stream.
+                    if (_this.state === SubscriptionState.OPENING) {
+                        _this.state = SubscriptionState.OPEN;
+                        if (_this.options.onOpen) {
+                            _this.options.onOpen();
+                        }
+                    }
+                    _this.assertState(['OPEN', 'ENDING']);
+                    var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
+                    _this.assertState(['OPEN', 'ENDING']);
+                    if (err != null) {
+                        _this.state = SubscriptionState.ENDED;
+                        if (err.statusCode != 204) {
+                            if (_this.options.onError) {
+                                _this.options.onError(err);
+                            }
+                        }
+                        // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
+                        // and so we will not call the event handler again.
+                        // Finish with options.onError instead of the options.onEnd.
+                    }
+                    else {
+                        // We consumed some response text, and all's fine. We expect more text.
+                    }
+                }
+                else {
+                    // Error response. Wait until the response completes (state 4) before erroring.
+                    _this.assertState(['OPENING']);
+                }
+            }
+            else if (_this.xhr.readyState === base_client_1.XhrReadyState.DONE) {
+                // This is the last time onreadystatechange is called.
+                if (_this.xhr.status === 200) {
+                    if (_this.state === SubscriptionState.OPENING) {
+                        _this.state = SubscriptionState.OPEN;
+                        if (_this.options.onOpen) {
+                            _this.options.onOpen();
+                        }
+                    }
+                    _this.assertState(['OPEN', 'ENDING']);
+                    var err = _this.onChunk();
+                    if (err !== null && err !== undefined) {
+                        _this.state = SubscriptionState.ENDED;
+                        if (err.statusCode === 204) {
+                            if (_this.options.onEnd) {
+                                _this.options.onEnd();
+                            }
+                        }
+                        else {
+                            if (_this.options.onError) {
+                                _this.options.onError(err);
+                            }
+                        }
+                    }
+                    else if (_this.state <= SubscriptionState.ENDING) {
+                        if (_this.options.onError) {
+                            _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
+                        }
+                    }
+                    else {
+                        // Stream ended normally.
+                        if (_this.options.onEnd) {
+                            _this.options.onEnd();
+                        }
+                    }
+                }
+                else {
+                    // The server responded with a bad status code (finish with onError).
+                    // Finish with an error.
+                    _this.assertState(['OPENING', 'OPEN', 'ENDED']);
+                    if (_this.state === SubscriptionState.ENDED) {
+                        // We aborted the request deliberately, and called onError/onEnd elsewhere.
+                    }
+                    else if (_this.xhr.status === 0) {
+                        _this.options.onError(new base_client_1.NetworkError("Connection lost."));
+                    }
+                    else {
+                        _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
+                    }
+                }
+            }
+        };
+    }
+    Subscription.prototype.open = function (jwt) {
+        if (this.state !== SubscriptionState.UNOPENED) {
+            throw new Error("Called .open() on Subscription object in unexpected state: " + this.state);
+        }
+        this.state = SubscriptionState.OPENING;
+        if (jwt) {
+            this.xhr.setRequestHeader("authorization", "Bearer " + jwt);
+        }
+        this.xhr.send();
+    };
+    // calls options.onEvent 0+ times, then possibly returns an error.
+    // idempotent.
+    Subscription.prototype.onChunk = function () {
+        this.assertState(['OPEN']);
+        var response = this.xhr.responseText;
+        var newlineIndex = response.lastIndexOf("\n");
+        if (newlineIndex > this.lastNewlineIndex) {
+            var rawEvents = response.slice(this.lastNewlineIndex, newlineIndex).split("\n");
+            this.lastNewlineIndex = newlineIndex;
+            for (var _i = 0, rawEvents_1 = rawEvents; _i < rawEvents_1.length; _i++) {
+                var rawEvent = rawEvents_1[_i];
+                if (rawEvent.length === 0) {
+                    continue; // FIXME why? This should be a protocol error
+                }
+                var data = JSON.parse(rawEvent);
+                var err = this.onMessage(data);
+                if (err != null) {
+                    return err;
+                }
+            }
+        }
+    };
+    // calls options.onEvent 0+ times, then returns an Error or null
+    Subscription.prototype.onMessage = function (message) {
+        this.assertState(['OPEN']);
+        if (this.gotEOS) {
+            return new Error("Got another message after EOS message");
+        }
+        if (!Array.isArray(message)) {
+            return new Error("Message is not an array");
+        }
+        if (message.length < 1) {
+            return new Error("Message is empty array");
+        }
+        switch (message[0]) {
+            case 0:
+                return null;
+            case 1:
+                return this.onEventMessage(message);
+            case 255:
+                return this.onEOSMessage(message);
+            default:
+                return new Error("Unknown Message: " + JSON.stringify(message));
+        }
+    };
+    // EITHER calls options.onEvent, OR returns an error
+    Subscription.prototype.onEventMessage = function (eventMessage) {
+        this.assertState(['OPEN']);
+        if (eventMessage.length !== 4) {
+            return new Error("Event message has " + eventMessage.length + " elements (expected 4)");
+        }
+        var _ = eventMessage[0], id = eventMessage[1], headers = eventMessage[2], body = eventMessage[3];
+        if (typeof id !== "string") {
+            return new Error("Invalid event ID in message: " + JSON.stringify(eventMessage));
+        }
+        if (typeof headers !== "object" || Array.isArray(headers)) {
+            return new Error("Invalid event headers in message: " + JSON.stringify(eventMessage));
+        }
+        if (this.options.onEvent) {
+            this.options.onEvent({ eventId: id, headers: headers, body: body });
+        }
+    };
+    // calls options.onEvent 0+ times, then possibly returns an error
+    Subscription.prototype.onEOSMessage = function (eosMessage) {
+        this.assertState(['OPEN']);
+        if (eosMessage.length !== 4) {
+            return new Error("EOS message has " + eosMessage.length + " elements (expected 4)");
+        }
+        var _ = eosMessage[0], statusCode = eosMessage[1], headers = eosMessage[2], info = eosMessage[3];
+        if (typeof statusCode !== "number") {
+            return new Error("Invalid EOS Status Code");
+        }
+        if (typeof headers !== "object" || Array.isArray(headers)) {
+            return new Error("Invalid EOS Headers");
+        }
+        this.state = SubscriptionState.ENDING;
+        return new base_client_1.ErrorResponse(statusCode, headers, info);
+    };
+    Subscription.prototype.unsubscribe = function (err) {
+        this.state = SubscriptionState.ENDED;
+        this.xhr.abort();
+        if (err) {
+            if (this.options.onError) {
+                this.options.onError(err);
+            }
+        }
+        else {
+            if (this.options.onEnd) {
+                this.options.onEnd();
+            }
+        }
+    };
+    return Subscription;
+}());
+exports.Subscription = Subscription;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var subscription_1 = __webpack_require__(2);
+var retry_strategy_1 = __webpack_require__(4);
+var ResumableSubscriptionState;
+(function (ResumableSubscriptionState) {
+    ResumableSubscriptionState[ResumableSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
+    ResumableSubscriptionState[ResumableSubscriptionState["OPENING"] = 1] = "OPENING";
+    ResumableSubscriptionState[ResumableSubscriptionState["OPEN"] = 2] = "OPEN";
+    ResumableSubscriptionState[ResumableSubscriptionState["ENDING"] = 3] = "ENDING";
+    ResumableSubscriptionState[ResumableSubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
+})(ResumableSubscriptionState = exports.ResumableSubscriptionState || (exports.ResumableSubscriptionState = {}));
+// Asserts that the subscription state is one of the specified values,
+// otherwise logs the current value.
+function assertState(stateEnum, states) {
+    var _this = this;
+    if (states === void 0) { states = []; }
+    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
+    var expected = states.join(', ');
+    var actual = stateEnum[this.state];
+    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
+    if (!check) {
+        console.trace();
+    }
+}
+exports.assertState = assertState;
+;
+// pattern of callbacks: ((onOpening (onOpen onEvent*)?)? (onError|onEnd)) | onError
+var ResumableSubscription = (function () {
+    function ResumableSubscription(xhrSource, options) {
+        this.xhrSource = xhrSource;
+        this.options = options;
+        this.state = ResumableSubscriptionState.UNOPENED;
+        this.assertState = assertState.bind(this, ResumableSubscriptionState);
+        this.lastEventIdReceived = options.lastEventId;
+        this.logger = options.logger;
+        if (options.retryStrategy !== undefined) {
+            this.retryStrategy = options.retryStrategy;
+        }
+        else {
+            this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({
+                logger: this.logger
+            });
+        }
+    }
+    ResumableSubscription.prototype.tryNow = function () {
+        var _this = this;
+        this.state = ResumableSubscriptionState.OPENING;
+        var newXhr = this.xhrSource();
+        this.subscription = new subscription_1.Subscription(newXhr, {
+            path: this.options.path,
+            lastEventId: this.lastEventIdReceived,
+            onOpen: function () {
+                _this.assertState(['OPENING']);
+                _this.state = ResumableSubscriptionState.OPEN;
+                if (_this.options.onOpen) {
+                    _this.options.onOpen();
+                }
+                _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
+            },
+            onEvent: function (event) {
+                _this.assertState(['OPEN']);
+                if (_this.options.onEvent) {
+                    _this.options.onEvent(event);
+                }
+                console.assert(!_this.lastEventIdReceived ||
+                    parseInt(event.eventId) > parseInt(_this.lastEventIdReceived), 'Expected the current event id to be larger than the previous one');
+                _this.lastEventIdReceived = event.eventId;
+            },
+            onEnd: function () {
+                _this.state = ResumableSubscriptionState.ENDED;
+                if (_this.options.onEnd) {
+                    _this.options.onEnd();
+                }
+            },
+            onError: function (error) {
+                _this.state = ResumableSubscriptionState.OPENING;
+                _this.retryStrategy.attemptRetry(error)
+                    .then(function () {
+                    if (_this.options.onRetry !== undefined) {
+                        _this.options.onRetry();
+                    }
+                    else {
+                        _this.tryNow();
+                    }
+                })
+                    .catch(function (error) {
+                    _this.state = ResumableSubscriptionState.ENDED;
+                    if (_this.options.onError) {
+                        _this.options.onError(error);
+                    }
+                });
+            },
+            logger: this.logger
+        });
+        if (this.options.tokenProvider) {
+            this.options.tokenProvider.fetchToken().then(function (jwt) {
+                _this.subscription.open(jwt);
+            }).catch(function (err) {
+                if (_this.options.onError)
+                    _this.options.onError(err);
+            });
+        }
+        else {
+            this.subscription.open(null);
+        }
+    };
+    ResumableSubscription.prototype.open = function () {
+        this.tryNow();
+    };
+    ResumableSubscription.prototype.unsubscribe = function (error) {
+        this.subscription.unsubscribe(error); // We'll get onEnd and bubble this up
+    };
+    return ResumableSubscription;
+}());
+exports.ResumableSubscription = ResumableSubscription;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
+var logger_1 = __webpack_require__(1);
+var Retry = (function () {
+    function Retry(waitTimeMilis) {
+        this.waitTimeMilis = waitTimeMilis;
+    }
+    return Retry;
+}());
+exports.Retry = Retry;
+var DoNotRetry = (function () {
+    function DoNotRetry(error) {
+        this.error = error;
+    }
+    return DoNotRetry;
+}());
+exports.DoNotRetry = DoNotRetry;
+var ExponentialBackoffRetryStrategy = (function () {
+    function ExponentialBackoffRetryStrategy(options) {
+        this.limit = 6;
+        this.retryCount = 0;
+        this.maxBackoffMilis = 30000;
+        this.defaultBackoffMilis = 1000;
+        this.currentBackoffMilis = this.defaultBackoffMilis;
+        if (options.limit)
+            this.limit = options.limit;
+        if (options.initialBackoffMilis) {
+            this.currentBackoffMilis = options.initialBackoffMilis;
+            this.defaultBackoffMilis = options.defaultBackoffMilis;
+        }
+        if (options.maxBackoffMilis)
+            this.maxBackoffMilis = options.maxBackoffMilis;
+        if (options.logger !== undefined) {
+            this.logger = options.logger;
+        }
+        else {
+            this.logger = new logger_1.EmptyLogger();
+        }
+    }
+    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
+        this.logger.verbose(this.constructor.name + ":  Error received", error);
+        if (this.retryCount >= this.limit && this.limit > 0) {
+            this.logger.verbose(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
+            return new DoNotRetry(error);
+        }
+        var retryable = this.isRetryable(error);
+        if (retryable.isRetryable) {
+            if (retryable.backoffMillis) {
+                this.retryCount += 1;
+                return new Retry(retryable.backoffMillis);
+            }
+            else {
+                this.currentBackoffMilis = this.calulateMilisToRetry();
+                this.retryCount += 1;
+                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
+                return new Retry(this.currentBackoffMilis);
+            }
+        }
+        else {
+            this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
+            return new DoNotRetry(error);
+        }
+    };
+    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var shouldRetry = _this.shouldRetry(error);
+            if (shouldRetry instanceof DoNotRetry) {
+                reject(error);
+            }
+            else if (shouldRetry instanceof Retry) {
+                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
+            }
+        });
+    };
+    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
+        var retryable = {
+            isRetryable: false
+        };
+        //We allow network errors
+        if (error instanceof base_client_1.NetworkError)
+            retryable.isRetryable = true;
+        else if (error instanceof base_client_1.ErrorResponse) {
+            //Only retry after is allowed
+            if (error.headers["retry-after"]) {
+                retryable.isRetryable = true;
+                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
+            }
+        }
+        return retryable;
+    };
+    ExponentialBackoffRetryStrategy.prototype.reset = function () {
+        this.retryCount = 0;
+        this.currentBackoffMilis = this.defaultBackoffMilis;
+    };
+    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
+        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
+            return this.maxBackoffMilis;
+        }
+        if (this.retryCount > 0) {
+            return this.currentBackoffMilis * 2;
+        }
+        return this.currentBackoffMilis;
+    };
+    return ExponentialBackoffRetryStrategy;
+}());
+exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
+var logger_1 = __webpack_require__(1);
+var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
+var App = (function () {
+    function App(options) {
+        if (!options.serviceId) {
+            throw new Error('Expected `serviceId` property in App options');
+        }
+        this.serviceId = options.serviceId;
+        this.tokenProvider = options.tokenProvider;
+        this.client = options.client || new base_client_1.BaseClient({
+            cluster: options.cluster ?
+                sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
+            encrypted: options.encrypted
+        });
+        if (options.logger !== undefined) {
+            this.logger = options.logger;
+        }
+        else {
+            this.logger = new logger_1.ConsoleLogger();
+        }
+    }
+    App.prototype.request = function (options) {
+        var _this = this;
+        options.path = this.absPath(options.path);
+        var tokenProvider = options.tokenProvider || this.tokenProvider;
+        if (!options.jwt && tokenProvider) {
+            return tokenProvider.fetchToken().then(function (jwt) {
+                return _this.client.request(__assign({ jwt: jwt }, options));
+            });
+        }
+        else {
+            return this.client.request(options);
+        }
+    };
+    App.prototype.subscribe = function (options) {
+        options.path = this.absPath(options.path);
+        options.logger = this.logger;
+        var subscription = this.client.newSubscription(options);
+        var tokenProvider = options.tokenProvider || this.tokenProvider;
+        if (options.jwt) {
+            subscription.open(options.jwt);
+        }
+        else if (tokenProvider) {
+            tokenProvider.fetchToken().then(function (jwt) {
+                subscription.open(jwt);
+            }).catch(function (err) {
+                subscription.unsubscribe(err);
+            });
+        }
+        else {
+            subscription.open(null);
+        }
+        return subscription;
+    };
+    App.prototype.resumableSubscribe = function (options) {
+        if (!options.logger)
+            options.logger = this.logger;
+        options.logger = this.logger;
+        options.path = this.absPath(options.path);
+        var tokenProvider = options.tokenProvider || this.tokenProvider;
+        var resumableSubscription = this.client.newResumableSubscription(__assign({ tokenProvider: tokenProvider }, options));
+        resumableSubscription.open();
+        return resumableSubscription;
+    };
+    App.prototype.absPath = function (relativePath) {
+        return ("/apps/" + this.serviceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
+    };
+    return App;
+}());
+exports.default = App;
+function sanitizeCluster(cluster) {
+    return cluster
+        .replace(/^[^\/:]*:\/\//, "") // remove schema
+        .replace(/\/$/, ""); // remove trailing slash
+}
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var app_1 = __webpack_require__(5);
+exports.App = app_1.default;
+var base_client_1 = __webpack_require__(0);
+exports.BaseClient = base_client_1.BaseClient;
+var logger_1 = __webpack_require__(1);
+exports.ConsoleLogger = logger_1.ConsoleLogger;
+exports.EmptyLogger = logger_1.EmptyLogger;
+var resumable_subscription_1 = __webpack_require__(3);
+exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
+var retry_strategy_1 = __webpack_require__(4);
+exports.ExponentialBackoffRetryStrategy = retry_strategy_1.ExponentialBackoffRetryStrategy;
+var subscription_1 = __webpack_require__(2);
+exports.Subscription = subscription_1.Subscription;
+exports.default = {
+    App: app_1.default,
+    BaseClient: base_client_1.BaseClient,
+    ResumableSubscription: resumable_subscription_1.ResumableSubscription, Subscription: subscription_1.Subscription,
+    ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
+    ConsoleLogger: logger_1.ConsoleLogger, EmptyLogger: logger_1.EmptyLogger
+};
+
+
+/***/ })
+/******/ ]);
+});
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -91,7 +997,7 @@ var OpType;
 
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -346,15 +1252,15 @@ var Logoot = (function () {
     Logoot.randomIntBetween = function (min, max) {
         return Math.floor(Math.random() * (max - (min + 1))) + min + 1;
     };
+    Logoot.min = exports.ABS_MIN_ATOM_IDENT;
+    Logoot.max = exports.ABS_MAX_ATOM_IDENT;
     return Logoot;
 }());
-Logoot.min = exports.ABS_MIN_ATOM_IDENT;
-Logoot.max = exports.ABS_MAX_ATOM_IDENT;
 exports.default = Logoot;
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -369,856 +1275,11 @@ var OpType;
 
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(true)
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else if(typeof exports === 'object')
-		exports["PusherPlatform"] = factory();
-	else
-		root["PusherPlatform"] = factory();
-})(this, function() {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var subscription_1 = __webpack_require__(1);
-var resumable_subscription_1 = __webpack_require__(2);
-function responseHeadersObj(headerStr) {
-    var headers = {};
-    if (!headerStr) {
-        return headers;
-    }
-    var headerPairs = headerStr.split('\u000d\u000a');
-    for (var i = 0; i < headerPairs.length; i++) {
-        var headerPair = headerPairs[i];
-        var index = headerPair.indexOf('\u003a\u0020');
-        if (index > 0) {
-            var key = headerPair.substring(0, index);
-            var val = headerPair.substring(index + 2);
-            headers[key] = val;
-        }
-    }
-    return headers;
-}
-exports.responseHeadersObj = responseHeadersObj;
-var ErrorResponse = (function (_super) {
-    __extends(ErrorResponse, _super);
-    function ErrorResponse(statusCode, headers, info) {
-        var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
-        _this.statusCode = statusCode;
-        _this.headers = headers;
-        _this.info = info;
-        return _this;
-    }
-    ErrorResponse.fromXHR = function (xhr) {
-        return new ErrorResponse(xhr.status, responseHeadersObj(xhr.getAllResponseHeaders()), xhr.responseText);
-    };
-    return ErrorResponse;
-}(Error));
-exports.ErrorResponse = ErrorResponse;
-var NetworkError = (function (_super) {
-    __extends(NetworkError, _super);
-    function NetworkError(error) {
-        var _this = _super.call(this) || this;
-        _this.error = error;
-        return _this;
-    }
-    return NetworkError;
-}(Error));
-exports.NetworkError = NetworkError;
-// Follows https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
-var XhrReadyState;
-(function (XhrReadyState) {
-    XhrReadyState[XhrReadyState["UNSENT"] = 0] = "UNSENT";
-    XhrReadyState[XhrReadyState["OPENED"] = 1] = "OPENED";
-    XhrReadyState[XhrReadyState["HEADERS_RECEIVED"] = 2] = "HEADERS_RECEIVED";
-    XhrReadyState[XhrReadyState["LOADING"] = 3] = "LOADING";
-    XhrReadyState[XhrReadyState["DONE"] = 4] = "DONE";
-})(XhrReadyState = exports.XhrReadyState || (exports.XhrReadyState = {}));
-var BaseClient = (function () {
-    function BaseClient(options) {
-        this.options = options;
-        var cluster = options.cluster.replace(/\/$/, '');
-        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + cluster;
-        this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
-    }
-    BaseClient.prototype.request = function (options) {
-        var xhr = this.createXHR(this.baseURL, options);
-        return new Promise(function (resolve, reject) {
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        resolve(xhr.responseText);
-                    }
-                    else {
-                        reject(ErrorResponse.fromXHR(xhr));
-                    }
-                }
-            };
-            xhr.send(JSON.stringify(options.body));
-        });
-    };
-    BaseClient.prototype.newSubscription = function (subOptions) {
-        return new subscription_1.Subscription(this.createXHR(this.baseURL, {
-            method: "SUBSCRIBE",
-            path: subOptions.path,
-            headers: {},
-            body: null,
-        }), subOptions);
-    };
-    BaseClient.prototype.newResumableSubscription = function (subOptions) {
-        var _this = this;
-        return new resumable_subscription_1.ResumableSubscription(function () {
-            return _this.createXHR(_this.baseURL, {
-                method: "SUBSCRIBE",
-                path: subOptions.path,
-                headers: {},
-                body: null,
-            });
-        }, subOptions);
-    };
-    BaseClient.prototype.createXHR = function (baseURL, options) {
-        var XMLHttpRequest = this.XMLHttpRequest;
-        var xhr = new XMLHttpRequest();
-        var path = options.path.replace(/^\/+/, "");
-        var endpoint = baseURL + "/" + path;
-        xhr.open(options.method.toUpperCase(), endpoint, true);
-        if (options.body) {
-            xhr.setRequestHeader("content-type", "application/json");
-        }
-        if (options.jwt) {
-            xhr.setRequestHeader("authorization", "Bearer " + options.jwt);
-        }
-        for (var key in options.headers) {
-            xhr.setRequestHeader(key, options.headers[key]);
-        }
-        return xhr;
-    };
-    return BaseClient;
-}());
-exports.BaseClient = BaseClient;
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
-var SubscriptionState;
-(function (SubscriptionState) {
-    SubscriptionState[SubscriptionState["UNOPENED"] = 0] = "UNOPENED";
-    SubscriptionState[SubscriptionState["OPENING"] = 1] = "OPENING";
-    SubscriptionState[SubscriptionState["OPEN"] = 2] = "OPEN";
-    SubscriptionState[SubscriptionState["ENDING"] = 3] = "ENDING";
-    SubscriptionState[SubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
-})(SubscriptionState = exports.SubscriptionState || (exports.SubscriptionState = {}));
-// Asserts that the subscription state is one of the specified values,
-// otherwise logs the current value.
-function assertState(stateEnum, states) {
-    var _this = this;
-    if (states === void 0) { states = []; }
-    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
-    var expected = states.join(', ');
-    var actual = stateEnum[this.state];
-    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
-    if (!check) {
-        console.trace();
-    }
-}
-exports.assertState = assertState;
-;
-// Callback pattern: (onOpen onEvent* (onEnd|onError)) | onError
-// A call to `unsubscribe()` will call `options.onEnd()`;
-// a call to `unsubscribe(someError)` will call `options.onError(someError)`.
-var Subscription = (function () {
-    function Subscription(xhr, options) {
-        var _this = this;
-        this.xhr = xhr;
-        this.options = options;
-        this.state = SubscriptionState.UNOPENED;
-        this.gotEOS = false;
-        this.lastNewlineIndex = 0;
-        this.assertState = assertState.bind(this, SubscriptionState);
-        if (options.lastEventId) {
-            this.xhr.setRequestHeader("Last-Event-Id", options.lastEventId);
-        }
-        this.xhr.onreadystatechange = function () {
-            if (_this.xhr.readyState === base_client_1.XhrReadyState.UNSENT ||
-                _this.xhr.readyState === base_client_1.XhrReadyState.OPENED ||
-                _this.xhr.readyState === base_client_1.XhrReadyState.HEADERS_RECEIVED) {
-                // Too early for us to do anything.
-                _this.assertState(['OPENING']);
-            }
-            else if (_this.xhr.readyState === base_client_1.XhrReadyState.LOADING) {
-                // The headers have loaded and we have partial body text.
-                // We can get this one multiple times.
-                _this.assertState(['OPENING', 'OPEN', 'ENDING']);
-                if (_this.xhr.status === 200) {
-                    // We've received a successful response header.
-                    // The partial body text is a partial JSON message stream.
-                    if (_this.state === SubscriptionState.OPENING) {
-                        _this.state = SubscriptionState.OPEN;
-                        if (_this.options.onOpen) {
-                            _this.options.onOpen();
-                        }
-                    }
-                    _this.assertState(['OPEN', 'ENDING']);
-                    var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
-                    _this.assertState(['OPEN', 'ENDING']);
-                    if (err != null) {
-                        _this.xhr.abort();
-                        // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
-                        // and so we will not call the event handler again.
-                        // Finish with options.onError instead of the options.onEnd.
-                        _this.state = SubscriptionState.ENDED;
-                        if (_this.options.onError) {
-                            _this.options.onError(err);
-                        }
-                    }
-                    else {
-                        // We consumed some response text, and all's fine. We expect more text.
-                    }
-                }
-                else {
-                    // Error response. Wait until the response completes (state 4) before erroring.
-                    _this.assertState(['OPENING']);
-                }
-            }
-            else if (_this.xhr.readyState === base_client_1.XhrReadyState.DONE) {
-                // This is the last time onreadystatechange is called.
-                if (_this.xhr.status === 200) {
-                    if (_this.state === SubscriptionState.OPENING) {
-                        _this.state = SubscriptionState.OPEN;
-                        if (_this.options.onOpen) {
-                            _this.options.onOpen();
-                        }
-                    }
-                    _this.assertState(['OPEN', 'ENDING']);
-                    var err = _this.onChunk();
-                    if (err !== null && err !== undefined) {
-                        _this.state = SubscriptionState.ENDED;
-                        if (_this.options.onError) {
-                            _this.options.onError(err);
-                        }
-                    }
-                    else if (_this.state !== SubscriptionState.ENDING) {
-                        if (_this.options.onError) {
-                            _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
-                        }
-                    }
-                    else {
-                        // Stream ended normally.
-                        if (_this.options.onEnd) {
-                            _this.options.onEnd();
-                        }
-                    }
-                }
-                else {
-                    // The server responded with a bad status code (finish with onError).
-                    // Finish with an error.
-                    _this.assertState(['OPENING', 'OPEN', 'ENDED']);
-                    if (_this.state === SubscriptionState.ENDED) {
-                        // We aborted the request deliberately, and called onError/onEnd elsewhere.
-                    }
-                    else {
-                        _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
-                    }
-                }
-            }
-        };
-        xhr.onerror = function (event) {
-            if (_this.options.onError) {
-                _this.options.onError(new base_client_1.NetworkError(event));
-            }
-        };
-    }
-    Subscription.prototype.open = function (jwt) {
-        if (this.state !== SubscriptionState.UNOPENED) {
-            throw new Error("Called .open() on Subscription object in unexpected state: " + this.state);
-        }
-        this.state = SubscriptionState.OPENING;
-        if (jwt) {
-            this.xhr.setRequestHeader("authorization", "Bearer " + jwt);
-        }
-        this.xhr.send();
-    };
-    // calls options.onEvent 0+ times, then possibly returns an error.
-    // idempotent.
-    Subscription.prototype.onChunk = function () {
-        this.assertState(['OPEN']);
-        var response = this.xhr.responseText;
-        var newlineIndex = response.lastIndexOf("\n");
-        if (newlineIndex > this.lastNewlineIndex) {
-            var rawEvents = response.slice(this.lastNewlineIndex, newlineIndex).split("\n");
-            this.lastNewlineIndex = newlineIndex;
-            for (var _i = 0, rawEvents_1 = rawEvents; _i < rawEvents_1.length; _i++) {
-                var rawEvent = rawEvents_1[_i];
-                if (rawEvent.length === 0) {
-                    continue; // FIXME why? This should be a protocol error
-                }
-                var data = JSON.parse(rawEvent);
-                var err = this.onMessage(data);
-                if (err != null) {
-                    return err;
-                }
-            }
-        }
-    };
-    // calls options.onEvent 0+ times, then returns an Error or null
-    Subscription.prototype.onMessage = function (message) {
-        this.assertState(['OPEN']);
-        if (this.gotEOS) {
-            return new Error("Got another message after EOS message");
-        }
-        if (!Array.isArray(message)) {
-            return new Error("Message is not an array");
-        }
-        if (message.length < 1) {
-            return new Error("Message is empty array");
-        }
-        switch (message[0]) {
-            case 0:
-                return null;
-            case 1:
-                return this.onEventMessage(message);
-            case 255:
-                return this.onEOSMessage(message);
-            default:
-                return new Error("Unknown Message: " + JSON.stringify(message));
-        }
-    };
-    // EITHER calls options.onEvent, OR returns an error
-    Subscription.prototype.onEventMessage = function (eventMessage) {
-        this.assertState(['OPEN']);
-        if (eventMessage.length !== 4) {
-            return new Error("Event message has " + eventMessage.length + " elements (expected 4)");
-        }
-        var _ = eventMessage[0], id = eventMessage[1], headers = eventMessage[2], body = eventMessage[3];
-        if (typeof id !== "string") {
-            return new Error("Invalid event ID in message: " + JSON.stringify(eventMessage));
-        }
-        if (typeof headers !== "object" || Array.isArray(headers)) {
-            return new Error("Invalid event headers in message: " + JSON.stringify(eventMessage));
-        }
-        if (this.options.onEvent) {
-            this.options.onEvent({ eventId: id, headers: headers, body: body });
-        }
-    };
-    // calls options.onEvent 0+ times, then possibly returns an error
-    Subscription.prototype.onEOSMessage = function (eosMessage) {
-        this.assertState(['OPEN']);
-        if (eosMessage.length !== 4) {
-            return new Error("EOS message has " + eosMessage.length + " elements (expected 4)");
-        }
-        var _ = eosMessage[0], statusCode = eosMessage[1], headers = eosMessage[2], info = eosMessage[3];
-        if (typeof statusCode !== "number") {
-            return new Error("Invalid EOS Status Code");
-        }
-        if (typeof headers !== "object" || Array.isArray(headers)) {
-            return new Error("Invalid EOS Headers");
-        }
-        this.state = SubscriptionState.ENDING;
-        return new base_client_1.ErrorResponse(statusCode, headers, info);
-    };
-    Subscription.prototype.unsubscribe = function (err) {
-        this.state = SubscriptionState.ENDED;
-        this.xhr.abort();
-        if (err) {
-            if (this.options.onError) {
-                this.options.onError(err);
-            }
-        }
-        else {
-            if (this.options.onEnd) {
-                this.options.onEnd();
-            }
-        }
-    };
-    return Subscription;
-}());
-exports.Subscription = Subscription;
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var subscription_1 = __webpack_require__(1);
-var retry_strategy_1 = __webpack_require__(6);
-var ResumableSubscriptionState;
-(function (ResumableSubscriptionState) {
-    ResumableSubscriptionState[ResumableSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
-    ResumableSubscriptionState[ResumableSubscriptionState["OPENING"] = 1] = "OPENING";
-    ResumableSubscriptionState[ResumableSubscriptionState["OPEN"] = 2] = "OPEN";
-    ResumableSubscriptionState[ResumableSubscriptionState["ENDING"] = 3] = "ENDING";
-    ResumableSubscriptionState[ResumableSubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
-})(ResumableSubscriptionState = exports.ResumableSubscriptionState || (exports.ResumableSubscriptionState = {}));
-// Asserts that the subscription state is one of the specified values,
-// otherwise logs the current value.
-function assertState(stateEnum, states) {
-    var _this = this;
-    if (states === void 0) { states = []; }
-    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
-    var expected = states.join(', ');
-    var actual = stateEnum[this.state];
-    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
-    if (!check) {
-        console.trace();
-    }
-}
-exports.assertState = assertState;
-;
-// pattern of callbacks: ((onOpening (onOpen onEvent*)?)? (onError|onEnd)) | onError
-var ResumableSubscription = (function () {
-    function ResumableSubscription(xhrSource, options) {
-        this.xhrSource = xhrSource;
-        this.options = options;
-        this.state = ResumableSubscriptionState.UNOPENED;
-        this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({});
-        this.assertState = assertState.bind(this, ResumableSubscriptionState);
-        this.lastEventIdReceived = options.lastEventId;
-        this.logger = options.logger;
-    }
-    ResumableSubscription.prototype.tryNow = function () {
-        var _this = this;
-        this.state = ResumableSubscriptionState.OPENING;
-        var newXhr = this.xhrSource();
-        this.subscription = new subscription_1.Subscription(newXhr, {
-            path: this.options.path,
-            lastEventId: this.lastEventIdReceived,
-            onOpen: function () {
-                _this.assertState(['OPENING']);
-                _this.state = ResumableSubscriptionState.OPEN;
-                if (_this.options.onOpen) {
-                    _this.options.onOpen();
-                }
-            },
-            onEvent: function (event) {
-                _this.assertState(['OPEN']);
-                if (_this.options.onEvent) {
-                    _this.options.onEvent(event);
-                }
-                console.assert(!_this.lastEventIdReceived ||
-                    parseInt(event.eventId) > parseInt(_this.lastEventIdReceived), 'Expected the current event id to be larger than the previous one');
-                _this.lastEventIdReceived = event.eventId;
-            },
-            onEnd: function () {
-                _this.state = ResumableSubscriptionState.ENDED;
-                if (_this.options.onEnd) {
-                    _this.options.onEnd();
-                }
-            },
-            onError: function (error) {
-                _this.state = ResumableSubscriptionState.OPENING;
-                _this.retryStrategy.attemptRetry(error)
-                    .then(function () { _this.tryNow; })
-                    .catch(function (error) {
-                    _this.state = ResumableSubscriptionState.ENDED;
-                    if (_this.options.onError) {
-                        _this.options.onError(error);
-                    }
-                });
-            },
-            logger: this.logger
-        });
-        if (this.options.tokenProvider) {
-            this.options.tokenProvider.fetchToken().then(function (jwt) {
-                _this.subscription.open(jwt);
-            }).catch(function (err) {
-                if (_this.options.onError)
-                    _this.options.onError(err);
-            });
-        }
-        else {
-            this.subscription.open(null);
-        }
-    };
-    ResumableSubscription.prototype.open = function () {
-        this.tryNow();
-    };
-    ResumableSubscription.prototype.unsubscribe = function () {
-        this.subscription.unsubscribe(); // We'll get onEnd and bubble this up
-    };
-    return ResumableSubscription;
-}());
-exports.ResumableSubscription = ResumableSubscription;
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var LogLevel;
-(function (LogLevel) {
-    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
-    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
-    LogLevel[LogLevel["INFO"] = 3] = "INFO";
-    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
-    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
-})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
-var DefaultLogger = (function () {
-    function DefaultLogger(treshold) {
-        if (treshold === void 0) { treshold = 2; }
-        this.treshold = treshold;
-    }
-    DefaultLogger.prototype.log = function (level, message, error) {
-        if (level >= this.treshold) {
-            console.log(message);
-            if (error) {
-                console.log(error);
-            }
-        }
-    };
-    DefaultLogger.prototype.verbose = function (message, error) {
-        this.log(LogLevel.VERBOSE, message, error);
-    };
-    DefaultLogger.prototype.debug = function (message, error) {
-        this.log(LogLevel.DEBUG, message, error);
-    };
-    DefaultLogger.prototype.info = function (message, error) {
-        this.log(LogLevel.INFO, message, error);
-    };
-    DefaultLogger.prototype.warn = function (message, error) {
-        this.log(LogLevel.WARNING, message, error);
-    };
-    DefaultLogger.prototype.error = function (message, error) {
-        this.log(LogLevel.ERROR, message, error);
-    };
-    return DefaultLogger;
-}());
-exports.DefaultLogger = DefaultLogger;
-var EmptyLogger = (function () {
-    function EmptyLogger() {
-    }
-    EmptyLogger.prototype.verbose = function (message, error) { };
-    ;
-    EmptyLogger.prototype.debug = function (message, error) { };
-    ;
-    EmptyLogger.prototype.info = function (message, error) { };
-    ;
-    EmptyLogger.prototype.warn = function (message, error) { };
-    ;
-    EmptyLogger.prototype.error = function (message, error) { };
-    ;
-    return EmptyLogger;
-}());
-exports.EmptyLogger = EmptyLogger;
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
-var logger_1 = __webpack_require__(3);
-var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
-var App = (function () {
-    function App(options) {
-        this.serviceId = options.serviceId;
-        this.tokenProvider = options.tokenProvider;
-        this.client = options.client || new base_client_1.BaseClient({
-            cluster: options.cluster || DEFAULT_CLUSTER,
-            encrypted: options.encrypted
-        });
-        if (options.logger) {
-            this.logger = options.logger;
-        }
-        else {
-            this.logger = new logger_1.DefaultLogger();
-        }
-    }
-    App.prototype.request = function (options) {
-        var _this = this;
-        options.path = this.absPath(options.path);
-        var tokenProvider = options.tokenProvider || this.tokenProvider;
-        if (!options.jwt && tokenProvider) {
-            return tokenProvider.fetchToken().then(function (jwt) {
-                return _this.client.request(__assign({ jwt: jwt }, options));
-            });
-        }
-        else {
-            return this.client.request(options);
-        }
-    };
-    App.prototype.subscribe = function (options) {
-        options.path = this.absPath(options.path);
-        options.logger = this.logger;
-        var subscription = this.client.newSubscription(options);
-        var tokenProvider = options.tokenProvider || this.tokenProvider;
-        if (options.jwt) {
-            subscription.open(options.jwt);
-        }
-        else if (tokenProvider) {
-            tokenProvider.fetchToken().then(function (jwt) {
-                subscription.open(jwt);
-            }).catch(function (err) {
-                subscription.unsubscribe(err);
-            });
-        }
-        else {
-            subscription.open(null);
-        }
-        return subscription;
-    };
-    App.prototype.resumableSubscribe = function (options) {
-        options.logger = this.logger;
-        options.path = this.absPath(options.path);
-        var tokenProvider = options.tokenProvider || this.tokenProvider;
-        var resumableSubscription = this.client.newResumableSubscription(__assign({ tokenProvider: tokenProvider }, options));
-        resumableSubscription.open();
-        return resumableSubscription;
-    };
-    App.prototype.absPath = function (relativePath) {
-        return ("/apps/" + this.serviceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
-    };
-    return App;
-}());
-exports.default = App;
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var app_1 = __webpack_require__(4);
-var base_client_1 = __webpack_require__(0);
-var resumable_subscription_1 = __webpack_require__(2);
-var subscription_1 = __webpack_require__(1);
-exports.default = {
-    App: app_1.default,
-    BaseClient: base_client_1.BaseClient,
-    ResumableSubscription: resumable_subscription_1.ResumableSubscription,
-    Subscription: subscription_1.Subscription
-};
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
-var logger_1 = __webpack_require__(3);
-var Retry = (function () {
-    function Retry(waitTimeMilis) {
-        this.waitTimeMilis = waitTimeMilis;
-    }
-    return Retry;
-}());
-exports.Retry = Retry;
-var DoNotRetry = (function () {
-    function DoNotRetry(error) {
-        this.error = error;
-    }
-    return DoNotRetry;
-}());
-exports.DoNotRetry = DoNotRetry;
-var ExponentialBackoffRetryStrategy = (function () {
-    function ExponentialBackoffRetryStrategy(options) {
-        this.limit = 6;
-        this.retryCount = 0;
-        this.maxBackoffMilis = 30000;
-        this.currentBackoffMilis = 1000;
-        if (options.limit)
-            this.limit = options.limit;
-        if (options.initialBackoffMilis)
-            this.currentBackoffMilis = options.initialBackoffMilis;
-        if (options.maxBackoffMilis)
-            this.maxBackoffMilis = options.maxBackoffMilis;
-        if (options.logger) {
-            this.logger = options.logger;
-        }
-        else {
-            this.logger = new logger_1.DefaultLogger();
-        }
-    }
-    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
-        this.logger.debug(this.constructor.name + ":  Error received", error);
-        if (this.retryCount >= this.limit && this.limit > 0) {
-            this.logger.debug(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
-            return new DoNotRetry(error);
-        }
-        var retryable = this.isRetryable(error);
-        if (retryable.isRetryable) {
-            if (retryable.backoffMillis) {
-                this.retryCount += 1;
-                return new Retry(retryable.backoffMillis);
-            }
-            else {
-                this.currentBackoffMilis = this.calulateMilisToRetry();
-                this.retryCount += 1;
-                this.logger.debug(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
-                return new Retry(this.currentBackoffMilis);
-            }
-        }
-        else {
-            this.logger.debug(this.constructor.name + ": Error is not retryable", error);
-            return new DoNotRetry(error);
-        }
-    };
-    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var shouldRetry = _this.shouldRetry(error);
-            if (shouldRetry instanceof DoNotRetry) {
-                reject(error);
-            }
-            else if (shouldRetry instanceof Retry) {
-                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
-            }
-        });
-    };
-    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
-        var retryable = {
-            isRetryable: false
-        };
-        //We allow network errors
-        if (error instanceof base_client_1.NetworkError)
-            retryable.isRetryable = true;
-        else if (error instanceof base_client_1.ErrorResponse) {
-            //Only retry after is allowed
-            if (error.headers["retry-after"]) {
-                retryable.isRetryable = true;
-                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
-            }
-        }
-        return retryable;
-    };
-    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
-        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
-            return this.maxBackoffMilis;
-        }
-        if (this.retryCount > 0) {
-            return this.currentBackoffMilis * 2;
-        }
-        return this.currentBackoffMilis;
-    };
-    return ExponentialBackoffRetryStrategy;
-}());
-exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
-
-
-/***/ })
-/******/ ]);
-});
-
-/***/ }),
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*!
- * Quill Editor v1.2.4
+ * Quill Editor v1.2.6
  * https://quilljs.com/
  * Copyright (c) 2014, Jason Chen
  * Copyright (c) 2013, salesforce.com
@@ -1298,7 +1359,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 136);
+/******/ 	return __webpack_require__(__webpack_require__.s = 137);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -1317,9 +1378,9 @@ var block_1 = __webpack_require__(56);
 var embed_1 = __webpack_require__(57);
 var text_1 = __webpack_require__(60);
 var attributor_1 = __webpack_require__(13);
-var class_1 = __webpack_require__(31);
-var style_1 = __webpack_require__(33);
-var store_1 = __webpack_require__(32);
+var class_1 = __webpack_require__(32);
+var style_1 = __webpack_require__(34);
+var store_1 = __webpack_require__(33);
 var Registry = __webpack_require__(1);
 var Parchment = {
     Scope: Registry.Scope,
@@ -1850,17 +1911,17 @@ var isPlainObject = function isPlainObject(obj) {
 	// Own properties are enumerated firstly, so to speed up,
 	// if last one is own, then all properties are own.
 	var key;
-	for (key in obj) {/**/}
+	for (key in obj) { /**/ }
 
 	return typeof key === 'undefined' || hasOwn.call(obj, key);
 };
 
 module.exports = function extend() {
-	var options, name, src, copy, copyIsArray, clone,
-		target = arguments[0],
-		i = 1,
-		length = arguments.length,
-		deep = false;
+	var options, name, src, copy, copyIsArray, clone;
+	var target = arguments[0];
+	var i = 1;
+	var length = arguments.length;
+	var deep = false;
 
 	// Handle a deep copy situation
 	if (typeof target === 'boolean') {
@@ -1868,7 +1929,8 @@ module.exports = function extend() {
 		target = arguments[1] || {};
 		// skip the boolean and the target
 		i = 2;
-	} else if ((typeof target !== 'object' && typeof target !== 'function') || target == null) {
+	}
+	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
 		target = {};
 	}
 
@@ -1907,7 +1969,6 @@ module.exports = function extend() {
 	// Return the modified object
 	return target;
 };
-
 
 
 /***/ }),
@@ -2262,7 +2323,7 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-__webpack_require__(43);
+__webpack_require__(44);
 
 var _quillDelta = __webpack_require__(2);
 
@@ -2296,7 +2357,7 @@ var _logger = __webpack_require__(10);
 
 var _logger2 = _interopRequireDefault(_logger);
 
-var _theme = __webpack_require__(29);
+var _theme = __webpack_require__(30);
 
 var _theme2 = _interopRequireDefault(_theme);
 
@@ -2382,6 +2443,7 @@ var Quill = function () {
     this.container.__quill = this;
     this.root = this.addContainer('ql-editor');
     this.root.classList.add('ql-blank');
+    this.root.setAttribute('data-gramm', false);
     this.scrollingContainer = this.options.scrollingContainer || this.root;
     this.emitter = new _emitter4.default();
     this.scroll = _parchment2.default.create(this.root, {
@@ -2813,7 +2875,7 @@ Quill.DEFAULTS = {
 Quill.events = _emitter4.default.events;
 Quill.sources = _emitter4.default.sources;
 // eslint-disable-next-line no-undef
-Quill.version =  false ? 'dev' : "1.2.4";
+Quill.version =  false ? 'dev' : "1.2.6";
 
 Quill.imports = {
   'delta': _quillDelta2.default,
@@ -2945,7 +3007,7 @@ function shiftRange(range, index, length, source) {
       end = void 0;
   if (index instanceof _quillDelta2.default) {
     var _map = [range.index, range.index + range.length].map(function (pos) {
-      return index.transformPosition(pos, source === _emitter4.default.sources.USER);
+      return index.transformPosition(pos, source !== _emitter4.default.sources.USER);
     });
 
     var _map2 = _slicedToArray(_map, 2);
@@ -2954,7 +3016,7 @@ function shiftRange(range, index, length, source) {
     end = _map2[1];
   } else {
     var _map3 = [range.index, range.index + range.length].map(function (pos) {
-      if (pos < index || pos === index && source !== _emitter4.default.sources.USER) return pos;
+      if (pos < index || pos === index && source === _emitter4.default.sources.USER) return pos;
       if (length >= 0) {
         return pos + length;
       } else {
@@ -3417,6 +3479,8 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var ASCII = /^[ -~]*$/;
+
 var Editor = function () {
   function Editor(scroll) {
     _classCallCheck(this, Editor);
@@ -3647,7 +3711,7 @@ var Editor = function () {
       var cursorIndex = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 
       var oldDelta = this.delta;
-      if (mutations.length === 1 && mutations[0].type === 'characterData' && _parchment2.default.find(mutations[0].target)) {
+      if (mutations.length === 1 && mutations[0].type === 'characterData' && mutations[0].target.data.match(ASCII) && _parchment2.default.find(mutations[0].target)) {
         // Optimization for character changes
         var textBlot = _parchment2.default.find(mutations[0].target);
         var formats = (0, _block.bubbleFormats)(textBlot);
@@ -3927,6 +3991,54 @@ var Selection = function () {
       if (selection == null || selection.rangeCount <= 0) return null;
       var nativeRange = selection.getRangeAt(0);
       if (nativeRange == null) return null;
+      var range = this.normalizeNative(nativeRange);
+      debug.info('getNativeRange', range);
+      return range;
+    }
+  }, {
+    key: 'getRange',
+    value: function getRange() {
+      var normalized = this.getNativeRange();
+      if (normalized == null) return [null, null];
+      var range = this.normalizedToRange(normalized);
+      return [range, normalized];
+    }
+  }, {
+    key: 'hasFocus',
+    value: function hasFocus() {
+      return document.activeElement === this.root;
+    }
+  }, {
+    key: 'normalizedToRange',
+    value: function normalizedToRange(range) {
+      var _this2 = this;
+
+      var positions = [[range.start.node, range.start.offset]];
+      if (!range.native.collapsed) {
+        positions.push([range.end.node, range.end.offset]);
+      }
+      var indexes = positions.map(function (position) {
+        var _position = _slicedToArray(position, 2),
+            node = _position[0],
+            offset = _position[1];
+
+        var blot = _parchment2.default.find(node, true);
+        var index = blot.offset(_this2.scroll);
+        if (offset === 0) {
+          return index;
+        } else if (blot instanceof _parchment2.default.Container) {
+          return index + blot.length();
+        } else {
+          return index + blot.index(node, offset);
+        }
+      });
+      var end = Math.min(Math.max.apply(Math, _toConsumableArray(indexes)), this.scroll.length() - 1);
+      var start = Math.min.apply(Math, [end].concat(_toConsumableArray(indexes)));
+      return new Range(start, end - start);
+    }
+  }, {
+    key: 'normalizeNative',
+    value: function normalizeNative(nativeRange) {
       if (!contains(this.root, nativeRange.startContainer) || !nativeRange.collapsed && !contains(this.root, nativeRange.endContainer)) {
         return null;
       }
@@ -3951,44 +4063,36 @@ var Selection = function () {
         }
         position.node = node, position.offset = offset;
       });
-      debug.info('getNativeRange', range);
       return range;
     }
   }, {
-    key: 'getRange',
-    value: function getRange() {
-      var _this2 = this;
+    key: 'rangeToNative',
+    value: function rangeToNative(range) {
+      var _this3 = this;
 
-      var range = this.getNativeRange();
-      if (range == null) return [null, null];
-      var positions = [[range.start.node, range.start.offset]];
-      if (!range.native.collapsed) {
-        positions.push([range.end.node, range.end.offset]);
-      }
-      var indexes = positions.map(function (position) {
-        var _position = _slicedToArray(position, 2),
-            node = _position[0],
-            offset = _position[1];
+      var indexes = range.collapsed ? [range.index] : [range.index, range.index + range.length];
+      var args = [];
+      var scrollLength = this.scroll.length();
+      indexes.forEach(function (index, i) {
+        index = Math.min(scrollLength - 1, index);
+        var node = void 0,
+            _scroll$leaf5 = _this3.scroll.leaf(index),
+            _scroll$leaf6 = _slicedToArray(_scroll$leaf5, 2),
+            leaf = _scroll$leaf6[0],
+            offset = _scroll$leaf6[1];
+        var _leaf$position5 = leaf.position(offset, i !== 0);
 
-        var blot = _parchment2.default.find(node, true);
-        var index = blot.offset(_this2.scroll);
-        if (offset === 0) {
-          return index;
-        } else if (blot instanceof _parchment2.default.Container) {
-          return index + blot.length();
-        } else {
-          return index + blot.index(node, offset);
-        }
+        var _leaf$position6 = _slicedToArray(_leaf$position5, 2);
+
+        node = _leaf$position6[0];
+        offset = _leaf$position6[1];
+
+        args.push(node, offset);
       });
-      var start = Math.min.apply(Math, _toConsumableArray(indexes)),
-          end = Math.max.apply(Math, _toConsumableArray(indexes));
-      end = Math.min(end, this.scroll.length() - 1);
-      return [new Range(start, end - start), range];
-    }
-  }, {
-    key: 'hasFocus',
-    value: function hasFocus() {
-      return document.activeElement === this.root;
+      if (args.length < 2) {
+        args = args.concat(args);
+      }
+      return args;
     }
   }, {
     key: 'scrollIntoView',
@@ -4062,8 +4166,6 @@ var Selection = function () {
   }, {
     key: 'setRange',
     value: function setRange(range) {
-      var _this3 = this;
-
       var force = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       var source = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : _emitter4.default.sources.API;
 
@@ -4073,28 +4175,7 @@ var Selection = function () {
       }
       debug.info('setRange', range);
       if (range != null) {
-        var indexes = range.collapsed ? [range.index] : [range.index, range.index + range.length];
-        var args = [];
-        var scrollLength = this.scroll.length();
-        indexes.forEach(function (index, i) {
-          index = Math.min(scrollLength - 1, index);
-          var node = void 0,
-              _scroll$leaf5 = _this3.scroll.leaf(index),
-              _scroll$leaf6 = _slicedToArray(_scroll$leaf5, 2),
-              leaf = _scroll$leaf6[0],
-              offset = _scroll$leaf6[1];
-          var _leaf$position5 = leaf.position(offset, i !== 0);
-
-          var _leaf$position6 = _slicedToArray(_leaf$position5, 2);
-
-          node = _leaf$position6[0];
-          offset = _leaf$position6[1];
-
-          args.push(node, offset);
-        });
-        if (args.length < 2) {
-          args = args.concat(args);
-        }
+        var args = this.rangeToNative(range);
         this.setNativeRange.apply(this, _toConsumableArray(args).concat([force]));
       } else {
         this.setNativeRange(null);
@@ -4496,6 +4577,8 @@ var Scroll = function (_Parchment$Scroll) {
         return whitelist;
       }, {});
     }
+    // Some reason fixes composition issues with character languages in Windows/Chrome, Safari
+    _this.domNode.addEventListener('DOMNodeInserted', function () {});
     _this.optimize();
     _this.enable();
     return _this;
@@ -5071,7 +5154,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var linked_list_1 = __webpack_require__(61);
-var shadow_1 = __webpack_require__(34);
+var shadow_1 = __webpack_require__(35);
 var Registry = __webpack_require__(1);
 var ContainerBlot = (function (_super) {
     __extends(ContainerBlot, _super);
@@ -5316,7 +5399,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var attributor_1 = __webpack_require__(13);
-var store_1 = __webpack_require__(32);
+var store_1 = __webpack_require__(33);
 var container_1 = __webpack_require__(21);
 var Registry = __webpack_require__(1);
 var FormatBlot = (function (_super) {
@@ -5399,7 +5482,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var shadow_1 = __webpack_require__(34);
+var shadow_1 = __webpack_require__(35);
 var Registry = __webpack_require__(1);
 var LeafBlot = (function (_super) {
     __extends(LeafBlot, _super);
@@ -5970,6 +6053,87 @@ exports.default = Picker;
 "use strict";
 
 
+var _parchment = __webpack_require__(0);
+
+var _parchment2 = _interopRequireDefault(_parchment);
+
+var _quill = __webpack_require__(6);
+
+var _quill2 = _interopRequireDefault(_quill);
+
+var _block = __webpack_require__(4);
+
+var _block2 = _interopRequireDefault(_block);
+
+var _break = __webpack_require__(17);
+
+var _break2 = _interopRequireDefault(_break);
+
+var _container = __webpack_require__(24);
+
+var _container2 = _interopRequireDefault(_container);
+
+var _cursor = __webpack_require__(25);
+
+var _cursor2 = _interopRequireDefault(_cursor);
+
+var _embed = __webpack_require__(7);
+
+var _embed2 = _interopRequireDefault(_embed);
+
+var _inline = __webpack_require__(8);
+
+var _inline2 = _interopRequireDefault(_inline);
+
+var _scroll = __webpack_require__(18);
+
+var _scroll2 = _interopRequireDefault(_scroll);
+
+var _text = __webpack_require__(12);
+
+var _text2 = _interopRequireDefault(_text);
+
+var _clipboard = __webpack_require__(46);
+
+var _clipboard2 = _interopRequireDefault(_clipboard);
+
+var _history = __webpack_require__(42);
+
+var _history2 = _interopRequireDefault(_history);
+
+var _keyboard = __webpack_require__(31);
+
+var _keyboard2 = _interopRequireDefault(_keyboard);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+_quill2.default.register({
+  'blots/block': _block2.default,
+  'blots/block/embed': _block.BlockEmbed,
+  'blots/break': _break2.default,
+  'blots/container': _container2.default,
+  'blots/cursor': _cursor2.default,
+  'blots/embed': _embed2.default,
+  'blots/inline': _inline2.default,
+  'blots/scroll': _scroll2.default,
+  'blots/text': _text2.default,
+
+  'modules/clipboard': _clipboard2.default,
+  'modules/history': _history2.default,
+  'modules/keyboard': _keyboard2.default
+});
+
+_parchment2.default.register(_block2.default, _break2.default, _cursor2.default, _inline2.default, _scroll2.default, _text2.default);
+
+module.exports = _quill2.default;
+
+/***/ }),
+/* 30 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -6020,7 +6184,7 @@ Theme.themes = {
 exports.default = Theme;
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6550,7 +6714,7 @@ exports.default = Keyboard;
 exports.SHORTKEY = SHORTKEY;
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6610,15 +6774,15 @@ exports.default = ClassAttributor;
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var attributor_1 = __webpack_require__(13);
-var class_1 = __webpack_require__(31);
-var style_1 = __webpack_require__(33);
+var class_1 = __webpack_require__(32);
+var style_1 = __webpack_require__(34);
 var Registry = __webpack_require__(1);
 var AttributorStore = (function () {
     function AttributorStore(domNode) {
@@ -6683,7 +6847,7 @@ exports.default = AttributorStore;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6740,7 +6904,7 @@ exports.default = StyleAttributor;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6893,87 +7057,6 @@ var ShadowBlot = (function () {
 ShadowBlot.blotName = 'abstract';
 exports.default = ShadowBlot;
 
-
-/***/ }),
-/* 35 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _parchment = __webpack_require__(0);
-
-var _parchment2 = _interopRequireDefault(_parchment);
-
-var _quill = __webpack_require__(6);
-
-var _quill2 = _interopRequireDefault(_quill);
-
-var _block = __webpack_require__(4);
-
-var _block2 = _interopRequireDefault(_block);
-
-var _break = __webpack_require__(17);
-
-var _break2 = _interopRequireDefault(_break);
-
-var _container = __webpack_require__(24);
-
-var _container2 = _interopRequireDefault(_container);
-
-var _cursor = __webpack_require__(25);
-
-var _cursor2 = _interopRequireDefault(_cursor);
-
-var _embed = __webpack_require__(7);
-
-var _embed2 = _interopRequireDefault(_embed);
-
-var _inline = __webpack_require__(8);
-
-var _inline2 = _interopRequireDefault(_inline);
-
-var _scroll = __webpack_require__(18);
-
-var _scroll2 = _interopRequireDefault(_scroll);
-
-var _text = __webpack_require__(12);
-
-var _text2 = _interopRequireDefault(_text);
-
-var _clipboard = __webpack_require__(45);
-
-var _clipboard2 = _interopRequireDefault(_clipboard);
-
-var _history = __webpack_require__(42);
-
-var _history2 = _interopRequireDefault(_history);
-
-var _keyboard = __webpack_require__(30);
-
-var _keyboard2 = _interopRequireDefault(_keyboard);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-_quill2.default.register({
-  'blots/block': _block2.default,
-  'blots/block/embed': _block.BlockEmbed,
-  'blots/break': _break2.default,
-  'blots/container': _container2.default,
-  'blots/cursor': _cursor2.default,
-  'blots/embed': _embed2.default,
-  'blots/inline': _inline2.default,
-  'blots/scroll': _scroll2.default,
-  'blots/text': _text2.default,
-
-  'modules/clipboard': _clipboard2.default,
-  'modules/history': _history2.default,
-  'modules/keyboard': _keyboard2.default
-});
-
-_parchment2.default.register(_block2.default, _break2.default, _cursor2.default, _inline2.default, _scroll2.default, _text2.default);
-
-module.exports = _quill2.default;
 
 /***/ }),
 /* 36 */
@@ -7384,6 +7467,348 @@ exports.getLastChangeIndex = getLastChangeIndex;
 "use strict";
 
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = exports.BaseTooltip = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _extend = __webpack_require__(3);
+
+var _extend2 = _interopRequireDefault(_extend);
+
+var _quillDelta = __webpack_require__(2);
+
+var _quillDelta2 = _interopRequireDefault(_quillDelta);
+
+var _emitter = __webpack_require__(5);
+
+var _emitter2 = _interopRequireDefault(_emitter);
+
+var _keyboard = __webpack_require__(31);
+
+var _keyboard2 = _interopRequireDefault(_keyboard);
+
+var _theme = __webpack_require__(30);
+
+var _theme2 = _interopRequireDefault(_theme);
+
+var _colorPicker = __webpack_require__(48);
+
+var _colorPicker2 = _interopRequireDefault(_colorPicker);
+
+var _iconPicker = __webpack_require__(49);
+
+var _iconPicker2 = _interopRequireDefault(_iconPicker);
+
+var _picker = __webpack_require__(28);
+
+var _picker2 = _interopRequireDefault(_picker);
+
+var _tooltip = __webpack_require__(50);
+
+var _tooltip2 = _interopRequireDefault(_tooltip);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ALIGNS = [false, 'center', 'right', 'justify'];
+
+var COLORS = ["#000000", "#e60000", "#ff9900", "#ffff00", "#008a00", "#0066cc", "#9933ff", "#ffffff", "#facccc", "#ffebcc", "#ffffcc", "#cce8cc", "#cce0f5", "#ebd6ff", "#bbbbbb", "#f06666", "#ffc266", "#ffff66", "#66b966", "#66a3e0", "#c285ff", "#888888", "#a10000", "#b26b00", "#b2b200", "#006100", "#0047b2", "#6b24b2", "#444444", "#5c0000", "#663d00", "#666600", "#003700", "#002966", "#3d1466"];
+
+var FONTS = [false, 'serif', 'monospace'];
+
+var HEADERS = ['1', '2', '3', false];
+
+var SIZES = ['small', false, 'large', 'huge'];
+
+var BaseTheme = function (_Theme) {
+  _inherits(BaseTheme, _Theme);
+
+  function BaseTheme(quill, options) {
+    _classCallCheck(this, BaseTheme);
+
+    var _this = _possibleConstructorReturn(this, (BaseTheme.__proto__ || Object.getPrototypeOf(BaseTheme)).call(this, quill, options));
+
+    var listener = function listener(e) {
+      if (!document.body.contains(quill.root)) {
+        return document.body.removeEventListener('click', listener);
+      }
+      if (_this.tooltip != null && !_this.tooltip.root.contains(e.target) && document.activeElement !== _this.tooltip.textbox && !_this.quill.hasFocus()) {
+        _this.tooltip.hide();
+      }
+      if (_this.pickers != null) {
+        _this.pickers.forEach(function (picker) {
+          if (!picker.container.contains(e.target)) {
+            picker.close();
+          }
+        });
+      }
+    };
+    document.body.addEventListener('click', listener);
+    return _this;
+  }
+
+  _createClass(BaseTheme, [{
+    key: 'addModule',
+    value: function addModule(name) {
+      var module = _get(BaseTheme.prototype.__proto__ || Object.getPrototypeOf(BaseTheme.prototype), 'addModule', this).call(this, name);
+      if (name === 'toolbar') {
+        this.extendToolbar(module);
+      }
+      return module;
+    }
+  }, {
+    key: 'buildButtons',
+    value: function buildButtons(buttons, icons) {
+      buttons.forEach(function (button) {
+        var className = button.getAttribute('class') || '';
+        className.split(/\s+/).forEach(function (name) {
+          if (!name.startsWith('ql-')) return;
+          name = name.slice('ql-'.length);
+          if (icons[name] == null) return;
+          if (name === 'direction') {
+            button.innerHTML = icons[name][''] + icons[name]['rtl'];
+          } else if (typeof icons[name] === 'string') {
+            button.innerHTML = icons[name];
+          } else {
+            var value = button.value || '';
+            if (value != null && icons[name][value]) {
+              button.innerHTML = icons[name][value];
+            }
+          }
+        });
+      });
+    }
+  }, {
+    key: 'buildPickers',
+    value: function buildPickers(selects, icons) {
+      var _this2 = this;
+
+      this.pickers = selects.map(function (select) {
+        if (select.classList.contains('ql-align')) {
+          if (select.querySelector('option') == null) {
+            fillSelect(select, ALIGNS);
+          }
+          return new _iconPicker2.default(select, icons.align);
+        } else if (select.classList.contains('ql-background') || select.classList.contains('ql-color')) {
+          var format = select.classList.contains('ql-background') ? 'background' : 'color';
+          if (select.querySelector('option') == null) {
+            fillSelect(select, COLORS, format === 'background' ? '#ffffff' : '#000000');
+          }
+          return new _colorPicker2.default(select, icons[format]);
+        } else {
+          if (select.querySelector('option') == null) {
+            if (select.classList.contains('ql-font')) {
+              fillSelect(select, FONTS);
+            } else if (select.classList.contains('ql-header')) {
+              fillSelect(select, HEADERS);
+            } else if (select.classList.contains('ql-size')) {
+              fillSelect(select, SIZES);
+            }
+          }
+          return new _picker2.default(select);
+        }
+      });
+      var update = function update() {
+        _this2.pickers.forEach(function (picker) {
+          picker.update();
+        });
+      };
+      this.quill.on(_emitter2.default.events.EDITOR_CHANGE, update);
+    }
+  }]);
+
+  return BaseTheme;
+}(_theme2.default);
+
+BaseTheme.DEFAULTS = (0, _extend2.default)(true, {}, _theme2.default.DEFAULTS, {
+  modules: {
+    toolbar: {
+      handlers: {
+        formula: function formula() {
+          this.quill.theme.tooltip.edit('formula');
+        },
+        image: function image() {
+          var _this3 = this;
+
+          var fileInput = this.container.querySelector('input.ql-image[type=file]');
+          if (fileInput == null) {
+            fileInput = document.createElement('input');
+            fileInput.setAttribute('type', 'file');
+            fileInput.setAttribute('accept', 'image/png, image/gif, image/jpeg, image/bmp, image/x-icon');
+            fileInput.classList.add('ql-image');
+            fileInput.addEventListener('change', function () {
+              if (fileInput.files != null && fileInput.files[0] != null) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                  var range = _this3.quill.getSelection(true);
+                  _this3.quill.updateContents(new _quillDelta2.default().retain(range.index).delete(range.length).insert({ image: e.target.result }), _emitter2.default.sources.USER);
+                  fileInput.value = "";
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+              }
+            });
+            this.container.appendChild(fileInput);
+          }
+          fileInput.click();
+        },
+        video: function video() {
+          this.quill.theme.tooltip.edit('video');
+        }
+      }
+    }
+  }
+});
+
+var BaseTooltip = function (_Tooltip) {
+  _inherits(BaseTooltip, _Tooltip);
+
+  function BaseTooltip(quill, boundsContainer) {
+    _classCallCheck(this, BaseTooltip);
+
+    var _this4 = _possibleConstructorReturn(this, (BaseTooltip.__proto__ || Object.getPrototypeOf(BaseTooltip)).call(this, quill, boundsContainer));
+
+    _this4.textbox = _this4.root.querySelector('input[type="text"]');
+    _this4.listen();
+    return _this4;
+  }
+
+  _createClass(BaseTooltip, [{
+    key: 'listen',
+    value: function listen() {
+      var _this5 = this;
+
+      this.textbox.addEventListener('keydown', function (event) {
+        if (_keyboard2.default.match(event, 'enter')) {
+          _this5.save();
+          event.preventDefault();
+        } else if (_keyboard2.default.match(event, 'escape')) {
+          _this5.cancel();
+          event.preventDefault();
+        }
+      });
+    }
+  }, {
+    key: 'cancel',
+    value: function cancel() {
+      this.hide();
+    }
+  }, {
+    key: 'edit',
+    value: function edit() {
+      var mode = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'link';
+      var preview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+      this.root.classList.remove('ql-hidden');
+      this.root.classList.add('ql-editing');
+      if (preview != null) {
+        this.textbox.value = preview;
+      } else if (mode !== this.root.getAttribute('data-mode')) {
+        this.textbox.value = '';
+      }
+      this.position(this.quill.getBounds(this.quill.selection.savedRange));
+      this.textbox.select();
+      this.textbox.setAttribute('placeholder', this.textbox.getAttribute('data-' + mode) || '');
+      this.root.setAttribute('data-mode', mode);
+    }
+  }, {
+    key: 'restoreFocus',
+    value: function restoreFocus() {
+      var scrollTop = this.quill.scrollingContainer.scrollTop;
+      this.quill.focus();
+      this.quill.scrollingContainer.scrollTop = scrollTop;
+    }
+  }, {
+    key: 'save',
+    value: function save() {
+      var value = this.textbox.value;
+      switch (this.root.getAttribute('data-mode')) {
+        case 'link':
+          {
+            var scrollTop = this.quill.root.scrollTop;
+            if (this.linkRange) {
+              this.quill.formatText(this.linkRange, 'link', value, _emitter2.default.sources.USER);
+              delete this.linkRange;
+            } else {
+              this.restoreFocus();
+              this.quill.format('link', value, _emitter2.default.sources.USER);
+            }
+            this.quill.root.scrollTop = scrollTop;
+            break;
+          }
+        case 'video':
+          {
+            value = extractVideoUrl(value);
+          } // eslint-disable-next-line no-fallthrough
+        case 'formula':
+          {
+            if (!value) break;
+            var range = this.quill.getSelection(true);
+            if (range != null) {
+              var index = range.index + range.length;
+              this.quill.insertEmbed(index, this.root.getAttribute('data-mode'), value, _emitter2.default.sources.USER);
+              if (this.root.getAttribute('data-mode') === 'formula') {
+                this.quill.insertText(index + 1, ' ', _emitter2.default.sources.USER);
+              }
+              this.quill.setSelection(index + 2, _emitter2.default.sources.USER);
+            }
+            break;
+          }
+        default:
+      }
+      this.textbox.value = '';
+      this.hide();
+    }
+  }]);
+
+  return BaseTooltip;
+}(_tooltip2.default);
+
+function extractVideoUrl(url) {
+  var match = url.match(/^(https?):\/\/(?:(?:www|m)\.)?youtube\.com\/watch.*v=([a-zA-Z0-9_-]+)/) || url.match(/^(https?):\/\/(?:(?:www|m)\.)?youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return match[1] + '://www.youtube.com/embed/' + match[2] + '?showinfo=0';
+  }
+  if (match = url.match(/^(https?):\/\/(?:www\.)?vimeo\.com\/(\d+)/)) {
+    // eslint-disable-line no-cond-assign
+    return match[1] + '://player.vimeo.com/video/' + match[2] + '/';
+  }
+  return url;
+}
+
+function fillSelect(select, values) {
+  var defaultValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+  values.forEach(function (value) {
+    var option = document.createElement('option');
+    if (value === defaultValue) {
+      option.setAttribute('selected', 'selected');
+    } else {
+      option.setAttribute('value', value);
+    }
+    select.appendChild(option);
+  });
+}
+
+exports.BaseTooltip = BaseTooltip;
+exports.default = BaseTheme;
+
+/***/ }),
+/* 44 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 var elem = document.createElement('div');
 elem.classList.toggle('test-class', false);
 if (elem.classList.contains('test-class')) {
@@ -7449,7 +7874,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7513,7 +7938,7 @@ Bold.tagName = ['STRONG', 'B'];
 exports.default = Bold;
 
 /***/ }),
-/* 45 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7787,11 +8212,12 @@ function matchAttributor(node, delta) {
       formats[attr.attrName] = attr.value(node);
       if (formats[attr.attrName]) return;
     }
-    if (ATTRIBUTE_ATTRIBUTORS[name] != null) {
-      attr = ATTRIBUTE_ATTRIBUTORS[name];
+    attr = ATTRIBUTE_ATTRIBUTORS[name];
+    if (attr != null && attr.attrName === name) {
       formats[attr.attrName] = attr.value(node) || undefined;
     }
-    if (STYLE_ATTRIBUTORS[name] != null) {
+    attr = STYLE_ATTRIBUTORS[name];
+    if (attr != null && attr.attrName === name) {
       attr = STYLE_ATTRIBUTORS[name];
       formats[attr.attrName] = attr.value(node) || undefined;
     }
@@ -7871,7 +8297,7 @@ function matchStyles(node, delta) {
   if (style.fontStyle && computeStyle(node).fontStyle === 'italic') {
     formats.italic = true;
   }
-  if (style.fontWeight && computeStyle(node).fontWeight === 'bold') {
+  if (style.fontWeight && (computeStyle(node).fontWeight.startsWith('bold') || parseInt(computeStyle(node).fontWeight) >= 700)) {
     formats.bold = true;
   }
   if (Object.keys(formats).length > 0) {
@@ -7919,7 +8345,7 @@ exports.matchSpacing = matchSpacing;
 exports.matchText = matchText;
 
 /***/ }),
-/* 46 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8242,342 +8668,6 @@ Toolbar.DEFAULTS = {
 
 exports.default = Toolbar;
 exports.addControls = addControls;
-
-/***/ }),
-/* 47 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = exports.BaseTooltip = undefined;
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _extend = __webpack_require__(3);
-
-var _extend2 = _interopRequireDefault(_extend);
-
-var _quillDelta = __webpack_require__(2);
-
-var _quillDelta2 = _interopRequireDefault(_quillDelta);
-
-var _emitter = __webpack_require__(5);
-
-var _emitter2 = _interopRequireDefault(_emitter);
-
-var _keyboard = __webpack_require__(30);
-
-var _keyboard2 = _interopRequireDefault(_keyboard);
-
-var _theme = __webpack_require__(29);
-
-var _theme2 = _interopRequireDefault(_theme);
-
-var _colorPicker = __webpack_require__(48);
-
-var _colorPicker2 = _interopRequireDefault(_colorPicker);
-
-var _iconPicker = __webpack_require__(49);
-
-var _iconPicker2 = _interopRequireDefault(_iconPicker);
-
-var _picker = __webpack_require__(28);
-
-var _picker2 = _interopRequireDefault(_picker);
-
-var _tooltip = __webpack_require__(50);
-
-var _tooltip2 = _interopRequireDefault(_tooltip);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var ALIGNS = [false, 'center', 'right', 'justify'];
-
-var COLORS = ["#000000", "#e60000", "#ff9900", "#ffff00", "#008a00", "#0066cc", "#9933ff", "#ffffff", "#facccc", "#ffebcc", "#ffffcc", "#cce8cc", "#cce0f5", "#ebd6ff", "#bbbbbb", "#f06666", "#ffc266", "#ffff66", "#66b966", "#66a3e0", "#c285ff", "#888888", "#a10000", "#b26b00", "#b2b200", "#006100", "#0047b2", "#6b24b2", "#444444", "#5c0000", "#663d00", "#666600", "#003700", "#002966", "#3d1466"];
-
-var FONTS = [false, 'serif', 'monospace'];
-
-var HEADERS = ['1', '2', '3', false];
-
-var SIZES = ['small', false, 'large', 'huge'];
-
-var BaseTheme = function (_Theme) {
-  _inherits(BaseTheme, _Theme);
-
-  function BaseTheme(quill, options) {
-    _classCallCheck(this, BaseTheme);
-
-    var _this = _possibleConstructorReturn(this, (BaseTheme.__proto__ || Object.getPrototypeOf(BaseTheme)).call(this, quill, options));
-
-    var listener = function listener(e) {
-      if (!document.body.contains(quill.root)) {
-        return document.body.removeEventListener('click', listener);
-      }
-      if (_this.tooltip != null && !_this.tooltip.root.contains(e.target) && document.activeElement !== _this.tooltip.textbox && !_this.quill.hasFocus()) {
-        _this.tooltip.hide();
-      }
-      if (_this.pickers != null) {
-        _this.pickers.forEach(function (picker) {
-          if (!picker.container.contains(e.target)) {
-            picker.close();
-          }
-        });
-      }
-    };
-    document.body.addEventListener('click', listener);
-    return _this;
-  }
-
-  _createClass(BaseTheme, [{
-    key: 'addModule',
-    value: function addModule(name) {
-      var module = _get(BaseTheme.prototype.__proto__ || Object.getPrototypeOf(BaseTheme.prototype), 'addModule', this).call(this, name);
-      if (name === 'toolbar') {
-        this.extendToolbar(module);
-      }
-      return module;
-    }
-  }, {
-    key: 'buildButtons',
-    value: function buildButtons(buttons, icons) {
-      buttons.forEach(function (button) {
-        var className = button.getAttribute('class') || '';
-        className.split(/\s+/).forEach(function (name) {
-          if (!name.startsWith('ql-')) return;
-          name = name.slice('ql-'.length);
-          if (icons[name] == null) return;
-          if (name === 'direction') {
-            button.innerHTML = icons[name][''] + icons[name]['rtl'];
-          } else if (typeof icons[name] === 'string') {
-            button.innerHTML = icons[name];
-          } else {
-            var value = button.value || '';
-            if (value != null && icons[name][value]) {
-              button.innerHTML = icons[name][value];
-            }
-          }
-        });
-      });
-    }
-  }, {
-    key: 'buildPickers',
-    value: function buildPickers(selects, icons) {
-      var _this2 = this;
-
-      this.pickers = selects.map(function (select) {
-        if (select.classList.contains('ql-align')) {
-          if (select.querySelector('option') == null) {
-            fillSelect(select, ALIGNS);
-          }
-          return new _iconPicker2.default(select, icons.align);
-        } else if (select.classList.contains('ql-background') || select.classList.contains('ql-color')) {
-          var format = select.classList.contains('ql-background') ? 'background' : 'color';
-          if (select.querySelector('option') == null) {
-            fillSelect(select, COLORS, format === 'background' ? '#ffffff' : '#000000');
-          }
-          return new _colorPicker2.default(select, icons[format]);
-        } else {
-          if (select.querySelector('option') == null) {
-            if (select.classList.contains('ql-font')) {
-              fillSelect(select, FONTS);
-            } else if (select.classList.contains('ql-header')) {
-              fillSelect(select, HEADERS);
-            } else if (select.classList.contains('ql-size')) {
-              fillSelect(select, SIZES);
-            }
-          }
-          return new _picker2.default(select);
-        }
-      });
-      var update = function update() {
-        _this2.pickers.forEach(function (picker) {
-          picker.update();
-        });
-      };
-      this.quill.on(_emitter2.default.events.SELECTION_CHANGE, update).on(_emitter2.default.events.SCROLL_OPTIMIZE, update);
-    }
-  }]);
-
-  return BaseTheme;
-}(_theme2.default);
-
-BaseTheme.DEFAULTS = (0, _extend2.default)(true, {}, _theme2.default.DEFAULTS, {
-  modules: {
-    toolbar: {
-      handlers: {
-        formula: function formula() {
-          this.quill.theme.tooltip.edit('formula');
-        },
-        image: function image() {
-          var _this3 = this;
-
-          var fileInput = this.container.querySelector('input.ql-image[type=file]');
-          if (fileInput == null) {
-            fileInput = document.createElement('input');
-            fileInput.setAttribute('type', 'file');
-            fileInput.setAttribute('accept', 'image/png, image/gif, image/jpeg, image/bmp, image/x-icon');
-            fileInput.classList.add('ql-image');
-            fileInput.addEventListener('change', function () {
-              if (fileInput.files != null && fileInput.files[0] != null) {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                  var range = _this3.quill.getSelection(true);
-                  _this3.quill.updateContents(new _quillDelta2.default().retain(range.index).delete(range.length).insert({ image: e.target.result }), _emitter2.default.sources.USER);
-                  fileInput.value = "";
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-              }
-            });
-            this.container.appendChild(fileInput);
-          }
-          fileInput.click();
-        },
-        video: function video() {
-          this.quill.theme.tooltip.edit('video');
-        }
-      }
-    }
-  }
-});
-
-var BaseTooltip = function (_Tooltip) {
-  _inherits(BaseTooltip, _Tooltip);
-
-  function BaseTooltip(quill, boundsContainer) {
-    _classCallCheck(this, BaseTooltip);
-
-    var _this4 = _possibleConstructorReturn(this, (BaseTooltip.__proto__ || Object.getPrototypeOf(BaseTooltip)).call(this, quill, boundsContainer));
-
-    _this4.textbox = _this4.root.querySelector('input[type="text"]');
-    _this4.listen();
-    return _this4;
-  }
-
-  _createClass(BaseTooltip, [{
-    key: 'listen',
-    value: function listen() {
-      var _this5 = this;
-
-      this.textbox.addEventListener('keydown', function (event) {
-        if (_keyboard2.default.match(event, 'enter')) {
-          _this5.save();
-          event.preventDefault();
-        } else if (_keyboard2.default.match(event, 'escape')) {
-          _this5.cancel();
-          event.preventDefault();
-        }
-      });
-    }
-  }, {
-    key: 'cancel',
-    value: function cancel() {
-      this.hide();
-    }
-  }, {
-    key: 'edit',
-    value: function edit() {
-      var mode = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'link';
-      var preview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-      this.root.classList.remove('ql-hidden');
-      this.root.classList.add('ql-editing');
-      if (preview != null) {
-        this.textbox.value = preview;
-      } else if (mode !== this.root.getAttribute('data-mode')) {
-        this.textbox.value = '';
-      }
-      this.position(this.quill.getBounds(this.quill.selection.savedRange));
-      this.textbox.select();
-      this.textbox.setAttribute('placeholder', this.textbox.getAttribute('data-' + mode) || '');
-      this.root.setAttribute('data-mode', mode);
-    }
-  }, {
-    key: 'restoreFocus',
-    value: function restoreFocus() {
-      var scrollTop = this.quill.scrollingContainer.scrollTop;
-      this.quill.focus();
-      this.quill.scrollingContainer.scrollTop = scrollTop;
-    }
-  }, {
-    key: 'save',
-    value: function save() {
-      var value = this.textbox.value;
-      switch (this.root.getAttribute('data-mode')) {
-        case 'link':
-          {
-            var scrollTop = this.quill.root.scrollTop;
-            if (this.linkRange) {
-              this.quill.formatText(this.linkRange, 'link', value, _emitter2.default.sources.USER);
-              delete this.linkRange;
-            } else {
-              this.restoreFocus();
-              this.quill.format('link', value, _emitter2.default.sources.USER);
-            }
-            this.quill.root.scrollTop = scrollTop;
-            break;
-          }
-        case 'video':
-          {
-            var match = value.match(/^(https?):\/\/(www\.)?youtube\.com\/watch.*v=([a-zA-Z0-9_-]+)/) || value.match(/^(https?):\/\/(www\.)?youtu\.be\/([a-zA-Z0-9_-]+)/);
-            if (match) {
-              value = match[1] + '://www.youtube.com/embed/' + match[3] + '?showinfo=0';
-            } else if (match = value.match(/^(https?):\/\/(www\.)?vimeo\.com\/(\d+)/)) {
-              // eslint-disable-line no-cond-assign
-              value = match[1] + '://player.vimeo.com/video/' + match[3] + '/';
-            }
-          } // eslint-disable-next-line no-fallthrough
-        case 'formula':
-          {
-            if (!value) break;
-            var range = this.quill.getSelection(true);
-            var index = range.index + range.length;
-            if (range != null) {
-              this.quill.insertEmbed(index, this.root.getAttribute('data-mode'), value, _emitter2.default.sources.USER);
-              if (this.root.getAttribute('data-mode') === 'formula') {
-                this.quill.insertText(index + 1, ' ', _emitter2.default.sources.USER);
-              }
-              this.quill.setSelection(index + 2, _emitter2.default.sources.USER);
-            }
-            break;
-          }
-        default:
-      }
-      this.textbox.value = '';
-      this.hide();
-    }
-  }]);
-
-  return BaseTooltip;
-}(_tooltip2.default);
-
-function fillSelect(select, values) {
-  var defaultValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-  values.forEach(function (value) {
-    var option = document.createElement('option');
-    if (value === defaultValue) {
-      option.setAttribute('selected', 'selected');
-    } else {
-      option.setAttribute('value', value);
-    }
-    select.appendChild(option);
-  });
-}
-
-exports.BaseTooltip = BaseTooltip;
-exports.default = BaseTheme;
 
 /***/ }),
 /* 48 */
@@ -10472,7 +10562,7 @@ exports.default = LinkedList;
 "use strict";
 
 
-var _core = __webpack_require__(35);
+var _core = __webpack_require__(29);
 
 var _core2 = _interopRequireDefault(_core);
 
@@ -10502,7 +10592,7 @@ var _font = __webpack_require__(39);
 
 var _size = __webpack_require__(40);
 
-var _bold = __webpack_require__(44);
+var _bold = __webpack_require__(45);
 
 var _bold2 = _interopRequireDefault(_bold);
 
@@ -10546,7 +10636,7 @@ var _syntax = __webpack_require__(75);
 
 var _syntax2 = _interopRequireDefault(_syntax);
 
-var _toolbar = __webpack_require__(46);
+var _toolbar = __webpack_require__(47);
 
 var _toolbar2 = _interopRequireDefault(_toolbar);
 
@@ -10667,7 +10757,7 @@ var _emitter = __webpack_require__(5);
 
 var _emitter2 = _interopRequireDefault(_emitter);
 
-var _base = __webpack_require__(47);
+var _base = __webpack_require__(43);
 
 var _base2 = _interopRequireDefault(_base);
 
@@ -11093,7 +11183,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _bold = __webpack_require__(44);
+var _bold = __webpack_require__(45);
 
 var _bold2 = _interopRequireDefault(_bold);
 
@@ -11823,7 +11913,7 @@ var _emitter = __webpack_require__(5);
 
 var _emitter2 = _interopRequireDefault(_emitter);
 
-var _base = __webpack_require__(47);
+var _base = __webpack_require__(43);
 
 var _base2 = _interopRequireDefault(_base);
 
@@ -12185,7 +12275,8 @@ module.exports = "<svg viewbox=\"0 0 18 18\"> <rect class=ql-stroke height=12 wi
 /* 133 */,
 /* 134 */,
 /* 135 */,
-/* 136 */
+/* 136 */,
+/* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(62);
@@ -12273,9 +12364,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var logoot_1 = __webpack_require__(1);
-var logoot_2 = __webpack_require__(1);
-var wire_format_1 = __webpack_require__(2);
+var logoot_1 = __webpack_require__(2);
+var logoot_2 = __webpack_require__(2);
+var wire_format_1 = __webpack_require__(3);
 var LogootDoc = (function (_super) {
     __extends(LogootDoc, _super);
     function LogootDoc(siteId) {
@@ -12384,7 +12475,7 @@ exports.default = LogootDoc;
  * Binding between the textsync document model and that of Quilljs
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var editorAdaptor = __webpack_require__(0);
+var editorAdaptor = __webpack_require__(1);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
         this.siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
@@ -12542,8 +12633,9 @@ exports.QuillAttributes = QuillAttributes;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var wireFormat = __webpack_require__(2);
-var editorAdaptor = __webpack_require__(0);
+var pusher_platform_js_1 = __webpack_require__(0);
+var wireFormat = __webpack_require__(3);
+var editorAdaptor = __webpack_require__(1);
 var collaborators_1 = __webpack_require__(18);
 var controller_1 = __webpack_require__(19);
 var badges_1 = __webpack_require__(17);
@@ -12608,7 +12700,8 @@ var TextSync = (function () {
             },
             onOpen: function () { console.info("subscription opened"); },
             onEnd: function () { _this.logError({ info: "subscription ended" }); },
-            onError: this.logError
+            onError: this.logError,
+            logger: new pusher_platform_js_1.ConsoleLogger()
         });
     };
     TextSync.prototype.initialContent = function (content) {
@@ -12751,22 +12844,22 @@ function placeHoldersCount (b64) {
 
 function byteLength (b64) {
   // base64 is 4/3 + up to two characters of the original data
-  return b64.length * 3 / 4 - placeHoldersCount(b64)
+  return (b64.length * 3 / 4) - placeHoldersCount(b64)
 }
 
 function toByteArray (b64) {
-  var i, j, l, tmp, placeHolders, arr
+  var i, l, tmp, placeHolders, arr
   var len = b64.length
   placeHolders = placeHoldersCount(b64)
 
-  arr = new Arr(len * 3 / 4 - placeHolders)
+  arr = new Arr((len * 3 / 4) - placeHolders)
 
   // if there are placeholders, only get up to the last complete 4 chars
   l = placeHolders > 0 ? len - 4 : len
 
   var L = 0
 
-  for (i = 0, j = 0; i < l; i += 4, j += 3) {
+  for (i = 0; i < l; i += 4) {
     tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
     arr[L++] = (tmp >> 16) & 0xFF
     arr[L++] = (tmp >> 8) & 0xFF
@@ -15499,7 +15592,7 @@ exports.default = PresenceEvent;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var Quill = __webpack_require__(4);
-var pusher_platform_js_1 = __webpack_require__(3);
+var PusherPlatform = __webpack_require__(0);
 var logoot_doc_1 = __webpack_require__(6);
 var textsync_1 = __webpack_require__(8);
 var quill_adaptor_1 = __webpack_require__(7);
@@ -15559,7 +15652,7 @@ function createEditor(appConfig, userConfig) {
     }
     var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
     var logootDoc = new logoot_doc_1.default(siteId);
-    var app = new pusher_platform_js_1.default.App({ serviceId: serviceId, cluster: cluster });
+    var app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster, logger: new PusherPlatform.ConsoleLogger(1) });
     var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
     var quill = initEditor(containerElement, quillConfig, appConfig, presenceConfig);
     var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
