@@ -12505,7 +12505,11 @@ var QuillAdaptor = (function () {
         console.log(error);
     };
     QuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
+        // The character index which the delta operation we are currently processing corresponds to
         var changeIndex = 0;
+        // The difference we need to apply when indexing in to the oldDelta by character, because
+        // we have deleted characters from the document which still exist in the oldDelta.
+        var oldDeltaChangeOffset = 0;
         console.debug("received event from editor:", JSON.stringify(delta));
         for (var _i = 0, _a = delta.ops; _i < _a.length; _i++) {
             var deltaOp = _a[_i];
@@ -12520,13 +12524,14 @@ var QuillAdaptor = (function () {
                     // We look at the previous delta (which represents the entire document before
                     // this changeset) in order to merge the new attribute set in to each
                     // different combination of attributes that previous applied.
-                    var affectedDelta = oldDelta.slice(changeIndex, changeIndex + deltaOp.retain);
+                    var oldDeltaIndex = changeIndex + oldDeltaChangeOffset;
+                    var affectedDelta = oldDelta.slice(oldDeltaIndex, oldDeltaIndex + deltaOp.retain);
                     for (var _b = 0, _c = affectedDelta.ops; _b < _c.length; _b++) {
                         var affectedOp = _c[_b];
                         var mergedAttrs = Object.assign({}, affectedOp.attributes, deltaOp.attributes);
                         var wireAttrs = QuillAttributes.toWireAttributes(mergedAttrs);
                         if (changeIndex == this.quill.getLength() - 1) {
-                            this.quill.formatText(changeIndex, 1, { header: false }, 'silent');
+                            this.quill.formatText(changeIndex, 1, { header: false, list: false }, 'silent'); // fishy. formatting could be any block level, not just header
                             this.quill.insertText(changeIndex, "\n", mergedAttrs, 'silent');
                             this.textsync.insertText(changeIndex, affectedOp.insert, wireAttrs);
                         }
@@ -12547,7 +12552,7 @@ var QuillAdaptor = (function () {
             }
             else if (deltaOp.hasOwnProperty('delete')) {
                 this.textsync.deleteText(changeIndex, deltaOp.delete);
-                changeIndex += deltaOp.delete;
+                oldDeltaChangeOffset += deltaOp.delete;
             }
         }
     };
@@ -12565,6 +12570,7 @@ var QuillAttributes = (function () {
         this.size = undefined;
         this.color = undefined;
         this.background = undefined;
+        this.list = undefined;
     }
     QuillAttributes.fromWireAttributes = function (wireAttrs) {
         var quillAttrs = new QuillAttributes();
@@ -12577,6 +12583,7 @@ var QuillAttributes = (function () {
         quillAttrs.size = wireAttrs.size || "";
         quillAttrs.color = wireAttrs.color || "";
         quillAttrs.background = wireAttrs.background || "";
+        quillAttrs.list = QuillAttributes.listFromWireAttributes(wireAttrs.list);
         return quillAttrs;
     };
     QuillAttributes.fromDeltaAttributes = function (attrs) {
@@ -12591,6 +12598,7 @@ var QuillAttributes = (function () {
             quillAttrs.size = attrs.size || "";
             quillAttrs.color = attrs.color || "";
             quillAttrs.background = attrs.background || "";
+            quillAttrs.list = attrs.list || "";
         }
         return quillAttrs;
     };
@@ -12615,8 +12623,33 @@ var QuillAttributes = (function () {
                 attrs.color = quillAttrs.color;
             if (quillAttrs.background)
                 attrs.background = quillAttrs.background;
+            if (quillAttrs.list)
+                attrs.list = QuillAttributes.listFromDeltaType(quillAttrs.list);
         }
         return attrs;
+    };
+    QuillAttributes.listFromDeltaType = function (deltaList) {
+        console.log(deltaList);
+        if (deltaList == "bullet") {
+            return 1;
+        }
+        else if (deltaList == "ordered") {
+            return 2;
+        }
+        else {
+            return undefined;
+        }
+    };
+    QuillAttributes.listFromWireAttributes = function (e) {
+        if (e == 1) {
+            return "bullet";
+        }
+        else if (e == 2) {
+            return "ordered";
+        }
+        else {
+            return undefined;
+        }
     };
     return QuillAttributes;
 }());
