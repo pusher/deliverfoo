@@ -12493,7 +12493,7 @@ var QuillAdaptor = (function () {
             var operation = operations_1[_i];
             switch (operation.opType) {
                 case editorAdaptor.OpType.Insert:
-                    this.quill.insertText(operation.index, operation.content, operation.attributes, 'silent');
+                    this.quill.insertText(operation.index, operation.content, QuillAttributes.fromWireAttributes(operation.attributes), 'silent');
                     break;
                 case editorAdaptor.OpType.Delete:
                     this.quill.deleteText(operation.index, 1, 'silent');
