@@ -199,6 +199,7 @@ var ErrorResponse = (function (_super) {
     __extends(ErrorResponse, _super);
     function ErrorResponse(statusCode, headers, info) {
         var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
+        Object.setPrototypeOf(_this, ErrorResponse.prototype);
         _this.statusCode = statusCode;
         _this.headers = headers;
         _this.info = info;
@@ -214,6 +215,7 @@ var NetworkError = (function (_super) {
     __extends(NetworkError, _super);
     function NetworkError(error) {
         var _this = _super.call(this, error) || this;
+        //TODO: ugly hack to make the instanceof calls work. We might have to find a better solution.
         Object.setPrototypeOf(_this, NetworkError.prototype);
         _this.error = error;
         return _this;
@@ -233,8 +235,8 @@ var XhrReadyState;
 var BaseClient = (function () {
     function BaseClient(options) {
         this.options = options;
-        var cluster = options.cluster.replace(/\/$/, '');
-        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + cluster;
+        var host = options.host.replace(/\/$/, '');
+        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + host;
         this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
     }
     BaseClient.prototype.request = function (options) {
@@ -751,8 +753,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var base_client_1 = __webpack_require__(0);
 var logger_1 = __webpack_require__(1);
 var Retry = (function () {
-    function Retry(waitTimeMilis) {
-        this.waitTimeMilis = waitTimeMilis;
+    function Retry(waitTimeMillis) {
+        this.waitTimeMillis = waitTimeMillis;
     }
     return Retry;
 }());
@@ -768,17 +770,17 @@ var ExponentialBackoffRetryStrategy = (function () {
     function ExponentialBackoffRetryStrategy(options) {
         this.limit = 6;
         this.retryCount = 0;
-        this.maxBackoffMilis = 30000;
-        this.defaultBackoffMilis = 1000;
-        this.currentBackoffMilis = this.defaultBackoffMilis;
+        this.maxBackoffMillis = 30000;
+        this.defaultBackoffMillis = 1000;
+        this.currentBackoffMillis = this.defaultBackoffMillis;
         if (options.limit)
             this.limit = options.limit;
-        if (options.initialBackoffMilis) {
-            this.currentBackoffMilis = options.initialBackoffMilis;
-            this.defaultBackoffMilis = options.defaultBackoffMilis;
+        if (options.initialBackoffMillis) {
+            this.currentBackoffMillis = options.initialBackoffMillis;
+            this.defaultBackoffMillis = options.defaultBackoffMillis;
         }
-        if (options.maxBackoffMilis)
-            this.maxBackoffMilis = options.maxBackoffMilis;
+        if (options.maxBackoffMillis)
+            this.maxBackoffMillis = options.maxBackoffMillis;
         if (options.logger !== undefined) {
             this.logger = options.logger;
         }
@@ -799,10 +801,10 @@ var ExponentialBackoffRetryStrategy = (function () {
                 return new Retry(retryable.backoffMillis);
             }
             else {
-                this.currentBackoffMilis = this.calulateMilisToRetry();
+                this.currentBackoffMillis = this.calulateMillisToRetry();
                 this.retryCount += 1;
-                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
-                return new Retry(this.currentBackoffMilis);
+                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMillis);
+                return new Retry(this.currentBackoffMillis);
             }
         }
         else {
@@ -818,7 +820,7 @@ var ExponentialBackoffRetryStrategy = (function () {
                 reject(error);
             }
             else if (shouldRetry instanceof Retry) {
-                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
+                window.setTimeout(resolve, shouldRetry.waitTimeMillis);
             }
         });
     };
@@ -831,7 +833,7 @@ var ExponentialBackoffRetryStrategy = (function () {
             retryable.isRetryable = true;
         else if (error instanceof base_client_1.ErrorResponse) {
             //Only retry after is allowed
-            if (error.headers["retry-after"]) {
+            if (error.headers["Retry-After"]) {
                 retryable.isRetryable = true;
                 retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
             }
@@ -840,16 +842,16 @@ var ExponentialBackoffRetryStrategy = (function () {
     };
     ExponentialBackoffRetryStrategy.prototype.reset = function () {
         this.retryCount = 0;
-        this.currentBackoffMilis = this.defaultBackoffMilis;
+        this.currentBackoffMillis = this.defaultBackoffMillis;
     };
-    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
-        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
-            return this.maxBackoffMilis;
+    ExponentialBackoffRetryStrategy.prototype.calulateMillisToRetry = function () {
+        if (this.currentBackoffMillis >= this.maxBackoffMillis || this.currentBackoffMillis * 2 >= this.maxBackoffMillis) {
+            return this.maxBackoffMillis;
         }
         if (this.retryCount > 0) {
-            return this.currentBackoffMilis * 2;
+            return this.currentBackoffMillis * 2;
         }
-        return this.currentBackoffMilis;
+        return this.currentBackoffMillis;
     };
     return ExponentialBackoffRetryStrategy;
 }());
@@ -873,18 +875,33 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_client_1 = __webpack_require__(0);
 var logger_1 = __webpack_require__(1);
-var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
-var App = (function () {
-    function App(options) {
-        if (!options.serviceId) {
-            throw new Error('Expected `serviceId` property in App options');
-        }
-        this.serviceId = options.serviceId;
+var HOST_BASE = "pusherplatform.io";
+var Instance = (function () {
+    function Instance(options) {
+        if (!options.instance)
+            throw new Error('Expected `instance` property in Instance options!');
+        if (options.instance.split(":").length !== 3)
+            throw new Error('The instance property is in the wrong format!');
+        if (!options.serviceName)
+            throw new Error('Expected `serviceName` property in Instance options!');
+        if (!options.serviceVersion)
+            throw new Error('Expected `serviceVersion` property in Instance otpions!');
+        var splitInstance = options.instance.split(":");
+        this.platformVersion = splitInstance[0];
+        this.cluster = splitInstance[1];
+        this.instanceId = splitInstance[2];
+        this.serviceName = options.serviceName;
+        this.serviceVersion = options.serviceVersion;
         this.tokenProvider = options.tokenProvider;
+        if (options.host) {
+            this.host = options.host;
+        }
+        else {
+            this.host = this.cluster + "." + HOST_BASE;
+        }
         this.client = options.client || new base_client_1.BaseClient({
-            cluster: options.cluster ?
-                sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
-            encrypted: options.encrypted
+            encrypted: options.encrypted,
+            host: this.host
         });
         if (options.logger !== undefined) {
             this.logger = options.logger;
@@ -893,7 +910,7 @@ var App = (function () {
             this.logger = new logger_1.ConsoleLogger();
         }
     }
-    App.prototype.request = function (options) {
+    Instance.prototype.request = function (options) {
         var _this = this;
         options.path = this.absPath(options.path);
         var tokenProvider = options.tokenProvider || this.tokenProvider;
@@ -906,7 +923,7 @@ var App = (function () {
             return this.client.request(options);
         }
     };
-    App.prototype.subscribe = function (options) {
+    Instance.prototype.subscribe = function (options) {
         options.path = this.absPath(options.path);
         options.logger = this.logger;
         var subscription = this.client.newSubscription(options);
@@ -926,7 +943,7 @@ var App = (function () {
         }
         return subscription;
     };
-    App.prototype.resumableSubscribe = function (options) {
+    Instance.prototype.resumableSubscribe = function (options) {
         if (!options.logger)
             options.logger = this.logger;
         options.logger = this.logger;
@@ -936,17 +953,12 @@ var App = (function () {
         resumableSubscription.open();
         return resumableSubscription;
     };
-    App.prototype.absPath = function (relativePath) {
-        return ("/apps/" + this.serviceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
+    Instance.prototype.absPath = function (relativePath) {
+        return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.instanceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
     };
-    return App;
+    return Instance;
 }());
-exports.default = App;
-function sanitizeCluster(cluster) {
-    return cluster
-        .replace(/^[^\/:]*:\/\//, "") // remove schema
-        .replace(/\/$/, ""); // remove trailing slash
-}
+exports.default = Instance;
 
 
 /***/ }),
@@ -956,8 +968,8 @@ function sanitizeCluster(cluster) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var app_1 = __webpack_require__(5);
-exports.App = app_1.default;
+var instance_1 = __webpack_require__(5);
+exports.Instance = instance_1.default;
 var base_client_1 = __webpack_require__(0);
 exports.BaseClient = base_client_1.BaseClient;
 var logger_1 = __webpack_require__(1);
@@ -970,7 +982,7 @@ exports.ExponentialBackoffRetryStrategy = retry_strategy_1.ExponentialBackoffRet
 var subscription_1 = __webpack_require__(2);
 exports.Subscription = subscription_1.Subscription;
 exports.default = {
-    App: app_1.default,
+    Instance: instance_1.default,
     BaseClient: base_client_1.BaseClient,
     ResumableSubscription: resumable_subscription_1.ResumableSubscription, Subscription: subscription_1.Subscription,
     ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
@@ -12884,13 +12896,12 @@ exports.QuillAttributes = QuillAttributes;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var pusher_platform_js_1 = __webpack_require__(0);
+var pusher_platform_1 = __webpack_require__(0);
 var wireFormat = __webpack_require__(4);
 var editorAdaptor = __webpack_require__(2);
 var collaborators_1 = __webpack_require__(19);
 var controller_1 = __webpack_require__(20);
 var badges_1 = __webpack_require__(18);
-var BASE_SERVICE_PATH = "/services/textsync/v1";
 var MIN_BROADCAST_PERIOD_MS = 200;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
@@ -12938,7 +12949,7 @@ var TextSync = (function () {
     };
     TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
-        var path = BASE_SERVICE_PATH + "/docs/" + this.docId + "?siteId=" + this.siteId;
+        var path = "/docs/" + this.docId + "?siteId=" + this.siteId;
         // Remove when we have JWT
         var encodedName = encodeURIComponent(name);
         var encodedEmail = encodeURIComponent(email);
@@ -12967,7 +12978,7 @@ var TextSync = (function () {
             onOpen: function () { console.info("subscription opened"); },
             onEnd: function () { _this.logError({ info: "subscription ended" }); },
             onError: this.logError,
-            logger: new pusher_platform_js_1.ConsoleLogger()
+            logger: new pusher_platform_1.ConsoleLogger()
         });
     };
     TextSync.prototype.initialContent = function (content) {
@@ -13014,7 +13025,7 @@ var TextSync = (function () {
             console.debug("Broadcasting operations to server:", JSON.stringify(body));
             this.pusher.request({
                 method: "POST",
-                path: BASE_SERVICE_PATH + "/docs/" + this.docId,
+                path: "/docs/" + this.docId,
                 body: body,
             }).then(function () {
                 _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
@@ -15871,60 +15882,62 @@ var DEFAULT_QUILL_CONFIG = {
         ]
     }
 };
-function createEditor(appConfig, userConfig) {
+function createEditor(instanceConfig, userConfig) {
     if (userConfig === void 0) { userConfig = {}; }
     var containerElement;
-    if (!appConfig) {
-        throw new Error("Config must be present to initialise TextSync.");
+    if (!instanceConfig) {
+        throw new Error("Pusher Platform instance config must be present to initialise TextSync.");
     }
-    if (!appConfig.serviceId) {
-        throw new Error("serviceId must be present in config when initialising TextSync.");
+    if (!instanceConfig.instance) {
+        throw new Error("instance must be present in config when initialising TextSync.");
     }
-    if (!appConfig.cluster) {
-        throw new Error("cluster must be present in config when initialising TextSync.");
-    }
-    if (!appConfig.docId) {
+    if (!instanceConfig.docId) {
         throw new Error("docId must be present in config when initialising TextSync.");
     }
-    if (!appConfig.element) {
+    if (!instanceConfig.element) {
         throw new Error("element must be present in config when initialising TextSync.");
     }
-    if (appConfig.presenceConfig && appConfig.presenceConfig.callback) {
-        if (typeof appConfig.presenceConfig.callback !== 'function') {
+    if (instanceConfig.presenceConfig && instanceConfig.presenceConfig.callback) {
+        if (typeof instanceConfig.presenceConfig.callback !== 'function') {
             throw new Error("presenceConfig.callback must be a function.");
         }
     }
-    if (appConfig.element instanceof Element) {
-        containerElement = appConfig.element;
+    if (instanceConfig.element instanceof Element) {
+        containerElement = instanceConfig.element;
     }
-    else if (document.querySelector(appConfig.element)) {
-        containerElement = document.querySelector(appConfig.element);
+    else if (document.querySelector(instanceConfig.element)) {
+        containerElement = document.querySelector(instanceConfig.element);
     }
     else {
-        throw new Error("Could not find element " + appConfig.element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
+        throw new Error("Could not find element " + instanceConfig.element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
     }
-    var serviceId = appConfig.serviceId;
-    var cluster = appConfig.cluster;
-    var docId = appConfig.docId;
-    var presenceConfig = appConfig.presenceConfig || { showBadges: true };
+    var instance = instanceConfig.instance;
+    var docId = instanceConfig.docId;
+    var presenceConfig = instanceConfig.presenceConfig || { showBadges: true };
     // Remove when we have JWT
     var name = userConfig.name;
     var email = userConfig.email;
-    var quillConfig = buildQuillConfig(appConfig);
+    var quillConfig = buildQuillConfig(instanceConfig);
     if (quillConfig.theme == null) {
         injectQuillCss(quillConfig);
     }
     var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
     var logootDoc = new logoot_doc_1.default(siteId);
-    var app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster, logger: new PusherPlatform.ConsoleLogger(1) });
+    var app = new PusherPlatform.Instance({
+        serviceName: 'textsync',
+        serviceVersion: 'v1',
+        instance: instance,
+        host: instanceConfig.host,
+        logger: new PusherPlatform.ConsoleLogger(1)
+    });
     var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
-    var quill = initEditor(containerElement, quillConfig, appConfig, presenceConfig);
+    var quill = initEditor(containerElement, quillConfig, instanceConfig, presenceConfig);
     var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
     textSyncInstance.start(quillAdaptor);
     return { quill: quill };
 }
 exports.createEditor = createEditor;
-function initEditor(element, quillConfig, appConfig, presenceConfig) {
+function initEditor(element, quillConfig, instanceConfig, presenceConfig) {
     if (presenceConfig.showBadges) {
         __webpack_require__(6);
         var presenceContainer = document.createElement('div');
@@ -15936,10 +15949,10 @@ function initEditor(element, quillConfig, appConfig, presenceConfig) {
     element.appendChild(editor);
     return new Quill(editor, quillConfig);
 }
-function buildQuillConfig(appConfig) {
+function buildQuillConfig(instanceConfig) {
     var quillConfig = {};
-    if (appConfig.quillConfig) {
-        quillConfig = appConfig.quillConfig;
+    if (instanceConfig.quillConfig) {
+        quillConfig = instanceConfig.quillConfig;
     }
     else {
         quillConfig = DEFAULT_QUILL_CONFIG;
