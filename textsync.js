@@ -78,6 +78,1127 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function(useSourceMap) {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		return this.map(function (item) {
+			var content = cssWithMappingToString(item, useSourceMap);
+			if(item[2]) {
+				return "@media " + item[2] + "{" + content + "}";
+			} else {
+				return content;
+			}
+		}).join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+function cssWithMappingToString(item, useSourceMap) {
+	var content = item[1] || '';
+	var cssMapping = item[3];
+	if (!cssMapping) {
+		return content;
+	}
+
+	if (useSourceMap && typeof btoa === 'function') {
+		var sourceMapping = toComment(cssMapping);
+		var sourceURLs = cssMapping.sources.map(function (source) {
+			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+		});
+
+		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+	}
+
+	return [content].join('\n');
+}
+
+// Adapted from convert-source-map (MIT)
+function toComment(sourceMap) {
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	return '/*# ' + data + ' */';
+}
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var pSlice = Array.prototype.slice;
+var objectKeys = __webpack_require__(20);
+var isArguments = __webpack_require__(19);
+
+var deepEqual = module.exports = function (actual, expected, opts) {
+  if (!opts) opts = {};
+  // 7.1. All identical values are equivalent, as determined by ===.
+  if (actual === expected) {
+    return true;
+
+  } else if (actual instanceof Date && expected instanceof Date) {
+    return actual.getTime() === expected.getTime();
+
+  // 7.3. Other pairs that do not both pass typeof value == 'object',
+  // equivalence is determined by ==.
+  } else if (!actual || !expected || typeof actual != 'object' && typeof expected != 'object') {
+    return opts.strict ? actual === expected : actual == expected;
+
+  // 7.4. For all other Object pairs, including Array objects, equivalence is
+  // determined by having the same number of owned properties (as verified
+  // with Object.prototype.hasOwnProperty.call), the same set of keys
+  // (although not necessarily the same order), equivalent values for every
+  // corresponding key, and an identical 'prototype' property. Note: this
+  // accounts for both named and indexed properties on Arrays.
+  } else {
+    return objEquiv(actual, expected, opts);
+  }
+}
+
+function isUndefinedOrNull(value) {
+  return value === null || value === undefined;
+}
+
+function isBuffer (x) {
+  if (!x || typeof x !== 'object' || typeof x.length !== 'number') return false;
+  if (typeof x.copy !== 'function' || typeof x.slice !== 'function') {
+    return false;
+  }
+  if (x.length > 0 && typeof x[0] !== 'number') return false;
+  return true;
+}
+
+function objEquiv(a, b, opts) {
+  var i, key;
+  if (isUndefinedOrNull(a) || isUndefinedOrNull(b))
+    return false;
+  // an identical 'prototype' property.
+  if (a.prototype !== b.prototype) return false;
+  //~~~I've managed to break Object.keys through screwy arguments passing.
+  //   Converting to array solves the problem.
+  if (isArguments(a)) {
+    if (!isArguments(b)) {
+      return false;
+    }
+    a = pSlice.call(a);
+    b = pSlice.call(b);
+    return deepEqual(a, b, opts);
+  }
+  if (isBuffer(a)) {
+    if (!isBuffer(b)) {
+      return false;
+    }
+    if (a.length !== b.length) return false;
+    for (i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+  try {
+    var ka = objectKeys(a),
+        kb = objectKeys(b);
+  } catch (e) {//happens when one is a string literal and the other isn't
+    return false;
+  }
+  // having the same number of owned properties (keys incorporates
+  // hasOwnProperty)
+  if (ka.length != kb.length)
+    return false;
+  //the same set of keys (although not necessarily the same order),
+  ka.sort();
+  kb.sort();
+  //~~~cheap key test
+  for (i = ka.length - 1; i >= 0; i--) {
+    if (ka[i] != kb[i])
+      return false;
+  }
+  //equivalent values for every corresponding key, and
+  //~~~possibly expensive deep test
+  for (i = ka.length - 1; i >= 0; i--) {
+    key = ka[i];
+    if (!deepEqual(a[key], b[key], opts)) return false;
+  }
+  return typeof a === typeof b;
+}
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var hasOwn = Object.prototype.hasOwnProperty;
+var toStr = Object.prototype.toString;
+
+var isArray = function isArray(arr) {
+	if (typeof Array.isArray === 'function') {
+		return Array.isArray(arr);
+	}
+
+	return toStr.call(arr) === '[object Array]';
+};
+
+var isPlainObject = function isPlainObject(obj) {
+	if (!obj || toStr.call(obj) !== '[object Object]') {
+		return false;
+	}
+
+	var hasOwnConstructor = hasOwn.call(obj, 'constructor');
+	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
+	// Not own constructor property must be Object
+	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) {
+		return false;
+	}
+
+	// Own properties are enumerated firstly, so to speed up,
+	// if last one is own, then all properties are own.
+	var key;
+	for (key in obj) { /**/ }
+
+	return typeof key === 'undefined' || hasOwn.call(obj, key);
+};
+
+module.exports = function extend() {
+	var options, name, src, copy, copyIsArray, clone;
+	var target = arguments[0];
+	var i = 1;
+	var length = arguments.length;
+	var deep = false;
+
+	// Handle a deep copy situation
+	if (typeof target === 'boolean') {
+		deep = target;
+		target = arguments[1] || {};
+		// skip the boolean and the target
+		i = 2;
+	}
+	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
+		target = {};
+	}
+
+	for (; i < length; ++i) {
+		options = arguments[i];
+		// Only deal with non-null/undefined values
+		if (options != null) {
+			// Extend the base object
+			for (name in options) {
+				src = target[name];
+				copy = options[name];
+
+				// Prevent never-ending loop
+				if (target !== copy) {
+					// Recurse if we're merging plain objects or arrays
+					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
+						if (copyIsArray) {
+							copyIsArray = false;
+							clone = src && isArray(src) ? src : [];
+						} else {
+							clone = src && isPlainObject(src) ? src : {};
+						}
+
+						// Never move original objects, clone them
+						target[name] = extend(deep, clone, copy);
+
+					// Don't bring in undefined values
+					} else if (typeof copy !== 'undefined') {
+						target[name] = copy;
+					}
+				}
+			}
+		}
+	}
+
+	// Return the modified object
+	return target;
+};
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+const HIGH_SURROGATE_START = 0xd800
+const HIGH_SURROGATE_END = 0xdbff
+
+const LOW_SURROGATE_START = 0xdc00
+
+const REGIONAL_INDICATOR_START = 0x1f1e6
+const REGIONAL_INDICATOR_END = 0x1f1ff
+
+const FITZPATRICK_MODIFIER_START = 0x1f3fb
+const FITZPATRICK_MODIFIER_END = 0x1f3ff
+
+const VARIATION_MODIFIER_START = 0xfe00
+const VARIATION_MODIFIER_END = 0xfe0f
+
+const ZWJ = 0x200d
+
+const GRAPHEMS = [
+  0x0308, // ( ◌̈ ) COMBINING DIAERESIS
+  0x0937, // ( ष ) DEVANAGARI LETTER SSA
+  0x0937, // ( ष ) DEVANAGARI LETTER SSA
+  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
+  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
+  0x0BA8, // ( ந ) TAMIL LETTER NA
+  0x0BBF, // ( ி ) TAMIL VOWEL SIGN I
+  0x0BCD, // ( ◌்) TAMIL SIGN VIRAMA
+  0x0E31, // ( ◌ั ) THAI CHARACTER MAI HAN-AKAT
+  0x0E33, // ( ำ ) THAI CHARACTER SARA AM
+  0x0E40, // ( เ ) THAI CHARACTER SARA E
+  0x0E49, // ( เ ) THAI CHARACTER MAI THO
+  0x1100, // ( ᄀ ) HANGUL CHOSEONG KIYEOK
+  0x1161, // ( ᅡ ) HANGUL JUNGSEONG A
+  0x11A8 // ( ᆨ ) HANGUL JONGSEONG KIYEOK
+]
+
+function runes (string) {
+  if (typeof string !== 'string') {
+    throw new Error('string cannot be undefined or null')
+  }
+  const result = []
+  let i = 0
+  let increment = 0
+  while (i < string.length) {
+    increment += nextUnits(i + increment, string)
+    if (isGraphem(string[i + increment])) {
+      increment++
+    }
+    if (isVariationSelector(string[i + increment])) {
+      increment++
+    }
+    if (isZeroWidthJoiner(string[i + increment])) {
+      increment++
+      continue
+    }
+    result.push(string.substring(i, i + increment))
+    i += increment
+    increment = 0
+  }
+  return result
+}
+
+// Decide how many code units make up the current character.
+// BMP characters: 1 code unit
+// Non-BMP characters (represented by surrogate pairs): 2 code units
+// Emoji with skin-tone modifiers: 4 code units (2 code points)
+// Country flags: 4 code units (2 code points)
+// Variations: 2 code units
+function nextUnits (i, string) {
+  const current = string[i]
+  // If we don't have a value that is part of a surrogate pair, or we're at
+  // the end, only take the value at i
+  if (!isFirstOfSurrogatePair(current) || i === string.length - 1) {
+    return 1
+  }
+
+  const currentPair = current + string[i + 1]
+  let nextPair = string.substring(i + 2, i + 5)
+
+  // Country flags are comprised of two regional indicator symbols,
+  // each represented by a surrogate pair.
+  // See http://emojipedia.org/flags/
+  // If both pairs are regional indicator symbols, take 4
+  if (isRegionalIndicator(currentPair) && isRegionalIndicator(nextPair)) {
+    return 4
+  }
+
+  // If the next pair make a Fitzpatrick skin tone
+  // modifier, take 4
+  // See http://emojipedia.org/modifiers/
+  // Technically, only some code points are meant to be
+  // combined with the skin tone modifiers. This function
+  // does not check the current pair to see if it is
+  // one of them.
+  if (isFitzpatrickModifier(nextPair)) {
+    return 4
+  }
+  return 2
+}
+
+function isFirstOfSurrogatePair (string) {
+  return string && betweenInclusive(string[0].charCodeAt(0), HIGH_SURROGATE_START, HIGH_SURROGATE_END)
+}
+
+function isRegionalIndicator (string) {
+  return betweenInclusive(codePointFromSurrogatePair(string), REGIONAL_INDICATOR_START, REGIONAL_INDICATOR_END)
+}
+
+function isFitzpatrickModifier (string) {
+  return betweenInclusive(codePointFromSurrogatePair(string), FITZPATRICK_MODIFIER_START, FITZPATRICK_MODIFIER_END)
+}
+
+function isVariationSelector (string) {
+  return typeof string === 'string' && betweenInclusive(string.charCodeAt(0), VARIATION_MODIFIER_START, VARIATION_MODIFIER_END)
+}
+
+function isGraphem (string) {
+  return typeof string === 'string' && GRAPHEMS.indexOf(string.charCodeAt(0)) !== -1
+}
+
+function isZeroWidthJoiner (string) {
+  return typeof string === 'string' && string.charCodeAt(0) === ZWJ
+}
+
+function codePointFromSurrogatePair (pair) {
+  const highOffset = pair.charCodeAt(0) - HIGH_SURROGATE_START
+  const lowOffset = pair.charCodeAt(1) - LOW_SURROGATE_START
+  return (highOffset << 10) + lowOffset + 0x10000
+}
+
+function betweenInclusive (value, lower, upper) {
+  return value >= lower && value <= upper
+}
+
+function substring (string, start, width) {
+  const chars = runes(string)
+  if (start === undefined) {
+    return string
+  }
+  if (start >= chars.length) {
+    return ''
+  }
+  const rest = chars.length - start
+  const stringWidth = width === undefined ? rest : width
+  let endIndex = start + stringWidth
+  if (endIndex > (start + rest)) {
+    endIndex = undefined
+  }
+  return chars.slice(start, endIndex).join('')
+}
+
+module.exports = runes
+module.exports.substr = substring
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+
+var stylesInDom = {};
+
+var	memoize = function (fn) {
+	var memo;
+
+	return function () {
+		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+		return memo;
+	};
+};
+
+var isOldIE = memoize(function () {
+	// Test for IE <= 9 as proposed by Browserhacks
+	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+	// Tests for existence of standard globals is to allow style-loader
+	// to operate correctly into non-standard environments
+	// @see https://github.com/webpack-contrib/style-loader/issues/177
+	return window && document && document.all && !window.atob;
+});
+
+var getElement = (function (fn) {
+	var memo = {};
+
+	return function(selector) {
+		if (typeof memo[selector] === "undefined") {
+			memo[selector] = fn.call(this, selector);
+		}
+
+		return memo[selector]
+	};
+})(function (target) {
+	return document.querySelector(target)
+});
+
+var singleton = null;
+var	singletonCounter = 0;
+var	stylesInsertedAtTop = [];
+
+var	fixUrls = __webpack_require__(26);
+
+module.exports = function(list, options) {
+	if (typeof DEBUG !== "undefined" && DEBUG) {
+		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+	}
+
+	options = options || {};
+
+	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	if (!options.singleton) options.singleton = isOldIE();
+
+	// By default, add <style> tags to the <head> element
+	if (!options.insertInto) options.insertInto = "head";
+
+	// By default, add <style> tags to the bottom of the target
+	if (!options.insertAt) options.insertAt = "bottom";
+
+	var styles = listToStyles(list, options);
+
+	addStylesToDom(styles, options);
+
+	return function update (newList) {
+		var mayRemove = [];
+
+		for (var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+
+			domStyle.refs--;
+			mayRemove.push(domStyle);
+		}
+
+		if(newList) {
+			var newStyles = listToStyles(newList, options);
+			addStylesToDom(newStyles, options);
+		}
+
+		for (var i = 0; i < mayRemove.length; i++) {
+			var domStyle = mayRemove[i];
+
+			if(domStyle.refs === 0) {
+				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
+
+				delete stylesInDom[domStyle.id];
+			}
+		}
+	};
+};
+
+function addStylesToDom (styles, options) {
+	for (var i = 0; i < styles.length; i++) {
+		var item = styles[i];
+		var domStyle = stylesInDom[item.id];
+
+		if(domStyle) {
+			domStyle.refs++;
+
+			for(var j = 0; j < domStyle.parts.length; j++) {
+				domStyle.parts[j](item.parts[j]);
+			}
+
+			for(; j < item.parts.length; j++) {
+				domStyle.parts.push(addStyle(item.parts[j], options));
+			}
+		} else {
+			var parts = [];
+
+			for(var j = 0; j < item.parts.length; j++) {
+				parts.push(addStyle(item.parts[j], options));
+			}
+
+			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+		}
+	}
+}
+
+function listToStyles (list, options) {
+	var styles = [];
+	var newStyles = {};
+
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var id = options.base ? item[0] + options.base : item[0];
+		var css = item[1];
+		var media = item[2];
+		var sourceMap = item[3];
+		var part = {css: css, media: media, sourceMap: sourceMap};
+
+		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
+		else newStyles[id].parts.push(part);
+	}
+
+	return styles;
+}
+
+function insertStyleElement (options, style) {
+	var target = getElement(options.insertInto)
+
+	if (!target) {
+		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
+	}
+
+	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
+
+	if (options.insertAt === "top") {
+		if (!lastStyleElementInsertedAtTop) {
+			target.insertBefore(style, target.firstChild);
+		} else if (lastStyleElementInsertedAtTop.nextSibling) {
+			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
+		} else {
+			target.appendChild(style);
+		}
+		stylesInsertedAtTop.push(style);
+	} else if (options.insertAt === "bottom") {
+		target.appendChild(style);
+	} else {
+		throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
+	}
+}
+
+function removeStyleElement (style) {
+	if (style.parentNode === null) return false;
+	style.parentNode.removeChild(style);
+
+	var idx = stylesInsertedAtTop.indexOf(style);
+	if(idx >= 0) {
+		stylesInsertedAtTop.splice(idx, 1);
+	}
+}
+
+function createStyleElement (options) {
+	var style = document.createElement("style");
+
+	options.attrs.type = "text/css";
+
+	addAttrs(style, options.attrs);
+	insertStyleElement(options, style);
+
+	return style;
+}
+
+function createLinkElement (options) {
+	var link = document.createElement("link");
+
+	options.attrs.type = "text/css";
+	options.attrs.rel = "stylesheet";
+
+	addAttrs(link, options.attrs);
+	insertStyleElement(options, link);
+
+	return link;
+}
+
+function addAttrs (el, attrs) {
+	Object.keys(attrs).forEach(function (key) {
+		el.setAttribute(key, attrs[key]);
+	});
+}
+
+function addStyle (obj, options) {
+	var style, update, remove, result;
+
+	// If a transform function was defined, run it on the css
+	if (options.transform && obj.css) {
+	    result = options.transform(obj.css);
+
+	    if (result) {
+	    	// If transform returns a value, use that instead of the original css.
+	    	// This allows running runtime transformations on the css.
+	    	obj.css = result;
+	    } else {
+	    	// If the transform function returns a falsy value, don't add this css.
+	    	// This allows conditional loading of css
+	    	return function() {
+	    		// noop
+	    	};
+	    }
+	}
+
+	if (options.singleton) {
+		var styleIndex = singletonCounter++;
+
+		style = singleton || (singleton = createStyleElement(options));
+
+		update = applyToSingletonTag.bind(null, style, styleIndex, false);
+		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+
+	} else if (
+		obj.sourceMap &&
+		typeof URL === "function" &&
+		typeof URL.createObjectURL === "function" &&
+		typeof URL.revokeObjectURL === "function" &&
+		typeof Blob === "function" &&
+		typeof btoa === "function"
+	) {
+		style = createLinkElement(options);
+		update = updateLink.bind(null, style, options);
+		remove = function () {
+			removeStyleElement(style);
+
+			if(style.href) URL.revokeObjectURL(style.href);
+		};
+	} else {
+		style = createStyleElement(options);
+		update = applyToTag.bind(null, style);
+		remove = function () {
+			removeStyleElement(style);
+		};
+	}
+
+	update(obj);
+
+	return function updateStyle (newObj) {
+		if (newObj) {
+			if (
+				newObj.css === obj.css &&
+				newObj.media === obj.media &&
+				newObj.sourceMap === obj.sourceMap
+			) {
+				return;
+			}
+
+			update(obj = newObj);
+		} else {
+			remove();
+		}
+	};
+}
+
+var replaceText = (function () {
+	var textStore = [];
+
+	return function (index, replacement) {
+		textStore[index] = replacement;
+
+		return textStore.filter(Boolean).join('\n');
+	};
+})();
+
+function applyToSingletonTag (style, index, remove, obj) {
+	var css = remove ? "" : obj.css;
+
+	if (style.styleSheet) {
+		style.styleSheet.cssText = replaceText(index, css);
+	} else {
+		var cssNode = document.createTextNode(css);
+		var childNodes = style.childNodes;
+
+		if (childNodes[index]) style.removeChild(childNodes[index]);
+
+		if (childNodes.length) {
+			style.insertBefore(cssNode, childNodes[index]);
+		} else {
+			style.appendChild(cssNode);
+		}
+	}
+}
+
+function applyToTag (style, obj) {
+	var css = obj.css;
+	var media = obj.media;
+
+	if(media) {
+		style.setAttribute("media", media)
+	}
+
+	if(style.styleSheet) {
+		style.styleSheet.cssText = css;
+	} else {
+		while(style.firstChild) {
+			style.removeChild(style.firstChild);
+		}
+
+		style.appendChild(document.createTextNode(css));
+	}
+}
+
+function updateLink (link, options, obj) {
+	var css = obj.css;
+	var sourceMap = obj.sourceMap;
+
+	/*
+		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
+		and there is no publicPath defined then lets turn convertToAbsoluteUrls
+		on by default.  Otherwise default to the convertToAbsoluteUrls option
+		directly
+	*/
+	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
+
+	if (options.convertToAbsoluteUrls || autoFixUrls) {
+		css = fixUrls(css);
+	}
+
+	if (sourceMap) {
+		// http://stackoverflow.com/a/26603875
+		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+	}
+
+	var blob = new Blob([css], { type: "text/css" });
+
+	var oldSrc = link.href;
+
+	link.href = URL.createObjectURL(blob);
+
+	if(oldSrc) URL.revokeObjectURL(oldSrc);
+}
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 0] = "Insert";
+    OpType[OpType["Delete"] = 1] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * This module describes a generic Logoot model.
+ *
+ * See Stephane Weiss, Pascal Urso, Pascal Molli. Logoot: a P2P collaborative editing system.
+ * [Research Report] RR-6713, INRIA. 2008, pp.13
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+var runes = __webpack_require__(3);
+var Ident = (function () {
+    function Ident(n, siteId) {
+        this.n = n;
+        this.siteId = siteId;
+    }
+    Ident.fromWire = function (object) {
+        return new Ident(object.n, object.siteId);
+    };
+    Ident.prototype.toWire = function () {
+        return { n: this.n, siteId: this.siteId };
+    };
+    Ident.prototype.compare = function (that) {
+        if (this.n > that.n)
+            return 1;
+        if (this.n < that.n)
+            return -1;
+        if (this.siteId > that.siteId)
+            return 1;
+        if (this.siteId < that.siteId)
+            return -1;
+        return 0;
+    };
+    Ident.prototype.lt = function (that) {
+        return this.compare(that) === -1;
+    };
+    Ident.prototype.toString = function () {
+        return "(" + this.n + ", " + this.siteId + ")";
+    };
+    return Ident;
+}());
+exports.Ident = Ident;
+var Position = (function () {
+    function Position(idents) {
+        this.idents = idents;
+    }
+    Position.fromWire = function (object) {
+        var is = [];
+        for (var _i = 0, object_1 = object; _i < object_1.length; _i++) {
+            var i = object_1[_i];
+            is.push(Ident.fromWire(i));
+        }
+        return new Position(is);
+    };
+    Position.prototype.toWire = function () {
+        var is = [];
+        for (var _i = 0, _a = this.idents; _i < _a.length; _i++) {
+            var i = _a[_i];
+            is.push(i.toWire());
+        }
+        return is;
+    };
+    Object.defineProperty(Position.prototype, "length", {
+        get: function () {
+            return this.idents.length;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Position.prototype.i = function (i) {
+        return this.idents[i];
+    };
+    Position.prototype.slice = function (i) {
+        return new Position(this.idents.slice(i));
+    };
+    Position.prototype.compare = function (that) {
+        if (this.length === 0 && that.length === 0)
+            return 0;
+        if (this.length === 0)
+            return -1;
+        if (that.length === 0)
+            return 1;
+        switch (this.i(0).compare(that.i(0))) {
+            case 1:
+                return 1;
+            case -1:
+                return -1;
+            case 0:
+                return this.slice(1).compare(that.slice(1));
+        }
+        throw new Error("Impossible");
+    };
+    Position.prototype.toString = function () {
+        return this.idents.toString();
+    };
+    Position.between = function (prevPos, nextPos, siteId) {
+        return new Position(Position.genIdentList(siteId, prevPos.idents, nextPos.idents));
+    };
+    Position.genIdentList = function (siteId, prevPos, nextPos) {
+        prevPos = prevPos.length > 0 ? prevPos : Logoot.min.position.idents;
+        nextPos = nextPos.length > 0 ? nextPos : Logoot.max.position.idents;
+        var prevHead = prevPos[0];
+        var nextHead = nextPos[0];
+        var prevInt = prevHead.n;
+        var nextInt = nextHead.n;
+        var prevSiteId = prevHead.siteId;
+        switch (prevHead.compare(nextHead)) {
+            case -1: {
+                var diff = nextInt - prevInt;
+                if (diff > 1) {
+                    return [new Ident(Logoot.randomIntBetween(prevInt, nextInt), siteId)];
+                }
+                else if (diff === 1 && siteId > prevSiteId) {
+                    return [new Ident(prevInt, siteId)];
+                }
+                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
+            }
+            case 0: {
+                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
+            }
+            case 1: {
+                throw new Error('"Next" position was less than "previous" position.');
+            }
+        }
+        throw new Error("Impossible");
+    };
+    return Position;
+}());
+exports.Position = Position;
+var AtomIdent = (function () {
+    function AtomIdent(position, clock) {
+        this.position = position;
+        this.clock = clock;
+    }
+    AtomIdent.fromWire = function (object) {
+        return new AtomIdent(Position.fromWire(object.position), object.clock);
+    };
+    AtomIdent.prototype.toWire = function () {
+        return { position: this.position.toWire(), clock: this.clock };
+    };
+    AtomIdent.between = function (prevAtomIdent, nextAtomIdent, siteId, clock) {
+        return new AtomIdent(Position.between(prevAtomIdent.position, nextAtomIdent.position, siteId), clock);
+    };
+    AtomIdent.prototype.compare = function (that) {
+        return this.position.compare(that.position);
+    };
+    AtomIdent.prototype.lt = function (that) {
+        return this.compare(that) === -1;
+    };
+    AtomIdent.prototype.toString = function () {
+        return "{" + this.position + "," + this.clock + "}";
+    };
+    return AtomIdent;
+}());
+exports.AtomIdent = AtomIdent;
+var Atom = (function () {
+    function Atom(ident, rune) {
+        this.ident = ident;
+        this.rune = rune;
+        var isSingleRune = runes(rune).length === 1;
+        if (!isSingleRune) {
+            throw new Error("Atom content must be single unicode character");
+        }
+    }
+    Atom.fromWire = function (ident, content) {
+        return new Atom(AtomIdent.fromWire(ident), content.text);
+    };
+    Atom.prototype.compare = function (that) {
+        return this.ident.compare(that.ident);
+    };
+    Atom.prototype.lt = function (that) {
+        return this.compare(that) === -1;
+    };
+    Atom.prototype.toString = function () {
+        return "Atom(" + this.ident + ")";
+    };
+    return Atom;
+}());
+exports.Atom = Atom;
+var MAX_POS = 32767;
+exports.ABS_MIN_ATOM_IDENT = new AtomIdent(new Position([new Ident(0, 0)]), 0);
+exports.ABS_MAX_ATOM_IDENT = new AtomIdent(new Position([new Ident(MAX_POS, 0)]), 1);
+var Logoot = (function () {
+    function Logoot(siteId) {
+        this.seq = [new Atom(Logoot.min, " "), new Atom(Logoot.max, " ")];
+        this.siteId = siteId;
+        this._clock = 0;
+    }
+    Logoot.prototype.insertAtom = function (atom) {
+        var sequenceLength = this.seq.length;
+        for (var i = 0; i < sequenceLength; i++) {
+            var prev = this.seq[i];
+            var next = this.seq[i + 1];
+            var comparisons = [
+                atom.compare(prev),
+                atom.compare(next)
+            ];
+            if (comparisons[0] === 1 && comparisons[1] === -1) {
+                this.seq.splice(i + 1, 0, atom);
+                return;
+            }
+            else if (comparisons[0] === -1 && comparisons[1] === 1 || comparisons[0] === -1 && comparisons[1] === -1) {
+                throw new Error('Sequence out of order!');
+            }
+        }
+    };
+    Logoot.prototype.deleteAtom = function (atomIdent) {
+        var sequenceLength = this.seq.length;
+        for (var i = 0; i < sequenceLength; i++) {
+            var currentAtom = this.seq[i];
+            if (currentAtom.ident.compare(atomIdent) === 0) {
+                this.seq.splice(i, 1);
+                return;
+            }
+        }
+    };
+    Logoot.prototype.prevAtom = function (atom) {
+        var sequenceLength = this.seq.length;
+        for (var i = 0; i < sequenceLength; i++) {
+            if (atom.compare(this.seq[i].ident) === 0) {
+                return this.seq[i - 1];
+            }
+        }
+        throw new Error('Atom not found looking for prevAtom');
+    };
+    Logoot.prototype.nextAtom = function (atom) {
+        var sequenceLength = this.seq.length;
+        for (var i = 0; i < sequenceLength; i++) {
+            if (atom.compare(this.seq[i].ident) === 0) {
+                return this.seq[i + 1];
+            }
+        }
+        throw new Error('Atom not found looking for nextAtom');
+    };
+    Logoot.prototype.initialContent = function (content) {
+        var runesToInsert = runes(content);
+        for (var i = 0; i < runesToInsert.length; i++) {
+            var position = new Position([
+                new Ident(MAX_POS - 1, 0),
+                new Ident(i, 0),
+            ]);
+            var siteId = 2 + i;
+            var content_1 = runesToInsert[i];
+            this.insertAtom(new Atom(new AtomIdent(position, siteId), content_1));
+        }
+    };
+    Logoot.prototype.newAtomBetween = function (x, y, content) {
+        return new Atom(AtomIdent.between(x.ident, y.ident, this.siteId, this.clock()), content);
+    };
+    Logoot.prototype.clock = function () {
+        return this._clock++;
+    };
+    Logoot.prototype.debugStr = function () {
+        var out = '';
+        for (var _i = 0, _a = this.seq; _i < _a.length; _i++) {
+            var atom = _a[_i];
+            out += atom.toString() + "\n";
+        }
+        return out;
+    };
+    Logoot.randomIntBetween = function (min, max) {
+        return Math.floor(Math.random() * (max - (min + 1))) + min + 1;
+    };
+    Logoot.min = exports.ABS_MIN_ATOM_IDENT;
+    Logoot.max = exports.ABS_MAX_ATOM_IDENT;
+    return Logoot;
+}());
+exports.default = Logoot;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+    OpType[OpType["Split"] = 3] = "Split";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function isDocOp(object) {
+    return 'ident' in object;
+}
+function isCursorOp(object) {
+    return 'position' in object;
+}
+function messageFromOps(ops, siteId) {
+    var docOps = [];
+    var cursorOps = [];
+    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
+        var op = ops_1[_i];
+        if (isDocOp(op)) {
+            docOps.push(op);
+        }
+        else if (isCursorOp(op)) {
+            cursorOps.push(op);
+        }
+    }
+    return {
+        docOps: docOps,
+        cursorOps: cursorOps,
+        siteId: siteId,
+    };
+}
+exports.messageFromOps = messageFromOps;
+
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -993,1127 +2114,6 @@ exports.default = {
 /***/ })
 /******/ ]);
 });
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-// css base code, injected by the css-loader
-module.exports = function(useSourceMap) {
-	var list = [];
-
-	// return the list of modules as css string
-	list.toString = function toString() {
-		return this.map(function (item) {
-			var content = cssWithMappingToString(item, useSourceMap);
-			if(item[2]) {
-				return "@media " + item[2] + "{" + content + "}";
-			} else {
-				return content;
-			}
-		}).join("");
-	};
-
-	// import a list of modules into the list
-	list.i = function(modules, mediaQuery) {
-		if(typeof modules === "string")
-			modules = [[null, modules, ""]];
-		var alreadyImportedModules = {};
-		for(var i = 0; i < this.length; i++) {
-			var id = this[i][0];
-			if(typeof id === "number")
-				alreadyImportedModules[id] = true;
-		}
-		for(i = 0; i < modules.length; i++) {
-			var item = modules[i];
-			// skip already imported module
-			// this implementation is not 100% perfect for weird media query combinations
-			//  when a module is imported multiple times with different media queries.
-			//  I hope this will never occur (Hey this way we have smaller bundles)
-			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-				if(mediaQuery && !item[2]) {
-					item[2] = mediaQuery;
-				} else if(mediaQuery) {
-					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-				}
-				list.push(item);
-			}
-		}
-	};
-	return list;
-};
-
-function cssWithMappingToString(item, useSourceMap) {
-	var content = item[1] || '';
-	var cssMapping = item[3];
-	if (!cssMapping) {
-		return content;
-	}
-
-	if (useSourceMap && typeof btoa === 'function') {
-		var sourceMapping = toComment(cssMapping);
-		var sourceURLs = cssMapping.sources.map(function (source) {
-			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
-		});
-
-		return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
-	}
-
-	return [content].join('\n');
-}
-
-// Adapted from convert-source-map (MIT)
-function toComment(sourceMap) {
-	// eslint-disable-next-line no-undef
-	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
-	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
-
-	return '/*# ' + data + ' */';
-}
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var pSlice = Array.prototype.slice;
-var objectKeys = __webpack_require__(20);
-var isArguments = __webpack_require__(19);
-
-var deepEqual = module.exports = function (actual, expected, opts) {
-  if (!opts) opts = {};
-  // 7.1. All identical values are equivalent, as determined by ===.
-  if (actual === expected) {
-    return true;
-
-  } else if (actual instanceof Date && expected instanceof Date) {
-    return actual.getTime() === expected.getTime();
-
-  // 7.3. Other pairs that do not both pass typeof value == 'object',
-  // equivalence is determined by ==.
-  } else if (!actual || !expected || typeof actual != 'object' && typeof expected != 'object') {
-    return opts.strict ? actual === expected : actual == expected;
-
-  // 7.4. For all other Object pairs, including Array objects, equivalence is
-  // determined by having the same number of owned properties (as verified
-  // with Object.prototype.hasOwnProperty.call), the same set of keys
-  // (although not necessarily the same order), equivalent values for every
-  // corresponding key, and an identical 'prototype' property. Note: this
-  // accounts for both named and indexed properties on Arrays.
-  } else {
-    return objEquiv(actual, expected, opts);
-  }
-}
-
-function isUndefinedOrNull(value) {
-  return value === null || value === undefined;
-}
-
-function isBuffer (x) {
-  if (!x || typeof x !== 'object' || typeof x.length !== 'number') return false;
-  if (typeof x.copy !== 'function' || typeof x.slice !== 'function') {
-    return false;
-  }
-  if (x.length > 0 && typeof x[0] !== 'number') return false;
-  return true;
-}
-
-function objEquiv(a, b, opts) {
-  var i, key;
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b))
-    return false;
-  // an identical 'prototype' property.
-  if (a.prototype !== b.prototype) return false;
-  //~~~I've managed to break Object.keys through screwy arguments passing.
-  //   Converting to array solves the problem.
-  if (isArguments(a)) {
-    if (!isArguments(b)) {
-      return false;
-    }
-    a = pSlice.call(a);
-    b = pSlice.call(b);
-    return deepEqual(a, b, opts);
-  }
-  if (isBuffer(a)) {
-    if (!isBuffer(b)) {
-      return false;
-    }
-    if (a.length !== b.length) return false;
-    for (i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
-  }
-  try {
-    var ka = objectKeys(a),
-        kb = objectKeys(b);
-  } catch (e) {//happens when one is a string literal and the other isn't
-    return false;
-  }
-  // having the same number of owned properties (keys incorporates
-  // hasOwnProperty)
-  if (ka.length != kb.length)
-    return false;
-  //the same set of keys (although not necessarily the same order),
-  ka.sort();
-  kb.sort();
-  //~~~cheap key test
-  for (i = ka.length - 1; i >= 0; i--) {
-    if (ka[i] != kb[i])
-      return false;
-  }
-  //equivalent values for every corresponding key, and
-  //~~~possibly expensive deep test
-  for (i = ka.length - 1; i >= 0; i--) {
-    key = ka[i];
-    if (!deepEqual(a[key], b[key], opts)) return false;
-  }
-  return typeof a === typeof b;
-}
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var hasOwn = Object.prototype.hasOwnProperty;
-var toStr = Object.prototype.toString;
-
-var isArray = function isArray(arr) {
-	if (typeof Array.isArray === 'function') {
-		return Array.isArray(arr);
-	}
-
-	return toStr.call(arr) === '[object Array]';
-};
-
-var isPlainObject = function isPlainObject(obj) {
-	if (!obj || toStr.call(obj) !== '[object Object]') {
-		return false;
-	}
-
-	var hasOwnConstructor = hasOwn.call(obj, 'constructor');
-	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
-	// Not own constructor property must be Object
-	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) {
-		return false;
-	}
-
-	// Own properties are enumerated firstly, so to speed up,
-	// if last one is own, then all properties are own.
-	var key;
-	for (key in obj) { /**/ }
-
-	return typeof key === 'undefined' || hasOwn.call(obj, key);
-};
-
-module.exports = function extend() {
-	var options, name, src, copy, copyIsArray, clone;
-	var target = arguments[0];
-	var i = 1;
-	var length = arguments.length;
-	var deep = false;
-
-	// Handle a deep copy situation
-	if (typeof target === 'boolean') {
-		deep = target;
-		target = arguments[1] || {};
-		// skip the boolean and the target
-		i = 2;
-	}
-	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
-		target = {};
-	}
-
-	for (; i < length; ++i) {
-		options = arguments[i];
-		// Only deal with non-null/undefined values
-		if (options != null) {
-			// Extend the base object
-			for (name in options) {
-				src = target[name];
-				copy = options[name];
-
-				// Prevent never-ending loop
-				if (target !== copy) {
-					// Recurse if we're merging plain objects or arrays
-					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
-						if (copyIsArray) {
-							copyIsArray = false;
-							clone = src && isArray(src) ? src : [];
-						} else {
-							clone = src && isPlainObject(src) ? src : {};
-						}
-
-						// Never move original objects, clone them
-						target[name] = extend(deep, clone, copy);
-
-					// Don't bring in undefined values
-					} else if (typeof copy !== 'undefined') {
-						target[name] = copy;
-					}
-				}
-			}
-		}
-	}
-
-	// Return the modified object
-	return target;
-};
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-const HIGH_SURROGATE_START = 0xd800
-const HIGH_SURROGATE_END = 0xdbff
-
-const LOW_SURROGATE_START = 0xdc00
-
-const REGIONAL_INDICATOR_START = 0x1f1e6
-const REGIONAL_INDICATOR_END = 0x1f1ff
-
-const FITZPATRICK_MODIFIER_START = 0x1f3fb
-const FITZPATRICK_MODIFIER_END = 0x1f3ff
-
-const VARIATION_MODIFIER_START = 0xfe00
-const VARIATION_MODIFIER_END = 0xfe0f
-
-const ZWJ = 0x200d
-
-const GRAPHEMS = [
-  0x0308, // ( ◌̈ ) COMBINING DIAERESIS
-  0x0937, // ( ष ) DEVANAGARI LETTER SSA
-  0x0937, // ( ष ) DEVANAGARI LETTER SSA
-  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
-  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
-  0x0BA8, // ( ந ) TAMIL LETTER NA
-  0x0BBF, // ( ி ) TAMIL VOWEL SIGN I
-  0x0BCD, // ( ◌்) TAMIL SIGN VIRAMA
-  0x0E31, // ( ◌ั ) THAI CHARACTER MAI HAN-AKAT
-  0x0E33, // ( ำ ) THAI CHARACTER SARA AM
-  0x0E40, // ( เ ) THAI CHARACTER SARA E
-  0x0E49, // ( เ ) THAI CHARACTER MAI THO
-  0x1100, // ( ᄀ ) HANGUL CHOSEONG KIYEOK
-  0x1161, // ( ᅡ ) HANGUL JUNGSEONG A
-  0x11A8 // ( ᆨ ) HANGUL JONGSEONG KIYEOK
-]
-
-function runes (string) {
-  if (typeof string !== 'string') {
-    throw new Error('string cannot be undefined or null')
-  }
-  const result = []
-  let i = 0
-  let increment = 0
-  while (i < string.length) {
-    increment += nextUnits(i + increment, string)
-    if (isGraphem(string[i + increment])) {
-      increment++
-    }
-    if (isVariationSelector(string[i + increment])) {
-      increment++
-    }
-    if (isZeroWidthJoiner(string[i + increment])) {
-      increment++
-      continue
-    }
-    result.push(string.substring(i, i + increment))
-    i += increment
-    increment = 0
-  }
-  return result
-}
-
-// Decide how many code units make up the current character.
-// BMP characters: 1 code unit
-// Non-BMP characters (represented by surrogate pairs): 2 code units
-// Emoji with skin-tone modifiers: 4 code units (2 code points)
-// Country flags: 4 code units (2 code points)
-// Variations: 2 code units
-function nextUnits (i, string) {
-  const current = string[i]
-  // If we don't have a value that is part of a surrogate pair, or we're at
-  // the end, only take the value at i
-  if (!isFirstOfSurrogatePair(current) || i === string.length - 1) {
-    return 1
-  }
-
-  const currentPair = current + string[i + 1]
-  let nextPair = string.substring(i + 2, i + 5)
-
-  // Country flags are comprised of two regional indicator symbols,
-  // each represented by a surrogate pair.
-  // See http://emojipedia.org/flags/
-  // If both pairs are regional indicator symbols, take 4
-  if (isRegionalIndicator(currentPair) && isRegionalIndicator(nextPair)) {
-    return 4
-  }
-
-  // If the next pair make a Fitzpatrick skin tone
-  // modifier, take 4
-  // See http://emojipedia.org/modifiers/
-  // Technically, only some code points are meant to be
-  // combined with the skin tone modifiers. This function
-  // does not check the current pair to see if it is
-  // one of them.
-  if (isFitzpatrickModifier(nextPair)) {
-    return 4
-  }
-  return 2
-}
-
-function isFirstOfSurrogatePair (string) {
-  return string && betweenInclusive(string[0].charCodeAt(0), HIGH_SURROGATE_START, HIGH_SURROGATE_END)
-}
-
-function isRegionalIndicator (string) {
-  return betweenInclusive(codePointFromSurrogatePair(string), REGIONAL_INDICATOR_START, REGIONAL_INDICATOR_END)
-}
-
-function isFitzpatrickModifier (string) {
-  return betweenInclusive(codePointFromSurrogatePair(string), FITZPATRICK_MODIFIER_START, FITZPATRICK_MODIFIER_END)
-}
-
-function isVariationSelector (string) {
-  return typeof string === 'string' && betweenInclusive(string.charCodeAt(0), VARIATION_MODIFIER_START, VARIATION_MODIFIER_END)
-}
-
-function isGraphem (string) {
-  return typeof string === 'string' && GRAPHEMS.indexOf(string.charCodeAt(0)) !== -1
-}
-
-function isZeroWidthJoiner (string) {
-  return typeof string === 'string' && string.charCodeAt(0) === ZWJ
-}
-
-function codePointFromSurrogatePair (pair) {
-  const highOffset = pair.charCodeAt(0) - HIGH_SURROGATE_START
-  const lowOffset = pair.charCodeAt(1) - LOW_SURROGATE_START
-  return (highOffset << 10) + lowOffset + 0x10000
-}
-
-function betweenInclusive (value, lower, upper) {
-  return value >= lower && value <= upper
-}
-
-function substring (string, start, width) {
-  const chars = runes(string)
-  if (start === undefined) {
-    return string
-  }
-  if (start >= chars.length) {
-    return ''
-  }
-  const rest = chars.length - start
-  const stringWidth = width === undefined ? rest : width
-  let endIndex = start + stringWidth
-  if (endIndex > (start + rest)) {
-    endIndex = undefined
-  }
-  return chars.slice(start, endIndex).join('')
-}
-
-module.exports = runes
-module.exports.substr = substring
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-
-var stylesInDom = {};
-
-var	memoize = function (fn) {
-	var memo;
-
-	return function () {
-		if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-		return memo;
-	};
-};
-
-var isOldIE = memoize(function () {
-	// Test for IE <= 9 as proposed by Browserhacks
-	// @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
-	// Tests for existence of standard globals is to allow style-loader
-	// to operate correctly into non-standard environments
-	// @see https://github.com/webpack-contrib/style-loader/issues/177
-	return window && document && document.all && !window.atob;
-});
-
-var getElement = (function (fn) {
-	var memo = {};
-
-	return function(selector) {
-		if (typeof memo[selector] === "undefined") {
-			memo[selector] = fn.call(this, selector);
-		}
-
-		return memo[selector]
-	};
-})(function (target) {
-	return document.querySelector(target)
-});
-
-var singleton = null;
-var	singletonCounter = 0;
-var	stylesInsertedAtTop = [];
-
-var	fixUrls = __webpack_require__(26);
-
-module.exports = function(list, options) {
-	if (typeof DEBUG !== "undefined" && DEBUG) {
-		if (typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-	}
-
-	options = options || {};
-
-	options.attrs = typeof options.attrs === "object" ? options.attrs : {};
-
-	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-	// tags it will allow on a page
-	if (!options.singleton) options.singleton = isOldIE();
-
-	// By default, add <style> tags to the <head> element
-	if (!options.insertInto) options.insertInto = "head";
-
-	// By default, add <style> tags to the bottom of the target
-	if (!options.insertAt) options.insertAt = "bottom";
-
-	var styles = listToStyles(list, options);
-
-	addStylesToDom(styles, options);
-
-	return function update (newList) {
-		var mayRemove = [];
-
-		for (var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-
-			domStyle.refs--;
-			mayRemove.push(domStyle);
-		}
-
-		if(newList) {
-			var newStyles = listToStyles(newList, options);
-			addStylesToDom(newStyles, options);
-		}
-
-		for (var i = 0; i < mayRemove.length; i++) {
-			var domStyle = mayRemove[i];
-
-			if(domStyle.refs === 0) {
-				for (var j = 0; j < domStyle.parts.length; j++) domStyle.parts[j]();
-
-				delete stylesInDom[domStyle.id];
-			}
-		}
-	};
-};
-
-function addStylesToDom (styles, options) {
-	for (var i = 0; i < styles.length; i++) {
-		var item = styles[i];
-		var domStyle = stylesInDom[item.id];
-
-		if(domStyle) {
-			domStyle.refs++;
-
-			for(var j = 0; j < domStyle.parts.length; j++) {
-				domStyle.parts[j](item.parts[j]);
-			}
-
-			for(; j < item.parts.length; j++) {
-				domStyle.parts.push(addStyle(item.parts[j], options));
-			}
-		} else {
-			var parts = [];
-
-			for(var j = 0; j < item.parts.length; j++) {
-				parts.push(addStyle(item.parts[j], options));
-			}
-
-			stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-		}
-	}
-}
-
-function listToStyles (list, options) {
-	var styles = [];
-	var newStyles = {};
-
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var id = options.base ? item[0] + options.base : item[0];
-		var css = item[1];
-		var media = item[2];
-		var sourceMap = item[3];
-		var part = {css: css, media: media, sourceMap: sourceMap};
-
-		if(!newStyles[id]) styles.push(newStyles[id] = {id: id, parts: [part]});
-		else newStyles[id].parts.push(part);
-	}
-
-	return styles;
-}
-
-function insertStyleElement (options, style) {
-	var target = getElement(options.insertInto)
-
-	if (!target) {
-		throw new Error("Couldn't find a style target. This probably means that the value for the 'insertInto' parameter is invalid.");
-	}
-
-	var lastStyleElementInsertedAtTop = stylesInsertedAtTop[stylesInsertedAtTop.length - 1];
-
-	if (options.insertAt === "top") {
-		if (!lastStyleElementInsertedAtTop) {
-			target.insertBefore(style, target.firstChild);
-		} else if (lastStyleElementInsertedAtTop.nextSibling) {
-			target.insertBefore(style, lastStyleElementInsertedAtTop.nextSibling);
-		} else {
-			target.appendChild(style);
-		}
-		stylesInsertedAtTop.push(style);
-	} else if (options.insertAt === "bottom") {
-		target.appendChild(style);
-	} else {
-		throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
-	}
-}
-
-function removeStyleElement (style) {
-	if (style.parentNode === null) return false;
-	style.parentNode.removeChild(style);
-
-	var idx = stylesInsertedAtTop.indexOf(style);
-	if(idx >= 0) {
-		stylesInsertedAtTop.splice(idx, 1);
-	}
-}
-
-function createStyleElement (options) {
-	var style = document.createElement("style");
-
-	options.attrs.type = "text/css";
-
-	addAttrs(style, options.attrs);
-	insertStyleElement(options, style);
-
-	return style;
-}
-
-function createLinkElement (options) {
-	var link = document.createElement("link");
-
-	options.attrs.type = "text/css";
-	options.attrs.rel = "stylesheet";
-
-	addAttrs(link, options.attrs);
-	insertStyleElement(options, link);
-
-	return link;
-}
-
-function addAttrs (el, attrs) {
-	Object.keys(attrs).forEach(function (key) {
-		el.setAttribute(key, attrs[key]);
-	});
-}
-
-function addStyle (obj, options) {
-	var style, update, remove, result;
-
-	// If a transform function was defined, run it on the css
-	if (options.transform && obj.css) {
-	    result = options.transform(obj.css);
-
-	    if (result) {
-	    	// If transform returns a value, use that instead of the original css.
-	    	// This allows running runtime transformations on the css.
-	    	obj.css = result;
-	    } else {
-	    	// If the transform function returns a falsy value, don't add this css.
-	    	// This allows conditional loading of css
-	    	return function() {
-	    		// noop
-	    	};
-	    }
-	}
-
-	if (options.singleton) {
-		var styleIndex = singletonCounter++;
-
-		style = singleton || (singleton = createStyleElement(options));
-
-		update = applyToSingletonTag.bind(null, style, styleIndex, false);
-		remove = applyToSingletonTag.bind(null, style, styleIndex, true);
-
-	} else if (
-		obj.sourceMap &&
-		typeof URL === "function" &&
-		typeof URL.createObjectURL === "function" &&
-		typeof URL.revokeObjectURL === "function" &&
-		typeof Blob === "function" &&
-		typeof btoa === "function"
-	) {
-		style = createLinkElement(options);
-		update = updateLink.bind(null, style, options);
-		remove = function () {
-			removeStyleElement(style);
-
-			if(style.href) URL.revokeObjectURL(style.href);
-		};
-	} else {
-		style = createStyleElement(options);
-		update = applyToTag.bind(null, style);
-		remove = function () {
-			removeStyleElement(style);
-		};
-	}
-
-	update(obj);
-
-	return function updateStyle (newObj) {
-		if (newObj) {
-			if (
-				newObj.css === obj.css &&
-				newObj.media === obj.media &&
-				newObj.sourceMap === obj.sourceMap
-			) {
-				return;
-			}
-
-			update(obj = newObj);
-		} else {
-			remove();
-		}
-	};
-}
-
-var replaceText = (function () {
-	var textStore = [];
-
-	return function (index, replacement) {
-		textStore[index] = replacement;
-
-		return textStore.filter(Boolean).join('\n');
-	};
-})();
-
-function applyToSingletonTag (style, index, remove, obj) {
-	var css = remove ? "" : obj.css;
-
-	if (style.styleSheet) {
-		style.styleSheet.cssText = replaceText(index, css);
-	} else {
-		var cssNode = document.createTextNode(css);
-		var childNodes = style.childNodes;
-
-		if (childNodes[index]) style.removeChild(childNodes[index]);
-
-		if (childNodes.length) {
-			style.insertBefore(cssNode, childNodes[index]);
-		} else {
-			style.appendChild(cssNode);
-		}
-	}
-}
-
-function applyToTag (style, obj) {
-	var css = obj.css;
-	var media = obj.media;
-
-	if(media) {
-		style.setAttribute("media", media)
-	}
-
-	if(style.styleSheet) {
-		style.styleSheet.cssText = css;
-	} else {
-		while(style.firstChild) {
-			style.removeChild(style.firstChild);
-		}
-
-		style.appendChild(document.createTextNode(css));
-	}
-}
-
-function updateLink (link, options, obj) {
-	var css = obj.css;
-	var sourceMap = obj.sourceMap;
-
-	/*
-		If convertToAbsoluteUrls isn't defined, but sourcemaps are enabled
-		and there is no publicPath defined then lets turn convertToAbsoluteUrls
-		on by default.  Otherwise default to the convertToAbsoluteUrls option
-		directly
-	*/
-	var autoFixUrls = options.convertToAbsoluteUrls === undefined && sourceMap;
-
-	if (options.convertToAbsoluteUrls || autoFixUrls) {
-		css = fixUrls(css);
-	}
-
-	if (sourceMap) {
-		// http://stackoverflow.com/a/26603875
-		css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
-	}
-
-	var blob = new Blob([css], { type: "text/css" });
-
-	var oldSrc = link.href;
-
-	link.href = URL.createObjectURL(blob);
-
-	if(oldSrc) URL.revokeObjectURL(oldSrc);
-}
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 0] = "Insert";
-    OpType[OpType["Delete"] = 1] = "Delete";
-})(OpType = exports.OpType || (exports.OpType = {}));
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * This module describes a generic Logoot model.
- *
- * See Stephane Weiss, Pascal Urso, Pascal Molli. Logoot: a P2P collaborative editing system.
- * [Research Report] RR-6713, INRIA. 2008, pp.13
- */
-Object.defineProperty(exports, "__esModule", { value: true });
-var runes = __webpack_require__(4);
-var Ident = (function () {
-    function Ident(n, siteId) {
-        this.n = n;
-        this.siteId = siteId;
-    }
-    Ident.fromWire = function (object) {
-        return new Ident(object.n, object.siteId);
-    };
-    Ident.prototype.toWire = function () {
-        return { n: this.n, siteId: this.siteId };
-    };
-    Ident.prototype.compare = function (that) {
-        if (this.n > that.n)
-            return 1;
-        if (this.n < that.n)
-            return -1;
-        if (this.siteId > that.siteId)
-            return 1;
-        if (this.siteId < that.siteId)
-            return -1;
-        return 0;
-    };
-    Ident.prototype.lt = function (that) {
-        return this.compare(that) === -1;
-    };
-    Ident.prototype.toString = function () {
-        return "(" + this.n + ", " + this.siteId + ")";
-    };
-    return Ident;
-}());
-exports.Ident = Ident;
-var Position = (function () {
-    function Position(idents) {
-        this.idents = idents;
-    }
-    Position.fromWire = function (object) {
-        var is = [];
-        for (var _i = 0, object_1 = object; _i < object_1.length; _i++) {
-            var i = object_1[_i];
-            is.push(Ident.fromWire(i));
-        }
-        return new Position(is);
-    };
-    Position.prototype.toWire = function () {
-        var is = [];
-        for (var _i = 0, _a = this.idents; _i < _a.length; _i++) {
-            var i = _a[_i];
-            is.push(i.toWire());
-        }
-        return is;
-    };
-    Object.defineProperty(Position.prototype, "length", {
-        get: function () {
-            return this.idents.length;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Position.prototype.i = function (i) {
-        return this.idents[i];
-    };
-    Position.prototype.slice = function (i) {
-        return new Position(this.idents.slice(i));
-    };
-    Position.prototype.compare = function (that) {
-        if (this.length === 0 && that.length === 0)
-            return 0;
-        if (this.length === 0)
-            return -1;
-        if (that.length === 0)
-            return 1;
-        switch (this.i(0).compare(that.i(0))) {
-            case 1:
-                return 1;
-            case -1:
-                return -1;
-            case 0:
-                return this.slice(1).compare(that.slice(1));
-        }
-        throw new Error("Impossible");
-    };
-    Position.prototype.toString = function () {
-        return this.idents.toString();
-    };
-    Position.between = function (prevPos, nextPos, siteId) {
-        return new Position(Position.genIdentList(siteId, prevPos.idents, nextPos.idents));
-    };
-    Position.genIdentList = function (siteId, prevPos, nextPos) {
-        prevPos = prevPos.length > 0 ? prevPos : Logoot.min.position.idents;
-        nextPos = nextPos.length > 0 ? nextPos : Logoot.max.position.idents;
-        var prevHead = prevPos[0];
-        var nextHead = nextPos[0];
-        var prevInt = prevHead.n;
-        var nextInt = nextHead.n;
-        var prevSiteId = prevHead.siteId;
-        switch (prevHead.compare(nextHead)) {
-            case -1: {
-                var diff = nextInt - prevInt;
-                if (diff > 1) {
-                    return [new Ident(Logoot.randomIntBetween(prevInt, nextInt), siteId)];
-                }
-                else if (diff === 1 && siteId > prevSiteId) {
-                    return [new Ident(prevInt, siteId)];
-                }
-                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
-            }
-            case 0: {
-                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
-            }
-            case 1: {
-                throw new Error('"Next" position was less than "previous" position.');
-            }
-        }
-        throw new Error("Impossible");
-    };
-    return Position;
-}());
-exports.Position = Position;
-var AtomIdent = (function () {
-    function AtomIdent(position, clock) {
-        this.position = position;
-        this.clock = clock;
-    }
-    AtomIdent.fromWire = function (object) {
-        return new AtomIdent(Position.fromWire(object.position), object.clock);
-    };
-    AtomIdent.prototype.toWire = function () {
-        return { position: this.position.toWire(), clock: this.clock };
-    };
-    AtomIdent.between = function (prevAtomIdent, nextAtomIdent, siteId, clock) {
-        return new AtomIdent(Position.between(prevAtomIdent.position, nextAtomIdent.position, siteId), clock);
-    };
-    AtomIdent.prototype.compare = function (that) {
-        return this.position.compare(that.position);
-    };
-    AtomIdent.prototype.lt = function (that) {
-        return this.compare(that) === -1;
-    };
-    AtomIdent.prototype.toString = function () {
-        return "{" + this.position + "," + this.clock + "}";
-    };
-    return AtomIdent;
-}());
-exports.AtomIdent = AtomIdent;
-var Atom = (function () {
-    function Atom(ident, rune) {
-        this.ident = ident;
-        this.rune = rune;
-        var isSingleRune = runes(rune).length === 1;
-        if (!isSingleRune) {
-            throw new Error("Atom content must be single unicode character");
-        }
-    }
-    Atom.fromWire = function (ident, content) {
-        return new Atom(AtomIdent.fromWire(ident), content.text);
-    };
-    Atom.prototype.compare = function (that) {
-        return this.ident.compare(that.ident);
-    };
-    Atom.prototype.lt = function (that) {
-        return this.compare(that) === -1;
-    };
-    Atom.prototype.toString = function () {
-        return "Atom(" + this.ident + ")";
-    };
-    return Atom;
-}());
-exports.Atom = Atom;
-var MAX_POS = 32767;
-exports.ABS_MIN_ATOM_IDENT = new AtomIdent(new Position([new Ident(0, 0)]), 0);
-exports.ABS_MAX_ATOM_IDENT = new AtomIdent(new Position([new Ident(MAX_POS, 0)]), 1);
-var Logoot = (function () {
-    function Logoot(siteId) {
-        this.seq = [new Atom(Logoot.min, " "), new Atom(Logoot.max, " ")];
-        this.siteId = siteId;
-        this._clock = 0;
-    }
-    Logoot.prototype.insertAtom = function (atom) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            var prev = this.seq[i];
-            var next = this.seq[i + 1];
-            var comparisons = [
-                atom.compare(prev),
-                atom.compare(next)
-            ];
-            if (comparisons[0] === 1 && comparisons[1] === -1) {
-                this.seq.splice(i + 1, 0, atom);
-                return;
-            }
-            else if (comparisons[0] === -1 && comparisons[1] === 1 || comparisons[0] === -1 && comparisons[1] === -1) {
-                throw new Error('Sequence out of order!');
-            }
-        }
-    };
-    Logoot.prototype.deleteAtom = function (atomIdent) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            var currentAtom = this.seq[i];
-            if (currentAtom.ident.compare(atomIdent) === 0) {
-                this.seq.splice(i, 1);
-                return;
-            }
-        }
-    };
-    Logoot.prototype.prevAtom = function (atom) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            if (atom.compare(this.seq[i].ident) === 0) {
-                return this.seq[i - 1];
-            }
-        }
-        throw new Error('Atom not found looking for prevAtom');
-    };
-    Logoot.prototype.nextAtom = function (atom) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            if (atom.compare(this.seq[i].ident) === 0) {
-                return this.seq[i + 1];
-            }
-        }
-        throw new Error('Atom not found looking for nextAtom');
-    };
-    Logoot.prototype.initialContent = function (content) {
-        var runesToInsert = runes(content);
-        for (var i = 0; i < runesToInsert.length; i++) {
-            var position = new Position([
-                new Ident(MAX_POS - 1, 0),
-                new Ident(i, 0),
-            ]);
-            var siteId = 2 + i;
-            var content_1 = runesToInsert[i];
-            this.insertAtom(new Atom(new AtomIdent(position, siteId), content_1));
-        }
-    };
-    Logoot.prototype.newAtomBetween = function (x, y, content) {
-        return new Atom(AtomIdent.between(x.ident, y.ident, this.siteId, this.clock()), content);
-    };
-    Logoot.prototype.clock = function () {
-        return this._clock++;
-    };
-    Logoot.prototype.debugStr = function () {
-        var out = '';
-        for (var _i = 0, _a = this.seq; _i < _a.length; _i++) {
-            var atom = _a[_i];
-            out += atom.toString() + "\n";
-        }
-        return out;
-    };
-    Logoot.randomIntBetween = function (min, max) {
-        return Math.floor(Math.random() * (max - (min + 1))) + min + 1;
-    };
-    Logoot.min = exports.ABS_MIN_ATOM_IDENT;
-    Logoot.max = exports.ABS_MAX_ATOM_IDENT;
-    return Logoot;
-}());
-exports.default = Logoot;
-
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-    OpType[OpType["Split"] = 3] = "Split";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function isDocOp(object) {
-    return 'ident' in object;
-}
-function isCursorOp(object) {
-    return 'position' in object;
-}
-function messageFromOps(ops, siteId) {
-    var docOps = [];
-    var cursorOps = [];
-    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
-        var op = ops_1[_i];
-        if (isDocOp(op)) {
-            docOps.push(op);
-        }
-        else if (isCursorOp(op)) {
-            cursorOps.push(op);
-        }
-    }
-    return {
-        docOps: docOps,
-        cursorOps: cursorOps,
-        siteId: siteId,
-    };
-}
-exports.messageFromOps = messageFromOps;
-
 
 /***/ }),
 /* 9 */
@@ -13143,7 +13143,7 @@ var transform;
 var options = {"insertAt":"top"}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(5)(content, options);
+var update = __webpack_require__(4)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -13174,7 +13174,7 @@ var transform;
 var options = {"insertAt":"top"}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(5)(content, options);
+var update = __webpack_require__(4)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -13236,10 +13236,10 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var logoot_1 = __webpack_require__(7);
-var logoot_2 = __webpack_require__(7);
-var wire_format_1 = __webpack_require__(8);
-var runes = __webpack_require__(4);
+var logoot_1 = __webpack_require__(6);
+var logoot_2 = __webpack_require__(6);
+var wire_format_1 = __webpack_require__(7);
+var runes = __webpack_require__(3);
 var LogootDoc = (function (_super) {
     __extends(LogootDoc, _super);
     function LogootDoc(siteId) {
@@ -13361,7 +13361,7 @@ exports.default = LogootDoc;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var Delta = __webpack_require__(24);
-var editorAdaptor = __webpack_require__(6);
+var editorAdaptor = __webpack_require__(5);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
         this.siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
@@ -13595,9 +13595,8 @@ exports.makeDeltas = makeDeltas;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var pusher_platform_1 = __webpack_require__(0);
-var wireFormat = __webpack_require__(8);
-var editorAdaptor = __webpack_require__(6);
+var wireFormat = __webpack_require__(7);
+var editorAdaptor = __webpack_require__(5);
 var collaborators_1 = __webpack_require__(28);
 var controller_1 = __webpack_require__(29);
 var badges_1 = __webpack_require__(27);
@@ -13620,6 +13619,9 @@ var TextSync = (function () {
         // Remove when we have JWT
         this.name = name;
         this.email = email;
+        if (this.name === "") {
+            this.name = createAnonName();
+        }
     }
     TextSync.prototype.insertText = function (index, content, attributes) {
         this.sendOps(this.logoot.insertText(index, content, attributes));
@@ -13649,12 +13651,13 @@ var TextSync = (function () {
     };
     TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
+        console.info("Connecting to server...");
         var path = "/docs/" + this.docId + "?siteId=" + this.siteId;
         // Remove when we have JWT
         var encodedName = encodeURIComponent(name);
         var encodedEmail = encodeURIComponent(email);
         path += "&name=" + encodedName + "&email=" + encodedEmail;
-        this.pusher.subscribe({
+        this.pusher.resumableSubscribe({
             path: path,
             onEvent: function (event) {
                 console.debug("event received from server:", JSON.stringify(event.body));
@@ -13681,10 +13684,17 @@ var TextSync = (function () {
                     }
                 }
             },
-            onOpen: function () { console.info("subscription opened"); },
-            onEnd: function () { _this.logError({ info: "subscription ended" }); },
-            onError: this.logError,
-            logger: new pusher_platform_1.ConsoleLogger()
+            onOpen: function () {
+                console.info("subscription opened successfully");
+            },
+            onEnd: function () {
+                console.error("subscription terminated by server");
+            },
+            onError: function (error) {
+                console.error("subscription closed due to error", error);
+                // Remove this when we have proper error GUI support - Jonathan Lloyd
+                alert("Whoops! Something went wrong. Refresh the page to reconnect.");
+            },
         });
     };
     TextSync.prototype.initialContent = function (content) {
@@ -13736,7 +13746,7 @@ var TextSync = (function () {
             }).then(function () {
                 _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
             }).catch(function (error) {
-                _this.logError(error);
+                console.error(error);
                 _this.outstandingOps = _this.outstandingOps.concat(opsToBroadcast_1);
                 var newBroadcastPeriod = _this.broadcastPeriod * BROADCAST_BACKOFF;
                 if (newBroadcastPeriod < MAX_BROADCAST_PERIOD_MS) {
@@ -13777,12 +13787,65 @@ var TextSync = (function () {
         }
         this.adaptor.applyOperations(editorOps);
     };
-    TextSync.prototype.logError = function (error) {
-        console.log(error);
-    };
     return TextSync;
 }());
 exports.default = TextSync;
+var ADJECTIVES = [
+    "massive",
+    "impressive",
+    "bearded",
+    "angry",
+    "shaky",
+    "sticky",
+    "fluffy",
+    "frozen",
+    "bonkers",
+    "harsh",
+    "greedy",
+    "magical",
+    "confused",
+    "high-end",
+    "slippery",
+    "vengeful",
+    "stunned",
+    "flickering",
+    "hyperactive",
+];
+var NOUNS = [
+    "guava jelly",
+    "mango chutney",
+    "ginger jam",
+    "sugar snap peas",
+    "moon cakes",
+    "soda crackers",
+    "banana split",
+    "nougat",
+    "gherkins",
+    "gouda",
+    "flan",
+    "trifle",
+    "dumpling",
+    "ladyfinger",
+    "marmalade",
+    "sushi",
+    "wasabi pea",
+    "falafel",
+    "goulash",
+    "crab cake",
+];
+function createAnonName() {
+    var adjective = randomChoice(ADJECTIVES);
+    var noun = randomChoice(NOUNS);
+    return capitalize(adjective + ' ' + noun);
+}
+function randomChoice(list) {
+    var randomIndex = Math.round(Math.random() * list.length);
+    return list[randomIndex];
+}
+function capitalize(text) {
+    var words = text.split(' ');
+    return words.map(function (word) { return word[0].toUpperCase() + word.slice(1); }).join(' ');
+}
 
 
 /***/ }),
@@ -15707,7 +15770,7 @@ function isnan (val) {
 /* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(1)(undefined);
+exports = module.exports = __webpack_require__(0)(undefined);
 // imports
 
 
@@ -15721,7 +15784,7 @@ exports.push([module.i, "@-webkit-keyframes flash {\n  0%   { opacity: 0; }\n  5
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(1)(undefined);
+exports = module.exports = __webpack_require__(0)(undefined);
 // imports
 
 
@@ -16582,8 +16645,8 @@ module.exports = Array.isArray || function (arr) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var diff = __webpack_require__(21);
-var equal = __webpack_require__(2);
-var extend = __webpack_require__(3);
+var equal = __webpack_require__(1);
+var extend = __webpack_require__(2);
 var op = __webpack_require__(25);
 
 
@@ -16901,8 +16964,8 @@ module.exports = Delta;
 /* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var equal = __webpack_require__(2);
-var extend = __webpack_require__(3);
+var equal = __webpack_require__(1);
+var extend = __webpack_require__(2);
 
 
 var lib = {
@@ -17408,7 +17471,7 @@ exports.default = PresenceEvent;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var Quill = __webpack_require__(9);
-var PusherPlatform = __webpack_require__(0);
+var PusherPlatform = __webpack_require__(8);
 var logoot_doc_1 = __webpack_require__(12);
 var textsync_1 = __webpack_require__(14);
 var quill_adaptor_1 = __webpack_require__(13);
