@@ -13666,8 +13666,11 @@ var TextSync = (function () {
         var path = "/docs/" + this.docId + "?siteId=" + this.siteId;
         // Remove when we have JWT
         var encodedName = encodeURIComponent(name);
-        var encodedEmail = encodeURIComponent(email);
-        path += "&name=" + encodedName + "&email=" + encodedEmail;
+        path += "&name=" + encodedName;
+        if (email) {
+            var encodedEmail = encodeURIComponent(email);
+            path += "&email=" + encodedEmail;
+        }
         this.pusher.resumableSubscribe({
             path: path,
             onEvent: function (event) {
