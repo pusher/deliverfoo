@@ -1075,54 +1075,57 @@ var Logoot = (function () {
         this.siteId = siteId;
         this._clock = 0;
     }
-    Logoot.prototype.insertAtom = function (atom) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            var prev = this.seq[i];
-            var next = this.seq[i + 1];
-            var comparisons = [
-                atom.compare(prev),
-                atom.compare(next)
-            ];
-            if (comparisons[0] === 1 && comparisons[1] === -1) {
-                this.seq.splice(i + 1, 0, atom);
-                return;
+    Logoot.prototype.insertAtoms = function (atoms) {
+        atoms = atoms.sort(function (a, b) { return a.compare(b); });
+        var atomsPointer = 0;
+        var seqPointer = 0;
+        var indices = [];
+        var newSeq = [];
+        while (atomsPointer < atoms.length
+            || seqPointer < this.seq.length) {
+            var atomsHead = atoms[atomsPointer];
+            var seqHead = this.seq[seqPointer];
+            if (!seqHead || atomsHead && atomsHead.lt(seqHead)) {
+                newSeq.push(atomsHead);
+                indices.push(atomsPointer + seqPointer - 1);
+                atomsPointer++;
             }
-            else if (comparisons[0] === -1 && comparisons[1] === 1 || comparisons[0] === -1 && comparisons[1] === -1) {
-                throw new Error('Sequence out of order!');
+            else {
+                newSeq.push(seqHead);
+                seqPointer++;
             }
         }
+        this.seq = newSeq;
+        return indices;
     };
-    Logoot.prototype.deleteAtom = function (atomIdent) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            var currentAtom = this.seq[i];
-            if (currentAtom.ident.compare(atomIdent) === 0) {
-                this.seq.splice(i, 1);
-                return;
+    Logoot.prototype.deleteAtoms = function (idents) {
+        if (idents.length === 0) {
+            return [];
+        }
+        idents = idents.sort(function (a, b) { return a.compare(b); });
+        var deletePointer = 0;
+        var indices = [];
+        var newSeq = [];
+        for (var i = 0; i < this.seq.length; i++) {
+            var identToDelete = idents[deletePointer];
+            var atomToCheck = this.seq[i];
+            if (identToDelete && identToDelete.compare(atomToCheck.ident) === 0) {
+                indices.push(i - deletePointer - 1);
+                deletePointer++;
+            }
+            else {
+                newSeq.push(atomToCheck);
             }
         }
-    };
-    Logoot.prototype.prevAtom = function (atom) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            if (atom.compare(this.seq[i].ident) === 0) {
-                return this.seq[i - 1];
-            }
+        if (deletePointer < idents.length) {
+            throw new Error("Trying to delete atom that does not exist");
         }
-        throw new Error('Atom not found looking for prevAtom');
-    };
-    Logoot.prototype.nextAtom = function (atom) {
-        var sequenceLength = this.seq.length;
-        for (var i = 0; i < sequenceLength; i++) {
-            if (atom.compare(this.seq[i].ident) === 0) {
-                return this.seq[i + 1];
-            }
-        }
-        throw new Error('Atom not found looking for nextAtom');
+        this.seq = newSeq;
+        return indices;
     };
     Logoot.prototype.initialContent = function (content) {
         var runesToInsert = runes(content);
+        var atoms = [];
         for (var i = 0; i < runesToInsert.length; i++) {
             var position = new Position([
                 new Ident(MAX_POS - 1, 0),
@@ -1130,15 +1133,38 @@ var Logoot = (function () {
             ]);
             var siteId = 2 + i;
             var content_1 = runesToInsert[i];
-            this.insertAtom(new Atom(new AtomIdent(position, siteId), content_1));
+            atoms.push(new Atom(new AtomIdent(position, siteId), content_1));
         }
+        this.insertAtoms(atoms);
     };
     Logoot.prototype.newAtomBetween = function (x, y, content) {
-        return new Atom(AtomIdent.between(x.ident, y.ident, this.siteId, this.clock()), content);
+        return new Atom(AtomIdent.between(x.ident, y.ident, this.siteId, this.clock), content);
     };
-    Logoot.prototype.clock = function () {
-        return this._clock++;
+    Logoot.prototype.getSurroundingAtoms = function (index) {
+        var nullAtomOffset = 1;
+        return [
+            this.seq[index],
+            this.seq[index + nullAtomOffset]
+        ];
     };
+    Logoot.prototype.getAtomsToDelete = function (index, length) {
+        var nullAtomOffset = 1;
+        return this.seq.slice(index + nullAtomOffset, index + nullAtomOffset + length);
+    };
+    Object.defineProperty(Logoot.prototype, "clock", {
+        get: function () {
+            return this._clock++;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Logoot.prototype, "docLength", {
+        get: function () {
+            return this.seq.length - 2;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Logoot.prototype.debugStr = function () {
         var out = '';
         for (var _i = 0, _a = this.seq; _i < _a.length; _i++) {
@@ -13205,24 +13231,23 @@ if(false) {
  * the document for a particular atom can be found by summing the values
  * of all previous atoms.
  *
- * The document is manipulated via insert* and delete* methods, whose
+ * The document is manipulated via insert and delete methods, whose
  * parameters are expressed in the text document domain. In addition to
  * mutating the Logoot representation as requested, these methods return
  * lists of Operations expressed in the Logoot domain, which, if passed
  * to the applyOps method of another instance, will recreate the same
  * changes which were made here.
  *
- * Similarly, applyOps returns a list of operations in the text document
+ * Similarly, apply methods return a list of operations in the text document
  * domain which can be applied to a rendered view of the document when
  * applying operations from remotely.
  *
  * In summary:
  * - Changes to the text which this LogootDoc represents (i.e. interactively
- *   in an editor) are applied using insert/delete* methods.
- * - insert/delete* methods return Operations which can be transmitted to
+ *   in an editor) are applied using insert/delete methods.
+ * - insert/delete methods return Operations which can be transmitted to
  *   remote instances.
- * - Operations received from remote instances may be applied using applyOps.
- * - applyOps returns a set of changes to the text which arose from the
+ * - Apply methods return a set of changes to the text which arose from the
  *   remote Operations.
  */
 var __extends = (this && this.__extends) || (function () {
@@ -13250,7 +13275,7 @@ var LogootDoc = (function (_super) {
      * @param {number} index - the insertion index
      * @param {string} content - the new content being inserted
      *
-     * @return {ExternalOp[]} - a description of the required operations
+     * @return {DocOp[]} - a description of the required operations
      *   suitable for transmitting to a remote replica of the doc,
      *   such that they might apply the same insertion.
      */
@@ -13262,8 +13287,12 @@ var LogootDoc = (function (_super) {
             var rune = runesToInsert[i];
             var _a = this.getSurroundingAtoms(index + i), before_1 = _a[0], after_1 = _a[1];
             var newAtom = this.newAtomBetween(before_1, after_1, rune);
-            var newOp = { type: wire_format_1.OpType.Insert, ident: newAtom.ident.toWire(), content: { text: rune, attributes: attributes } };
-            this.applyInsertText(newOp);
+            var newOp = {
+                type: wire_format_1.OpType.Insert,
+                ident: newAtom.ident.toWire(),
+                content: { text: rune, attributes: attributes },
+            };
+            this.applyInsertText([newOp]);
             ops.push(newOp); // to be batch-sent to server
         }
         return ops;
@@ -13273,7 +13302,7 @@ var LogootDoc = (function (_super) {
      * @param {number} index - the start index of the removed content
      * @param {string} length - the length of the content removed
      *
-     * @return {ExternalOp[]} - a description of the required operations
+     * @return {DocOp[]} - a description of the required operations
      *   suitable for transmitting to a remote replica of the doc,
      *   such that they might apply the same removal.
      */
@@ -13285,65 +13314,47 @@ var LogootDoc = (function (_super) {
                 type: wire_format_1.OpType.Delete,
                 ident: atoms[i].ident.toWire()
             };
-            this.applyDelete(deleteOp);
+            this.applyDelete([deleteOp]);
             ops.push(deleteOp);
         }
         return ops;
     };
-    LogootDoc.prototype.charIndexOf = function (atomIdent) {
-        for (var i = 0; i < this.seq.length; i++) {
-            var currentAtom = this.seq[i];
-            var identMatches = currentAtom.ident.compare(atomIdent) == 0;
-            if (identMatches) {
-                return i - 1;
-            }
-        }
-        throw new Error("Out of range: " + JSON.stringify(atomIdent));
-    };
+    /**
+     * Generate a new position at a given character index
+     * @param {number} charIndex - the index at which to generate the new
+     *    position
+     *
+     * @return {WireIdent[]} - A unique position in the document
+     */
     LogootDoc.prototype.newPositionAtIndex = function (charIndex) {
-        var index = charIndex + 1;
-        if (index > this.seq.length - 2) {
+        if (charIndex > this.docLength - 1) {
             throw new Error("Index out of range: " + charIndex);
         }
-        var atomIdentBefore = this.seq[index - 1].ident;
-        var atomIdentAfter = this.seq[index].ident;
-        var atomIdent = logoot_2.AtomIdent.between(atomIdentBefore, atomIdentAfter, 0, 0);
+        var _a = this.getSurroundingAtoms(charIndex), atomBefore = _a[0], atomAfter = _a[1];
+        var atomIdent = logoot_2.AtomIdent.between(atomBefore.ident, atomAfter.ident, 0, 0);
         return atomIdent.toWire().position;
     };
-    LogootDoc.prototype.applyInsertText = function (op) {
-        var atom = logoot_2.Atom.fromWire(op.ident, op.content);
-        this.insertAtom(atom);
-        return this.charIndexOf(atom.ident);
-    };
-    LogootDoc.prototype.applyDelete = function (op) {
-        var atomIdent = logoot_2.AtomIdent.fromWire(op.ident);
-        var index = this.charIndexOf(atomIdent);
-        this.deleteAtom(atomIdent);
-        return index;
+    /**
+     * Applies a set of insert operations to the document model
+     * @param {DocOp[]} ops - The operations to apply
+     *
+     * @return {number[]} - The indices at which the atoms in each operation
+     *   were inserted.
+     */
+    LogootDoc.prototype.applyInsertText = function (ops) {
+        var newAtoms = ops.map(function (op) { return logoot_2.Atom.fromWire(op.ident, op.content); });
+        return this.insertAtoms(newAtoms);
     };
     /**
-     * Finds the atoms which will precede and follow another atom in the document
+     * Applies a set of delete operations to the document model
+     * @param {DocOp[]} ops - The operations to apply
      *
-     * @param {number} index - the start index within the document
-     * @return {Atom[]} - array of length 2 with preceding and following atoms
+     * @return {number[]} - The indices at which the atoms in each operation
+     *   were deleted.
      */
-    LogootDoc.prototype.getSurroundingAtoms = function (index) {
-        var nullAtomOffset = 1;
-        return [
-            this.seq[index],
-            this.seq[index + nullAtomOffset]
-        ];
-    };
-    /**
-     * Finds the atoms bound for deletion from the document
-     *
-     * @param {number} index - the start index within the document
-     * @param {number} length - the number of atoms to be deleted
-     * @return {Atom[]} - array of atoms representing the unit of content to be deleted
-     */
-    LogootDoc.prototype.getAtomsToDelete = function (index, length) {
-        var nullAtomOffset = 1;
-        return this.seq.slice(index + nullAtomOffset, index + nullAtomOffset + length);
+    LogootDoc.prototype.applyDelete = function (ops) {
+        var identsToDelete = ops.map(function (op) { return logoot_2.AtomIdent.fromWire(op.ident); });
+        return this.deleteAtoms(identsToDelete);
     };
     return LogootDoc;
 }(logoot_1.default));
@@ -13597,8 +13608,8 @@ exports.makeDeltas = makeDeltas;
 Object.defineProperty(exports, "__esModule", { value: true });
 var wireFormat = __webpack_require__(7);
 var editorAdaptor = __webpack_require__(5);
-var collaborators_1 = __webpack_require__(28);
-var controller_1 = __webpack_require__(29);
+var model_1 = __webpack_require__(30);
+var controller_1 = __webpack_require__(28);
 var badges_1 = __webpack_require__(27);
 var MIN_BROADCAST_PERIOD_MS = 200;
 var MAX_BROADCAST_PERIOD_MS = 10000;
@@ -13619,7 +13630,7 @@ var TextSync = (function () {
         // Remove when we have JWT
         this.name = name;
         this.email = email;
-        if (this.name === "") {
+        if (this.name === null) {
             this.name = createAnonName();
         }
     }
@@ -13638,9 +13649,9 @@ var TextSync = (function () {
         ]);
     };
     TextSync.prototype.initBadges = function () {
-        this.collaborators = new collaborators_1.default();
+        this.presenceModel = new model_1.default();
         this.badges = new badges_1.default(this.siteId);
-        this.controller = new controller_1.default(this.collaborators, this.badges);
+        this.controller = new controller_1.default(this.presenceModel, this.badges);
     };
     TextSync.prototype.start = function (adaptor) {
         this.adaptor = adaptor;
@@ -13670,7 +13681,7 @@ var TextSync = (function () {
                         siteId: event.body.siteId
                     });
                     if (_this.presenceConfig.showBadges && event.body.siteId !== _this.siteId && !_this.isFirstDocOpsBatch) {
-                        _this.collaborators.triggerStartTypingEvent(event.body.siteId);
+                        _this.presenceModel.triggerStartTypingEvent(event.body.siteId);
                     }
                     if (_this.isFirstDocOpsBatch) {
                         _this.isFirstDocOpsBatch = false;
@@ -13722,10 +13733,10 @@ var TextSync = (function () {
         }
         if (this.presenceConfig.showBadges) {
             if (presentCollaborators.length > 0) {
-                this.collaborators.add(presentCollaborators);
+                this.presenceModel.add(presentCollaborators);
             }
             if (absentCollaborators.length > 0) {
-                this.collaborators.remove(absentCollaborators);
+                this.presenceModel.remove(absentCollaborators);
             }
         }
     };
@@ -13761,35 +13772,33 @@ var TextSync = (function () {
             return;
         }
         var editorOps = [];
-        for (var _i = 0, _a = wireMessage.docOps; _i < _a.length; _i++) {
-            var wireOp = _a[_i];
-            var index = void 0;
-            switch (wireOp.type) {
-                case wireFormat.OpType.Insert:
-                    index = this.logoot.applyInsertText(wireOp);
-                    var insertTextOp = {
-                        "opType": editorAdaptor.OpType.Insert,
-                        "index": index,
-                        "content": wireOp.content.text,
-                        "attributes": wireOp.content.attributes,
-                    };
-                    editorOps.push(insertTextOp);
-                    break;
-                case wireFormat.OpType.Delete:
-                    index = this.logoot.applyDelete(wireOp);
-                    var deleteTextOp = {
-                        "opType": editorAdaptor.OpType.Delete,
-                        "index": index,
-                    };
-                    editorOps.push(deleteTextOp);
-                    break;
-            }
+        var insertOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Insert; });
+        var indices = this.logoot.applyInsertText(insertOps);
+        for (var i = 0; i < indices.length; i++) {
+            var op = insertOps[i];
+            var runeIndex = indices[i];
+            editorOps.push({
+                "opType": editorAdaptor.OpType.Insert,
+                "index": runeIndex,
+                "content": op.content.text,
+                "attributes": op.content.attributes,
+            });
+        }
+        var deleteOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Delete; });
+        indices = this.logoot.applyDelete(deleteOps);
+        for (var i = 0; i < indices.length; i++) {
+            var op = deleteOps[i];
+            var runeIndex = indices[i];
+            editorOps.push({
+                "opType": editorAdaptor.OpType.Delete,
+                "index": runeIndex,
+            });
         }
         this.adaptor.applyOperations(editorOps);
     };
     return TextSync;
 }());
-exports.default = TextSync;
+exports.TextSync = TextSync;
 var ADJECTIVES = [
     "massive",
     "impressive",
@@ -17306,88 +17315,19 @@ exports.default = Badges;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var event_dispatcher_1 = __webpack_require__(30);
-var Collaborators = (function () {
-    function Collaborators() {
-        this._data = [];
-        this.joinedEvent = new event_dispatcher_1.default(this);
-        this.leftEvent = new event_dispatcher_1.default(this);
-        this.startTypingEvent = new event_dispatcher_1.default(this);
-    }
-    /**
-     * Adds new collaborators
-     * @param {AddOp[]} joining - array of 'add collaborator' operations
-     * @returns {void}
-     */
-    Collaborators.prototype.add = function (joining) {
-        if (!Array.isArray(joining) || joining.length === 0) {
-            console.error(new TypeError("expected an array of AddOp"));
-            return;
-        }
-        var existing = this._data.length;
-        this._data = this._data.concat(joining);
-        this.joinedEvent.notify(joining, existing);
-    };
-    /**
-     * Removes existing collaborators
-     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
-     * @returns {void}
-     */
-    Collaborators.prototype.remove = function (leaving) {
-        var _this = this;
-        if (!Array.isArray(leaving) || leaving.length === 0) {
-            console.error(new TypeError("expected an array of RemoveOp"));
-            return;
-        }
-        leaving.forEach(function (leavingPerson) {
-            _this._data = _this._data.filter(function (collab) { return collab.siteId !== leavingPerson.siteId; });
-        });
-        var leavingSiteIds = leaving.reduce(function (acc, collab) {
-            acc.push(collab.siteId);
-            return acc;
-        }, []);
-        this.leftEvent.notify(leavingSiteIds);
-    };
-    /**
-     * Gets the current list of collaborators
-     * @returns {AddOp[]} - array of collaborators
-     */
-    Collaborators.prototype.getData = function () {
-        return this._data.slice(0);
-    };
-    /**
-      * Triggers the start typing event for a collaborator
-      * @param {number} siteId - site id for collaborator
-      * @returns {void}
-      */
-    Collaborators.prototype.triggerStartTypingEvent = function (siteId) {
-        this.startTypingEvent.notify(siteId);
-    };
-    return Collaborators;
-}());
-exports.default = Collaborators;
-
-
-/***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
 var ANIMATION_LENGTH = 1000;
-var Controller = (function () {
-    function Controller(collaborators, badges) {
-        this.collaborators = collaborators;
+var PresenceController = (function () {
+    function PresenceController(model, badges) {
+        this.model = model;
         this.badges = badges;
         this.flashingBadges = {};
         this.attachListeners();
     }
-    Controller.prototype.resetTimeout = function (siteId) {
+    PresenceController.prototype.resetTimeout = function (siteId) {
         clearTimeout(this.flashingBadges[siteId]);
         this.startTimeout(siteId);
     };
-    Controller.prototype.startTimeout = function (siteId) {
+    PresenceController.prototype.startTimeout = function (siteId) {
         var _this = this;
         this.flashingBadges[siteId] = setTimeout(function (siteId) {
             _this.badges.stopBadgeFlash(siteId);
@@ -17395,9 +17335,9 @@ var Controller = (function () {
             delete _this.flashingBadges[siteId];
         }, ANIMATION_LENGTH, siteId);
     };
-    Controller.prototype.attachListeners = function () {
+    PresenceController.prototype.attachListeners = function () {
         var _this = this;
-        this.collaborators.joinedEvent.attach(function (sender, joining) {
+        this.model.joinedEvent.attach(function (sender, joining) {
             joining.sort(function (a, b) {
                 if (a.timestamp > b.timestamp) {
                     return 1;
@@ -17411,12 +17351,12 @@ var Controller = (function () {
             });
             _this.badges.addBadges(joining);
         });
-        this.collaborators.leftEvent.attach(function (sender, leavingSiteIds) {
+        this.model.leftEvent.attach(function (sender, leavingSiteIds) {
             leavingSiteIds.forEach(function (siteId, i) {
                 _this.badges.removeBadge(siteId);
             });
         });
-        this.collaborators.startTypingEvent.attach(function (sender, siteId) {
+        this.model.startTypingEvent.attach(function (sender, siteId) {
             if (_this.flashingBadges[siteId]) {
                 _this.resetTimeout(siteId);
             }
@@ -17426,13 +17366,13 @@ var Controller = (function () {
             }
         });
     };
-    return Controller;
+    return PresenceController;
 }());
-exports.default = Controller;
+exports.default = PresenceController;
 
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17457,6 +17397,74 @@ var PresenceEvent = (function () {
     return PresenceEvent;
 }());
 exports.default = PresenceEvent;
+
+
+/***/ }),
+/* 30 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var event_dispatcher_1 = __webpack_require__(29);
+var PresenceModel = (function () {
+    function PresenceModel() {
+        this._collaboratorIds = {};
+        this.joinedEvent = new event_dispatcher_1.default(this);
+        this.leftEvent = new event_dispatcher_1.default(this);
+        this.startTypingEvent = new event_dispatcher_1.default(this);
+    }
+    /**
+     * Adds new collaborators
+     * @param {AddOp[]} joining - array of 'add collaborator' operations
+     * @returns {void}
+     */
+    PresenceModel.prototype.add = function (joining) {
+        var _this = this;
+        if (joining.length === 0) {
+            return;
+        }
+        var alreadyJoined = joining
+            .map(function (collaborator) { return collaborator.siteId; })
+            .filter(function (siteId) { return _this._collaboratorIds.hasOwnProperty(siteId); });
+        if (alreadyJoined.length > 0) {
+            console.error("The following Site IDs were added to the presence model " +
+                "but they already exist:", alreadyJoined);
+        }
+        var justJoined = joining.filter(function (collaborator) { return !_this._collaboratorIds.hasOwnProperty(collaborator.siteId); });
+        justJoined.forEach(function (collaborator) { return _this._collaboratorIds[collaborator.siteId] = true; });
+        this.joinedEvent.notify(justJoined, Object.keys(this._collaboratorIds).length);
+    };
+    /**
+     * Removes existing collaborators
+     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
+     * @returns {void}
+     */
+    PresenceModel.prototype.remove = function (leaving) {
+        var _this = this;
+        if (leaving.length === 0) {
+            return;
+        }
+        var alreadyLeft = leaving.map(function (op) { return op.siteId; }).filter(function (collaboratorId) { return !_this._collaboratorIds.hasOwnProperty(collaboratorId); });
+        if (alreadyLeft.length > 0) {
+            console.error("Tried to remove the following Site IDs from the presence model " +
+                "but they were missing:", alreadyLeft);
+        }
+        var justLeft = leaving.map(function (op) { return op.siteId; }).filter(function (collaboratorId) { return _this._collaboratorIds.hasOwnProperty(collaboratorId); });
+        justLeft.forEach(function (collaboratorId) { return delete _this._collaboratorIds[collaboratorId]; });
+        this.leftEvent.notify(justLeft);
+    };
+    /**
+      * Triggers the start typing event for a collaborator
+      * @param {number} siteId - site id for collaborator
+      * @returns {void}
+      */
+    PresenceModel.prototype.triggerStartTypingEvent = function (siteId) {
+        this.startTypingEvent.notify(siteId);
+    };
+    return PresenceModel;
+}());
+exports.default = PresenceModel;
 
 
 /***/ }),
@@ -17486,62 +17494,64 @@ var DEFAULT_QUILL_CONFIG = {
         ]
     }
 };
-function createEditor(instanceConfig, userConfig) {
-    if (userConfig === void 0) { userConfig = {}; }
-    var containerElement;
-    if (!instanceConfig) {
-        throw new Error("Pusher Platform instance config must be present to initialise TextSync.");
-    }
-    if (!instanceConfig.instance) {
-        throw new Error("instance must be present in config when initialising TextSync.");
-    }
-    if (!instanceConfig.docId) {
-        throw new Error("docId must be present in config when initialising TextSync.");
-    }
-    if (!instanceConfig.element) {
-        throw new Error("element must be present in config when initialising TextSync.");
-    }
-    if (instanceConfig.presenceConfig && instanceConfig.presenceConfig.callback) {
-        if (typeof instanceConfig.presenceConfig.callback !== 'function') {
-            throw new Error("presenceConfig.callback must be a function.");
+var TextSync = (function () {
+    function TextSync(instanceConfig, host) {
+        if (!instanceConfig) {
+            throw new Error("Pusher Platform instance config must be present to initialise TextSync.");
         }
+        else if (!instanceConfig.instance) {
+            throw new Error("Instance ID must be present in config when initialising TextSync.");
+        }
+        this.instance = instanceConfig.instance;
+        this.host = host || null;
+        this.userName = instanceConfig.user.name || null;
+        this.userEmail = instanceConfig.user.email || null;
     }
-    if (instanceConfig.element instanceof Element) {
-        containerElement = instanceConfig.element;
-    }
-    else if (document.querySelector(instanceConfig.element)) {
-        containerElement = document.querySelector(instanceConfig.element);
-    }
-    else {
-        throw new Error("Could not find element " + instanceConfig.element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
-    }
-    var instance = instanceConfig.instance;
-    var docId = instanceConfig.docId;
-    var presenceConfig = instanceConfig.presenceConfig || { showBadges: true };
-    // Remove when we have JWT
-    var name = userConfig.name;
-    var email = userConfig.email;
-    var quillConfig = buildQuillConfig(instanceConfig);
-    if (quillConfig.theme == null) {
+    TextSync.prototype.createEditor = function (editorConfig) {
+        var docId = editorConfig.docId || null;
+        if (!docId) {
+            throw new Error("docId must be present in config when initialising TextSync.");
+        }
+        var element = editorConfig.element || null;
+        var containerElement;
+        if (!element) {
+            throw new Error("element must be present in config when initialising TextSync.");
+        }
+        else if (element instanceof HTMLElement) {
+            containerElement = element;
+        }
+        else if (document.querySelector(element)) {
+            containerElement = document.querySelector(element);
+        }
+        else {
+            throw new Error("Could not find element " + element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
+        }
+        var presenceConfig = editorConfig.presenceConfig || { showBadges: true };
+        if (presenceConfig.callback) {
+            if (typeof presenceConfig.callback !== 'function') {
+                throw new Error("presenceConfig.callback must be a function.");
+            }
+        }
+        var quillConfig = buildQuillConfig(editorConfig.quillConfig);
         injectQuillCss(quillConfig);
-    }
-    var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
-    var logootDoc = new logoot_doc_1.default(siteId);
-    var app = new PusherPlatform.Instance({
-        serviceName: 'textsync',
-        serviceVersion: 'v1',
-        instance: instance,
-        host: instanceConfig.host,
-        logger: new PusherPlatform.ConsoleLogger(1)
-    });
-    var textSyncInstance = new textsync_1.default(logootDoc, app, docId, siteId, presenceConfig, name, email);
-    var quill = initEditor(containerElement, quillConfig, instanceConfig, presenceConfig);
-    var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
-    textSyncInstance.start(quillAdaptor);
-    return { quill: quill };
-}
-exports.createEditor = createEditor;
-function initEditor(element, quillConfig, instanceConfig, presenceConfig) {
+        var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
+        var logootDoc = new logoot_doc_1.default(siteId);
+        var app = new PusherPlatform.Instance({
+            serviceName: 'textsync',
+            serviceVersion: 'v1',
+            instance: this.instance,
+            host: this.host,
+            logger: new PusherPlatform.ConsoleLogger(1)
+        });
+        var textSyncInstance = new textsync_1.TextSync(logootDoc, app, docId, siteId, presenceConfig, this.userName, this.userEmail);
+        var quill = initEditor(containerElement, quillConfig, presenceConfig);
+        var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
+        textSyncInstance.start(quillAdaptor);
+        return { quill: quill };
+    };
+    return TextSync;
+}());
+function initEditor(element, quillConfig, presenceConfig) {
     if (presenceConfig.showBadges) {
         __webpack_require__(10);
         __webpack_require__(11);
@@ -17554,14 +17564,8 @@ function initEditor(element, quillConfig, instanceConfig, presenceConfig) {
     element.appendChild(editor);
     return new Quill(editor, quillConfig);
 }
-function buildQuillConfig(instanceConfig) {
-    var quillConfig = {};
-    if (instanceConfig.quillConfig) {
-        quillConfig = instanceConfig.quillConfig;
-    }
-    else {
-        quillConfig = DEFAULT_QUILL_CONFIG;
-    }
+function buildQuillConfig(quillConfig) {
+    quillConfig = quillConfig || DEFAULT_QUILL_CONFIG;
     if (quillConfig.modules == null)
         quillConfig.modules = {};
     quillConfig.modules.history = {
@@ -17589,6 +17593,7 @@ function injectQuillCss(quillConfig) {
     link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
     document.getElementsByTagName("head")[0].appendChild(link);
 }
+module.exports = TextSync;
 
 
 /***/ }),
