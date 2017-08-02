@@ -13851,7 +13851,7 @@ function createAnonName() {
     return capitalize(adjective + ' ' + noun);
 }
 function randomChoice(list) {
-    var randomIndex = Math.round(Math.random() * list.length - 1);
+    var randomIndex = Math.round(Math.random() * (list.length - 1));
     return list[randomIndex];
 }
 function capitalize(text) {
