@@ -17533,7 +17533,6 @@ var TextSync = (function () {
             }
         }
         var quillConfig = buildQuillConfig(editorConfig.quillConfig);
-        injectQuillCss(quillConfig);
         var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
         var logootDoc = new logoot_doc_1.default(siteId);
         var app = new PusherPlatform.Instance({
@@ -17544,7 +17543,16 @@ var TextSync = (function () {
             logger: new PusherPlatform.ConsoleLogger(1)
         });
         var textSyncInstance = new textsync_1.TextSync(logootDoc, app, docId, siteId, presenceConfig, this.userName, this.userEmail);
+        // Hide the editor element until the CSS has loaded
+        var cachedDisplayStyle = containerElement.style.display;
+        containerElement.style.display = "none";
         var quill = initEditor(containerElement, quillConfig, presenceConfig);
+        injectQuillCss(quillConfig).then(function () {
+            containerElement.style.display = cachedDisplayStyle;
+        }).catch(function () {
+            console.error("Failed to load Quill styles");
+            containerElement.style.display = cachedDisplayStyle;
+        });
         var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
         textSyncInstance.start(quillAdaptor);
         return { quill: quill };
@@ -17592,6 +17600,10 @@ function injectQuillCss(quillConfig) {
     link.type = "text/css";
     link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
     document.getElementsByTagName("head")[0].appendChild(link);
+    return new Promise(function (resolve, reject) {
+        link.onload = resolve;
+        link.onerror = reject;
+    });
 }
 module.exports = TextSync;
 
