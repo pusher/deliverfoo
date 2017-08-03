@@ -17601,7 +17601,7 @@ function injectQuillCss(quillConfig) {
     var link = document.createElement("link");
     link.rel = "stylesheet";
     link.type = "text/css";
-    link.href = "http://cdn.quilljs.com/1.2.4/quill.snow.css";
+    link.href = "//cdn.quilljs.com/1.2.4/quill.snow.css";
     document.getElementsByTagName("head")[0].appendChild(link);
     return new Promise(function (resolve, reject) {
         link.onload = resolve;
