@@ -163,8 +163,8 @@ function toComment(sourceMap) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var pSlice = Array.prototype.slice;
-var objectKeys = __webpack_require__(20);
-var isArguments = __webpack_require__(19);
+var objectKeys = __webpack_require__(19);
+var isArguments = __webpack_require__(18);
 
 var deepEqual = module.exports = function (actual, expected, opts) {
   if (!opts) opts = {};
@@ -353,166 +353,6 @@ module.exports = function extend() {
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-const HIGH_SURROGATE_START = 0xd800
-const HIGH_SURROGATE_END = 0xdbff
-
-const LOW_SURROGATE_START = 0xdc00
-
-const REGIONAL_INDICATOR_START = 0x1f1e6
-const REGIONAL_INDICATOR_END = 0x1f1ff
-
-const FITZPATRICK_MODIFIER_START = 0x1f3fb
-const FITZPATRICK_MODIFIER_END = 0x1f3ff
-
-const VARIATION_MODIFIER_START = 0xfe00
-const VARIATION_MODIFIER_END = 0xfe0f
-
-const ZWJ = 0x200d
-
-const GRAPHEMS = [
-  0x0308, // ( ◌̈ ) COMBINING DIAERESIS
-  0x0937, // ( ष ) DEVANAGARI LETTER SSA
-  0x0937, // ( ष ) DEVANAGARI LETTER SSA
-  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
-  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
-  0x0BA8, // ( ந ) TAMIL LETTER NA
-  0x0BBF, // ( ி ) TAMIL VOWEL SIGN I
-  0x0BCD, // ( ◌்) TAMIL SIGN VIRAMA
-  0x0E31, // ( ◌ั ) THAI CHARACTER MAI HAN-AKAT
-  0x0E33, // ( ำ ) THAI CHARACTER SARA AM
-  0x0E40, // ( เ ) THAI CHARACTER SARA E
-  0x0E49, // ( เ ) THAI CHARACTER MAI THO
-  0x1100, // ( ᄀ ) HANGUL CHOSEONG KIYEOK
-  0x1161, // ( ᅡ ) HANGUL JUNGSEONG A
-  0x11A8 // ( ᆨ ) HANGUL JONGSEONG KIYEOK
-]
-
-function runes (string) {
-  if (typeof string !== 'string') {
-    throw new Error('string cannot be undefined or null')
-  }
-  const result = []
-  let i = 0
-  let increment = 0
-  while (i < string.length) {
-    increment += nextUnits(i + increment, string)
-    if (isGraphem(string[i + increment])) {
-      increment++
-    }
-    if (isVariationSelector(string[i + increment])) {
-      increment++
-    }
-    if (isZeroWidthJoiner(string[i + increment])) {
-      increment++
-      continue
-    }
-    result.push(string.substring(i, i + increment))
-    i += increment
-    increment = 0
-  }
-  return result
-}
-
-// Decide how many code units make up the current character.
-// BMP characters: 1 code unit
-// Non-BMP characters (represented by surrogate pairs): 2 code units
-// Emoji with skin-tone modifiers: 4 code units (2 code points)
-// Country flags: 4 code units (2 code points)
-// Variations: 2 code units
-function nextUnits (i, string) {
-  const current = string[i]
-  // If we don't have a value that is part of a surrogate pair, or we're at
-  // the end, only take the value at i
-  if (!isFirstOfSurrogatePair(current) || i === string.length - 1) {
-    return 1
-  }
-
-  const currentPair = current + string[i + 1]
-  let nextPair = string.substring(i + 2, i + 5)
-
-  // Country flags are comprised of two regional indicator symbols,
-  // each represented by a surrogate pair.
-  // See http://emojipedia.org/flags/
-  // If both pairs are regional indicator symbols, take 4
-  if (isRegionalIndicator(currentPair) && isRegionalIndicator(nextPair)) {
-    return 4
-  }
-
-  // If the next pair make a Fitzpatrick skin tone
-  // modifier, take 4
-  // See http://emojipedia.org/modifiers/
-  // Technically, only some code points are meant to be
-  // combined with the skin tone modifiers. This function
-  // does not check the current pair to see if it is
-  // one of them.
-  if (isFitzpatrickModifier(nextPair)) {
-    return 4
-  }
-  return 2
-}
-
-function isFirstOfSurrogatePair (string) {
-  return string && betweenInclusive(string[0].charCodeAt(0), HIGH_SURROGATE_START, HIGH_SURROGATE_END)
-}
-
-function isRegionalIndicator (string) {
-  return betweenInclusive(codePointFromSurrogatePair(string), REGIONAL_INDICATOR_START, REGIONAL_INDICATOR_END)
-}
-
-function isFitzpatrickModifier (string) {
-  return betweenInclusive(codePointFromSurrogatePair(string), FITZPATRICK_MODIFIER_START, FITZPATRICK_MODIFIER_END)
-}
-
-function isVariationSelector (string) {
-  return typeof string === 'string' && betweenInclusive(string.charCodeAt(0), VARIATION_MODIFIER_START, VARIATION_MODIFIER_END)
-}
-
-function isGraphem (string) {
-  return typeof string === 'string' && GRAPHEMS.indexOf(string.charCodeAt(0)) !== -1
-}
-
-function isZeroWidthJoiner (string) {
-  return typeof string === 'string' && string.charCodeAt(0) === ZWJ
-}
-
-function codePointFromSurrogatePair (pair) {
-  const highOffset = pair.charCodeAt(0) - HIGH_SURROGATE_START
-  const lowOffset = pair.charCodeAt(1) - LOW_SURROGATE_START
-  return (highOffset << 10) + lowOffset + 0x10000
-}
-
-function betweenInclusive (value, lower, upper) {
-  return value >= lower && value <= upper
-}
-
-function substring (string, start, width) {
-  const chars = runes(string)
-  if (start === undefined) {
-    return string
-  }
-  if (start >= chars.length) {
-    return ''
-  }
-  const rest = chars.length - start
-  const stringWidth = width === undefined ? rest : width
-  let endIndex = start + stringWidth
-  if (endIndex > (start + rest)) {
-    endIndex = undefined
-  }
-  return chars.slice(start, endIndex).join('')
-}
-
-module.exports = runes
-module.exports.substr = substring
-
-
-/***/ }),
-/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -871,7 +711,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -885,7 +725,7 @@ var OpType;
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -897,7 +737,7 @@ var OpType;
  * [Research Report] RR-6713, INRIA. 2008, pp.13
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var runes = __webpack_require__(3);
+var runes = __webpack_require__(25);
 var Ident = (function () {
     function Ident(n, siteId) {
         this.n = n;
@@ -1075,6 +915,24 @@ var Logoot = (function () {
         this.siteId = siteId;
         this._clock = 0;
     }
+    Logoot.prototype._insertText = function (index, content) {
+        var atoms = [];
+        var atomBeforeTextBlock = this.seq[index];
+        var atomAfterTextBlock = this.seq[index + 1];
+        var atomJustInserted;
+        var runesToInsert = runes(content);
+        for (var _i = 0, runesToInsert_1 = runesToInsert; _i < runesToInsert_1.length; _i++) {
+            var rune = runesToInsert_1[_i];
+            var prevAtom = atomJustInserted || atomBeforeTextBlock;
+            var nextAtom = atomAfterTextBlock;
+            var newAtom = this.newAtomBetween(prevAtom, nextAtom, rune);
+            atoms.push(newAtom);
+            atomJustInserted = newAtom;
+        }
+        (_a = this.seq).splice.apply(_a, [index + 1, 0].concat(atoms));
+        return atoms;
+        var _a;
+    };
     Logoot.prototype.insertAtoms = function (atoms) {
         atoms = atoms.sort(function (a, b) { return a.compare(b); });
         var atomsPointer = 0;
@@ -1184,7 +1042,7 @@ exports.default = Logoot;
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1224,7 +1082,7 @@ exports.messageFromOps = messageFromOps;
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -2142,7 +2000,7 @@ exports.default = {
 });
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -13152,16 +13010,16 @@ module.exports = __webpack_require__(62);
 /***/ })
 /******/ ]);
 });
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(15).Buffer))
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(17);
+var content = __webpack_require__(16);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -13169,7 +13027,7 @@ var transform;
 var options = {"insertAt":"top"}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(4)(content, options);
+var update = __webpack_require__(3)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -13186,13 +13044,13 @@ if(false) {
 }
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(18);
+var content = __webpack_require__(17);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -13200,7 +13058,7 @@ var transform;
 var options = {"insertAt":"top"}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(4)(content, options);
+var update = __webpack_require__(3)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -13217,7 +13075,7 @@ if(false) {
 }
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13261,10 +13119,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var logoot_1 = __webpack_require__(6);
-var logoot_2 = __webpack_require__(6);
-var wire_format_1 = __webpack_require__(7);
-var runes = __webpack_require__(3);
+var logoot_1 = __webpack_require__(5);
+var logoot_2 = __webpack_require__(5);
+var wire_format_1 = __webpack_require__(6);
 var LogootDoc = (function (_super) {
     __extends(LogootDoc, _super);
     function LogootDoc(siteId) {
@@ -13280,21 +13137,14 @@ var LogootDoc = (function (_super) {
      *   such that they might apply the same insertion.
      */
     LogootDoc.prototype.insertText = function (index, content, attributes) {
-        var ops = [];
-        // should be one op per atom
-        var runesToInsert = runes(content);
-        for (var i = 0; i < runesToInsert.length; i++) {
-            var rune = runesToInsert[i];
-            var _a = this.getSurroundingAtoms(index + i), before_1 = _a[0], after_1 = _a[1];
-            var newAtom = this.newAtomBetween(before_1, after_1, rune);
-            var newOp = {
+        var atoms = this._insertText(index, content);
+        var ops = atoms.map(function (atom) {
+            return {
                 type: wire_format_1.OpType.Insert,
-                ident: newAtom.ident.toWire(),
-                content: { text: rune, attributes: attributes },
+                ident: atom.ident.toWire(),
+                content: { text: atom.rune, attributes: attributes },
             };
-            this.applyInsertText([newOp]);
-            ops.push(newOp); // to be batch-sent to server
-        }
+        });
         return ops;
     };
     /**
@@ -13362,7 +13212,7 @@ exports.default = LogootDoc;
 
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13371,8 +13221,8 @@ exports.default = LogootDoc;
  * Binding between the textsync document model and that of Quilljs
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var Delta = __webpack_require__(24);
-var editorAdaptor = __webpack_require__(5);
+var Delta = __webpack_require__(23);
+var editorAdaptor = __webpack_require__(4);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
         this.siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
@@ -13597,7 +13447,7 @@ exports.makeDeltas = makeDeltas;
 
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13606,8 +13456,8 @@ exports.makeDeltas = makeDeltas;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var wireFormat = __webpack_require__(7);
-var editorAdaptor = __webpack_require__(5);
+var wireFormat = __webpack_require__(6);
+var editorAdaptor = __webpack_require__(4);
 var model_1 = __webpack_require__(30);
 var controller_1 = __webpack_require__(28);
 var badges_1 = __webpack_require__(27);
@@ -13861,7 +13711,7 @@ function capitalize(text) {
 
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13982,7 +13832,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 16 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13996,9 +13846,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(15)
-var ieee754 = __webpack_require__(22)
-var isArray = __webpack_require__(23)
+var base64 = __webpack_require__(14)
+var ieee754 = __webpack_require__(21)
+var isArray = __webpack_require__(22)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -15779,7 +15629,7 @@ function isnan (val) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(32)))
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -15793,7 +15643,7 @@ exports.push([module.i, "@-webkit-keyframes flash {\n  0%   { opacity: 0; }\n  5
 
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -15807,7 +15657,7 @@ exports.push([module.i, "\n.tsync-badge {\n  opacity: 0;\n  transition: opacity 
 
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ (function(module, exports) {
 
 var supportsArgumentsClass = (function(){
@@ -15833,7 +15683,7 @@ function unsupported(object){
 
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ (function(module, exports) {
 
 exports = module.exports = typeof Object.keys === 'function'
@@ -15848,7 +15698,7 @@ function shim (obj) {
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ (function(module, exports) {
 
 /**
@@ -16552,7 +16402,7 @@ function merge_tuples (diffs, start, length) {
 
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -16642,7 +16492,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -16653,13 +16503,13 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var diff = __webpack_require__(21);
+var diff = __webpack_require__(20);
 var equal = __webpack_require__(1);
 var extend = __webpack_require__(2);
-var op = __webpack_require__(25);
+var op = __webpack_require__(24);
 
 
 var NULL_CHARACTER = String.fromCharCode(0);  // Placeholder char for embed in diff()
@@ -16973,7 +16823,7 @@ module.exports = Delta;
 
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var equal = __webpack_require__(1);
@@ -17115,6 +16965,166 @@ Iterator.prototype.peekType = function () {
 
 
 module.exports = lib;
+
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+const HIGH_SURROGATE_START = 0xd800
+const HIGH_SURROGATE_END = 0xdbff
+
+const LOW_SURROGATE_START = 0xdc00
+
+const REGIONAL_INDICATOR_START = 0x1f1e6
+const REGIONAL_INDICATOR_END = 0x1f1ff
+
+const FITZPATRICK_MODIFIER_START = 0x1f3fb
+const FITZPATRICK_MODIFIER_END = 0x1f3ff
+
+const VARIATION_MODIFIER_START = 0xfe00
+const VARIATION_MODIFIER_END = 0xfe0f
+
+const ZWJ = 0x200d
+
+const GRAPHEMS = [
+  0x0308, // ( ◌̈ ) COMBINING DIAERESIS
+  0x0937, // ( ष ) DEVANAGARI LETTER SSA
+  0x0937, // ( ष ) DEVANAGARI LETTER SSA
+  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
+  0x093F, // ( ि ) DEVANAGARI VOWEL SIGN I
+  0x0BA8, // ( ந ) TAMIL LETTER NA
+  0x0BBF, // ( ி ) TAMIL VOWEL SIGN I
+  0x0BCD, // ( ◌்) TAMIL SIGN VIRAMA
+  0x0E31, // ( ◌ั ) THAI CHARACTER MAI HAN-AKAT
+  0x0E33, // ( ำ ) THAI CHARACTER SARA AM
+  0x0E40, // ( เ ) THAI CHARACTER SARA E
+  0x0E49, // ( เ ) THAI CHARACTER MAI THO
+  0x1100, // ( ᄀ ) HANGUL CHOSEONG KIYEOK
+  0x1161, // ( ᅡ ) HANGUL JUNGSEONG A
+  0x11A8 // ( ᆨ ) HANGUL JONGSEONG KIYEOK
+]
+
+function runes (string) {
+  if (typeof string !== 'string') {
+    throw new Error('string cannot be undefined or null')
+  }
+  const result = []
+  let i = 0
+  let increment = 0
+  while (i < string.length) {
+    increment += nextUnits(i + increment, string)
+    if (isGraphem(string[i + increment])) {
+      increment++
+    }
+    if (isVariationSelector(string[i + increment])) {
+      increment++
+    }
+    if (isZeroWidthJoiner(string[i + increment])) {
+      increment++
+      continue
+    }
+    result.push(string.substring(i, i + increment))
+    i += increment
+    increment = 0
+  }
+  return result
+}
+
+// Decide how many code units make up the current character.
+// BMP characters: 1 code unit
+// Non-BMP characters (represented by surrogate pairs): 2 code units
+// Emoji with skin-tone modifiers: 4 code units (2 code points)
+// Country flags: 4 code units (2 code points)
+// Variations: 2 code units
+function nextUnits (i, string) {
+  const current = string[i]
+  // If we don't have a value that is part of a surrogate pair, or we're at
+  // the end, only take the value at i
+  if (!isFirstOfSurrogatePair(current) || i === string.length - 1) {
+    return 1
+  }
+
+  const currentPair = current + string[i + 1]
+  let nextPair = string.substring(i + 2, i + 5)
+
+  // Country flags are comprised of two regional indicator symbols,
+  // each represented by a surrogate pair.
+  // See http://emojipedia.org/flags/
+  // If both pairs are regional indicator symbols, take 4
+  if (isRegionalIndicator(currentPair) && isRegionalIndicator(nextPair)) {
+    return 4
+  }
+
+  // If the next pair make a Fitzpatrick skin tone
+  // modifier, take 4
+  // See http://emojipedia.org/modifiers/
+  // Technically, only some code points are meant to be
+  // combined with the skin tone modifiers. This function
+  // does not check the current pair to see if it is
+  // one of them.
+  if (isFitzpatrickModifier(nextPair)) {
+    return 4
+  }
+  return 2
+}
+
+function isFirstOfSurrogatePair (string) {
+  return string && betweenInclusive(string[0].charCodeAt(0), HIGH_SURROGATE_START, HIGH_SURROGATE_END)
+}
+
+function isRegionalIndicator (string) {
+  return betweenInclusive(codePointFromSurrogatePair(string), REGIONAL_INDICATOR_START, REGIONAL_INDICATOR_END)
+}
+
+function isFitzpatrickModifier (string) {
+  return betweenInclusive(codePointFromSurrogatePair(string), FITZPATRICK_MODIFIER_START, FITZPATRICK_MODIFIER_END)
+}
+
+function isVariationSelector (string) {
+  return typeof string === 'string' && betweenInclusive(string.charCodeAt(0), VARIATION_MODIFIER_START, VARIATION_MODIFIER_END)
+}
+
+function isGraphem (string) {
+  return typeof string === 'string' && GRAPHEMS.indexOf(string.charCodeAt(0)) !== -1
+}
+
+function isZeroWidthJoiner (string) {
+  return typeof string === 'string' && string.charCodeAt(0) === ZWJ
+}
+
+function codePointFromSurrogatePair (pair) {
+  const highOffset = pair.charCodeAt(0) - HIGH_SURROGATE_START
+  const lowOffset = pair.charCodeAt(1) - LOW_SURROGATE_START
+  return (highOffset << 10) + lowOffset + 0x10000
+}
+
+function betweenInclusive (value, lower, upper) {
+  return value >= lower && value <= upper
+}
+
+function substring (string, start, width) {
+  const chars = runes(string)
+  if (start === undefined) {
+    return string
+  }
+  if (start >= chars.length) {
+    return ''
+  }
+  const rest = chars.length - start
+  const stringWidth = width === undefined ? rest : width
+  let endIndex = start + stringWidth
+  if (endIndex > (start + rest)) {
+    endIndex = undefined
+  }
+  return chars.slice(start, endIndex).join('')
+}
+
+module.exports = runes
+module.exports.substr = substring
 
 
 /***/ }),
@@ -17481,11 +17491,11 @@ exports.default = PresenceModel;
  * It is intended to replace an existing
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var Quill = __webpack_require__(9);
-var PusherPlatform = __webpack_require__(8);
-var logoot_doc_1 = __webpack_require__(12);
-var textsync_1 = __webpack_require__(14);
-var quill_adaptor_1 = __webpack_require__(13);
+var Quill = __webpack_require__(8);
+var PusherPlatform = __webpack_require__(7);
+var logoot_doc_1 = __webpack_require__(11);
+var textsync_1 = __webpack_require__(13);
+var quill_adaptor_1 = __webpack_require__(12);
 var DEFAULT_QUILL_CONFIG = {
     theme: 'snow',
     modules: {
@@ -17564,8 +17574,8 @@ var TextSync = (function () {
 }());
 function initEditor(element, quillConfig, presenceConfig) {
     if (presenceConfig.showBadges) {
+        __webpack_require__(9);
         __webpack_require__(10);
-        __webpack_require__(11);
         var presenceContainer = document.createElement('div');
         presenceContainer.id = 'tsync-presence-container';
         element.appendChild(presenceContainer);
@@ -17601,7 +17611,7 @@ function injectQuillCss(quillConfig) {
     var link = document.createElement("link");
     link.rel = "stylesheet";
     link.type = "text/css";
-    link.href = "//cdn.quilljs.com/1.2.4/quill.snow.css";
+    link.href = "https://cdn.quilljs.com/1.2.4/quill.snow.css";
     document.getElementsByTagName("head")[0].appendChild(link);
     return new Promise(function (resolve, reject) {
         link.onload = resolve;
