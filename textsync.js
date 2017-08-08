@@ -837,7 +837,7 @@ var Position = (function () {
             case -1: {
                 var diff = nextInt - prevInt;
                 if (diff > 1) {
-                    return [new Ident(Logoot.randomIntBetween(prevInt, nextInt), siteId)];
+                    return [new Ident(this.genIdentIntBetween(prevInt, nextInt), siteId)];
                 }
                 else if (diff === 1 && siteId > prevSiteId) {
                     return [new Ident(prevInt, siteId)];
@@ -852,6 +852,10 @@ var Position = (function () {
             }
         }
         throw new Error("Impossible");
+    };
+    Position.genIdentIntBetween = function (min, max) {
+        // We might do something more interesting later
+        return min + 1;
     };
     return Position;
 }());
@@ -1030,9 +1034,6 @@ var Logoot = (function () {
             out += atom.toString() + "\n";
         }
         return out;
-    };
-    Logoot.randomIntBetween = function (min, max) {
-        return Math.floor(Math.random() * (max - (min + 1))) + min + 1;
     };
     Logoot.min = exports.ABS_MIN_ATOM_IDENT;
     Logoot.max = exports.ABS_MAX_ATOM_IDENT;
