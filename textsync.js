@@ -1923,6 +1923,8 @@ var OpType;
 (function (OpType) {
     OpType[OpType["Insert"] = 0] = "Insert";
     OpType[OpType["Delete"] = 1] = "Delete";
+    OpType[OpType["AddCursor"] = 2] = "AddCursor";
+    OpType[OpType["RemoveCursor"] = 3] = "RemoveCursor";
 })(OpType = exports.OpType || (exports.OpType = {}));
 
 
@@ -19385,7 +19387,7 @@ function createAnonName() {
 }
 exports.createAnonName = createAnonName;
 function randomChoice(list) {
-    var randomIndex = Math.round(Math.random() * list.length);
+    var randomIndex = Math.round(Math.random() * (list.length - 1));
     return list[randomIndex];
 }
 function capitalize(text) {
