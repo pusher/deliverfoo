@@ -1923,8 +1923,6 @@ var OpType;
 (function (OpType) {
     OpType[OpType["Insert"] = 0] = "Insert";
     OpType[OpType["Delete"] = 1] = "Delete";
-    OpType[OpType["AddCursor"] = 2] = "AddCursor";
-    OpType[OpType["RemoveCursor"] = 3] = "RemoveCursor";
 })(OpType = exports.OpType || (exports.OpType = {}));
 
 
