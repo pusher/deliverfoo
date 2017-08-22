@@ -1966,7 +1966,7 @@ var Ident = (function () {
         return this.compare(that) === -1;
     };
     Ident.prototype.toString = function () {
-        return "(" + this.n + ", " + this.siteId + ")";
+        return '(' + this.n + ', ' + this.siteId + ')';
     };
     return Ident;
 }());
@@ -2019,7 +2019,7 @@ var Position = (function () {
             case 0:
                 return this.slice(1).compare(that.slice(1));
         }
-        throw new Error("Impossible");
+        throw new Error('Impossible');
     };
     Position.prototype.toString = function () {
         return this.idents.toString();
@@ -2053,7 +2053,7 @@ var Position = (function () {
                 throw new Error('"Next" position was less than "previous" position.');
             }
         }
-        throw new Error("Impossible");
+        throw new Error('Impossible');
     };
     Position.genIdentIntBetween = function (min, max) {
         // We might do something more interesting later
@@ -2083,7 +2083,7 @@ var AtomIdent = (function () {
         return this.compare(that) === -1;
     };
     AtomIdent.prototype.toString = function () {
-        return "{" + this.position + "," + this.clock + "}";
+        return '{' + this.position + ',' + this.clock + '}';
     };
     return AtomIdent;
 }());
@@ -2094,7 +2094,7 @@ var Atom = (function () {
         this.rune = rune;
         var isSingleRune = runes(rune).length === 1;
         if (!isSingleRune) {
-            throw new Error("Atom content must be single unicode character");
+            throw new Error('Atom content must be single unicode character');
         }
     }
     Atom.fromWire = function (ident, content) {
@@ -2107,7 +2107,7 @@ var Atom = (function () {
         return this.compare(that) === -1;
     };
     Atom.prototype.toString = function () {
-        return "Atom(" + this.ident + ")";
+        return 'Atom(' + this.ident + ')';
     };
     return Atom;
 }());
@@ -2117,7 +2117,7 @@ exports.ABS_MIN_ATOM_IDENT = new AtomIdent(new Position([new Ident(0, 0)]), 0);
 exports.ABS_MAX_ATOM_IDENT = new AtomIdent(new Position([new Ident(MAX_POS, 0)]), 1);
 var Logoot = (function () {
     function Logoot(siteId) {
-        this.seq = [new Atom(Logoot.min, " "), new Atom(Logoot.max, " ")];
+        this.seq = [new Atom(Logoot.min, ' '), new Atom(Logoot.max, ' ')];
         this.siteId = siteId;
         this._clock = 0;
     }
@@ -2145,11 +2145,10 @@ var Logoot = (function () {
         var seqPointer = 0;
         var indices = [];
         var newSeq = [];
-        while (atomsPointer < atoms.length
-            || seqPointer < this.seq.length) {
+        while (atomsPointer < atoms.length || seqPointer < this.seq.length) {
             var atomsHead = atoms[atomsPointer];
             var seqHead = this.seq[seqPointer];
-            if (!seqHead || atomsHead && atomsHead.lt(seqHead)) {
+            if (!seqHead || (atomsHead && atomsHead.lt(seqHead))) {
                 newSeq.push(atomsHead);
                 indices.push(atomsPointer + seqPointer - 1);
                 atomsPointer++;
@@ -2182,7 +2181,7 @@ var Logoot = (function () {
             }
         }
         if (deletePointer < idents.length) {
-            throw new Error("Trying to delete atom that does not exist");
+            throw new Error('Trying to delete atom that does not exist');
         }
         this.seq = newSeq;
         return indices;
@@ -2193,7 +2192,7 @@ var Logoot = (function () {
         for (var i = 0; i < runesToInsert.length; i++) {
             var position = new Position([
                 new Ident(MAX_POS - 1, 0),
-                new Ident(i, 0),
+                new Ident(i, 0)
             ]);
             var siteId = 2 + i;
             var content_1 = runesToInsert[i];
@@ -2206,10 +2205,7 @@ var Logoot = (function () {
     };
     Logoot.prototype.getSurroundingAtoms = function (index) {
         var nullAtomOffset = 1;
-        return [
-            this.seq[index],
-            this.seq[index + nullAtomOffset]
-        ];
+        return [this.seq[index], this.seq[index + nullAtomOffset]];
     };
     Logoot.prototype.getAtomsToDelete = function (index, length) {
         var nullAtomOffset = 1;
@@ -2233,7 +2229,7 @@ var Logoot = (function () {
         var out = '';
         for (var _i = 0, _a = this.seq; _i < _a.length; _i++) {
             var atom = _a[_i];
-            out += atom.toString() + "\n";
+            out += atom.toString() + '\n';
         }
         return out;
     };
@@ -2278,7 +2274,7 @@ function messageFromOps(ops, siteId) {
     return {
         docOps: docOps,
         cursorOps: cursorOps,
-        siteId: siteId,
+        siteId: siteId
     };
 }
 exports.messageFromOps = messageFromOps;
@@ -14345,7 +14341,7 @@ var LogootDoc = (function (_super) {
             return {
                 type: wire_format_1.OpType.Insert,
                 ident: atom.ident.toWire(),
-                content: { text: atom.rune, attributes: attributes },
+                content: { text: atom.rune, attributes: attributes }
             };
         });
         return ops;
@@ -14386,7 +14382,7 @@ var LogootDoc = (function (_super) {
                 return i - 1;
             }
         }
-        console.log("this.seq", this.seq);
+        console.log('this.seq', this.seq);
         throw new Error("Out of range: " + JSON.stringify(atomIdent));
     };
     /**
@@ -14462,14 +14458,14 @@ var editorAdaptor = __webpack_require__(5);
 __webpack_require__(30);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
-        this.siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
+        this.siteId = Math.floor(Math.random() * Math.pow(2, 32));
         this.docId = docId;
         this.quill = quill;
         this.textsync = textsync;
         this.cursorModule = quill.getModule('cursors');
         // The "empty" Quill document is a single newline. It can't be removed, so we need
         // to initialise the textsync document with it.
-        this.textsync.initialContent("\n");
+        this.textsync.initialContent('\n');
         this.quill.setText('');
         this.quill.on('text-change', this.editorChange.bind(this));
         this.quill.on('selection-change', this.selectionChange.bind(this));
@@ -14491,14 +14487,12 @@ var QuillAdaptor = (function () {
         console.error(error);
     };
     QuillAdaptor.prototype.selectionChange = function (range, oldRange, source) {
-        console.log("selection change");
+        console.log('selection change');
         if (range) {
-            console.log("range == ", range, source);
-            // If there is no selection the length will be 0. If there is a selection
-            // the cursor could either be considered to be at the start or end of
-            // the selection. We have decided that the end seems more intuitive.
-            var cursorPosition = range.index + range.length;
-            this.textsync.updateCursor(cursorPosition);
+            console.log('range == ', range, source);
+            var start = range.index;
+            var end = range.length > 0 ? start + range.length : null;
+            this.textsync.updateCursor(start, end);
         }
         else {
             console.info(this.siteId + " has defocussed");
@@ -14506,13 +14500,13 @@ var QuillAdaptor = (function () {
         }
     };
     QuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
-        console.log("text change", delta, oldDelta);
+        console.log('text change', delta, oldDelta);
         // The character index which the delta operation we are currently processing
         var changeIndex = 0;
         // The difference we need to apply when indexing in to the oldDelta by character, because
         // we have deleted characters from the document which still exist in the oldDelta.
         var oldDeltaChangeOffset = 0;
-        console.debug("received event from editor:", JSON.stringify(delta));
+        console.debug('received event from editor:', JSON.stringify(delta));
         for (var _i = 0, _a = delta.ops; _i < _a.length; _i++) {
             var deltaOp = _a[_i];
             if (deltaOp.hasOwnProperty('retain')) {
@@ -14534,7 +14528,7 @@ var QuillAdaptor = (function () {
                         var wireAttrs = QuillAttributes.toWireAttributes(mergedAttrs);
                         if (changeIndex == this.quill.getLength() - 1) {
                             this.quill.formatText(changeIndex, 1, { header: false, list: false }, 'silent'); // fishy. formatting could be any block level, not just header
-                            this.quill.insertText(changeIndex, "\n", mergedAttrs, 'silent');
+                            this.quill.insertText(changeIndex, '\n', mergedAttrs, 'silent');
                             this.textsync.insertText(changeIndex, affectedOp.insert, wireAttrs);
                         }
                         else {
@@ -14580,11 +14574,11 @@ var QuillAttributes = (function () {
         quillAttrs.italic = wireAttrs.italic || false;
         quillAttrs.underline = wireAttrs.underline || false;
         quillAttrs.strike = wireAttrs.strikethrough || false;
-        quillAttrs.link = wireAttrs.hyperlink || "";
+        quillAttrs.link = wireAttrs.hyperlink || '';
         quillAttrs.header = wireAttrs.header || false;
-        quillAttrs.size = wireAttrs.size || "";
-        quillAttrs.color = wireAttrs.color || "";
-        quillAttrs.background = wireAttrs.background || "";
+        quillAttrs.size = wireAttrs.size || '';
+        quillAttrs.color = wireAttrs.color || '';
+        quillAttrs.background = wireAttrs.background || '';
         quillAttrs.list = QuillAttributes.listFromWireAttributes(wireAttrs.list);
         return quillAttrs;
     };
@@ -14595,12 +14589,12 @@ var QuillAttributes = (function () {
             quillAttrs.italic = attrs.italic || false;
             quillAttrs.underline = attrs.underline || false;
             quillAttrs.strike = attrs.strike || false;
-            quillAttrs.link = attrs.link || "";
+            quillAttrs.link = attrs.link || '';
             quillAttrs.header = attrs.link || false;
-            quillAttrs.size = attrs.size || "";
-            quillAttrs.color = attrs.color || "";
-            quillAttrs.background = attrs.background || "";
-            quillAttrs.list = attrs.list || "";
+            quillAttrs.size = attrs.size || '';
+            quillAttrs.color = attrs.color || '';
+            quillAttrs.background = attrs.background || '';
+            quillAttrs.list = attrs.list || '';
         }
         return quillAttrs;
     };
@@ -14632,10 +14626,10 @@ var QuillAttributes = (function () {
     };
     QuillAttributes.listFromDeltaType = function (deltaList) {
         console.log(deltaList);
-        if (deltaList == "bullet") {
+        if (deltaList == 'bullet') {
             return 1;
         }
-        else if (deltaList == "ordered") {
+        else if (deltaList == 'ordered') {
             return 2;
         }
         else {
@@ -14644,10 +14638,10 @@ var QuillAttributes = (function () {
     };
     QuillAttributes.listFromWireAttributes = function (e) {
         if (e == 1) {
-            return "bullet";
+            return 'bullet';
         }
         else if (e == 2) {
-            return "ordered";
+            return 'ordered';
         }
         else {
             return undefined;
@@ -14658,7 +14652,7 @@ var QuillAttributes = (function () {
 exports.QuillAttributes = QuillAttributes;
 function makeDeltas(operations) {
     var deltas = [];
-    var insertBuffer = "";
+    var insertBuffer = '';
     for (var i = 0; i < operations.length; i++) {
         var delta = new Delta();
         var operation = operations[i];
@@ -14666,10 +14660,11 @@ function makeDeltas(operations) {
         var runesToRetain = void 0;
         switch (operation.opType) {
             case editorAdaptor.OpType.Insert:
-                var canSquashIntoNextOp = (nextOperation !== null
-                    && nextOperation.opType === editorAdaptor.OpType.Insert
-                    && JSON.stringify(nextOperation.attributes) === JSON.stringify(operation.attributes)
-                    && nextOperation.index === operation.index + 1);
+                var canSquashIntoNextOp = nextOperation !== null &&
+                    nextOperation.opType === editorAdaptor.OpType.Insert &&
+                    JSON.stringify(nextOperation.attributes) ===
+                        JSON.stringify(operation.attributes) &&
+                    nextOperation.index === operation.index + 1;
                 if (canSquashIntoNextOp) {
                     insertBuffer += operation.content;
                 }
@@ -14680,7 +14675,7 @@ function makeDeltas(operations) {
                     // Insert
                     var attrs = operation.attributes || {};
                     delta.insert(insertBuffer + operation.content, QuillAttributes.fromWireAttributes(attrs));
-                    insertBuffer = "";
+                    insertBuffer = '';
                     deltas.push(delta);
                 }
                 break;
@@ -14718,8 +14713,8 @@ var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
 var TextSync = (function () {
     function TextSync(logoot, pusher, docId, siteId, presenceConfig, name, email) {
-        if (name === void 0) { name = ""; }
-        if (email === void 0) { email = ""; }
+        if (name === void 0) { name = ''; }
+        if (email === void 0) { email = ''; }
         this.logoot = logoot;
         this.pusher = pusher;
         this.docId = docId;
@@ -14742,12 +14737,22 @@ var TextSync = (function () {
     TextSync.prototype.deleteText = function (index, length) {
         this.sendOps(this.logoot.deleteText(index, length));
     };
-    TextSync.prototype.updateCursor = function (newPosition) {
+    TextSync.prototype.updateCursor = function (start, end) {
+        if (end === void 0) { end = null; }
+        var position = null;
+        if (start != null) {
+            position = {
+                start: this.logoot.newPositionAtIndex(start)
+            };
+            if (end != null) {
+                position.end = this.logoot.newPositionAtIndex(end);
+            }
+        }
         this.sendOps([
             {
                 siteId: this.siteId,
-                position: typeof newPosition === 'number' ? this.logoot.newPositionAtIndex(newPosition) : null
-            },
+                position: position
+            }
         ]);
     };
     TextSync.prototype.initPresence = function (presenceConfig) {
@@ -14763,7 +14768,7 @@ var TextSync = (function () {
     };
     TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
-        console.info("Connecting to server...");
+        console.info('Connecting to server...');
         var path = "/docs/" + this.docId + "?siteId=" + this.siteId;
         // Remove when we have JWT
         var encodedName = encodeURIComponent(name);
@@ -14775,7 +14780,7 @@ var TextSync = (function () {
         this.pusher.resumableSubscribe({
             path: path,
             onEvent: function (event) {
-                console.debug("event received from server:", JSON.stringify(event.body));
+                console.debug('event received from server:', JSON.stringify(event.body));
                 if (event.body.siteId !== _this.siteId) {
                     if (event.body.presOps && event.body.presOps.length > 0) {
                         _this.applyPresOps(event.body.presOps);
@@ -14787,19 +14792,29 @@ var TextSync = (function () {
                             siteId: event.body.siteId
                         });
                         if (_this.presenceConfig.showCursors) {
-                            console.log("from server?", event.body.siteId === 0);
+                            console.log('from server?', event.body.siteId === 0);
                             console.log(event.body.siteId + " has typed.");
                             if (event.body.siteId !== 0) {
+                                // not coming from server.  not ourselves
                                 var lastDocOp = event.body.docOps[event.body.docOps.length - 1];
-                                var cursorOp = { siteId: event.body.siteId, position: lastDocOp.ident.position };
+                                var cursorOp = {
+                                    siteId: event.body.siteId,
+                                    position: {
+                                        start: lastDocOp.ident.position
+                                    }
+                                };
                                 // insert op: lastCharIndex + 1
                                 // delete op: lastCharIndex - 1
-                                var offset = event.body.docOps[event.body.docOps.length - 1].type === 1 ? 1 : 0;
+                                var offset = event.body.docOps[event.body.docOps.length - 1].type === 1
+                                    ? 1
+                                    : 0;
                                 _this.presenceController.updateCursorPosition(cursorOp, offset);
                             }
                         }
                         if (_this.presenceConfig.showBadges) {
-                            if (event.body.siteId !== _this.siteId && !_this.isFirstDocOpsBatch) {
+                            if (event.body.siteId !== _this.siteId &&
+                                !_this.isFirstDocOpsBatch) {
+                                // same as siteId === 0?
                                 _this.presenceController.triggerStartTypingEvent(event.body.siteId);
                             }
                         }
@@ -14817,16 +14832,16 @@ var TextSync = (function () {
                 }
             },
             onOpen: function () {
-                console.info("subscription opened successfully");
+                console.info('subscription opened successfully');
             },
             onEnd: function () {
-                console.error("subscription terminated by server");
+                console.error('subscription terminated by server');
             },
             onError: function (error) {
-                console.error("subscription closed due to error", error);
+                console.error('subscription closed due to error', error);
                 // Remove this when we have proper error GUI support - Jonathan Lloyd
-                alert("Whoops! Something went wrong. Refresh the page to reconnect.");
-            },
+                alert('Whoops! Something went wrong. Refresh the page to reconnect.');
+            }
         });
     };
     TextSync.prototype.initialContent = function (content) {
@@ -14870,14 +14885,17 @@ var TextSync = (function () {
             var opsToBroadcast_1 = this.outstandingOps;
             this.outstandingOps = [];
             var body = wireFormat.messageFromOps(opsToBroadcast_1, this.siteId);
-            console.debug("Broadcasting operations to server:", JSON.stringify(body));
-            this.pusher.request({
-                method: "POST",
+            console.debug('Broadcasting operations to server:', JSON.stringify(body));
+            this.pusher
+                .request({
+                method: 'POST',
                 path: "/docs/" + this.docId,
-                body: body,
-            }).then(function () {
+                body: body
+            })
+                .then(function () {
                 _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
-            }).catch(function (error) {
+            })
+                .catch(function (error) {
                 console.error(error);
                 _this.outstandingOps = _this.outstandingOps.concat(opsToBroadcast_1);
                 var newBroadcastPeriod = _this.broadcastPeriod * BROADCAST_BACKOFF;
@@ -14886,7 +14904,9 @@ var TextSync = (function () {
                 }
             });
         }
-        setTimeout(function () { _this.broadcastOps(); }, this.broadcastPeriod);
+        setTimeout(function () {
+            _this.broadcastOps();
+        }, this.broadcastPeriod);
     };
     TextSync.prototype.receiveOps = function (wireMessage) {
         if (wireMessage.siteId === this.siteId) {
@@ -14899,10 +14919,10 @@ var TextSync = (function () {
             var op = insertOps[i];
             var runeIndex = indices[i];
             editorOps.push({
-                "opType": editorAdaptor.OpType.Insert,
-                "index": runeIndex,
-                "content": op.content.text,
-                "attributes": op.content.attributes,
+                opType: editorAdaptor.OpType.Insert,
+                index: runeIndex,
+                content: op.content.text,
+                attributes: op.content.attributes
             });
         }
         var deleteOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Delete; });
@@ -14911,8 +14931,8 @@ var TextSync = (function () {
             var op = deleteOps[i];
             var runeIndex = indices[i];
             editorOps.push({
-                "opType": editorAdaptor.OpType.Delete,
-                "index": runeIndex,
+                opType: editorAdaptor.OpType.Delete,
+                index: runeIndex
             });
         }
         this.adaptor.applyOperations(editorOps);
@@ -19100,7 +19120,7 @@ var Badges = (function () {
         }
     };
     Badges.prototype.addToDOM = function (data, index) {
-        console.log("someone joined");
+        console.log('someone joined');
         var badgeWrapper = this.createBadge(data);
         // if people use custom templates, catch for carriage returns...
         this.targetElement.appendChild(badgeWrapper);
@@ -19108,7 +19128,7 @@ var Badges = (function () {
         setTimeout(function () {
             var badge = badgeWrapper.children[0];
             badge.classList.add('in');
-        }, 100 + (100 * index));
+        }, 100 + 100 * index);
     };
     Badges.prototype.removeBadge = function (leavingSiteId) {
         var index = this.findBadgeInDOM(leavingSiteId);
@@ -19120,13 +19140,13 @@ var Badges = (function () {
         }
     };
     Badges.prototype.removeFromDOM = function (index) {
-        console.log("someone left");
+        console.log('someone left');
         var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
         var toRemove = badges[index];
         this.targetElement.removeChild(toRemove);
     };
     Badges.prototype.findBadgeInDOM = function (leavingSiteId) {
-        var badges = Array.from(document.querySelectorAll(".tsync-badge-wrapper"));
+        var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
         for (var i = 0; i < badges.length; i++) {
             if (badges[i].dataset.siteId === leavingSiteId.toString()) {
                 return i;
@@ -19136,16 +19156,16 @@ var Badges = (function () {
     };
     Badges.prototype.createBadge = function (data) {
         var badgeWrapper = document.createElement('span');
-        badgeWrapper.className = "tsync-badge-wrapper";
+        badgeWrapper.className = 'tsync-badge-wrapper';
         badgeWrapper.dataset.siteId = data.siteId.toString();
         var badge = document.createElement('div');
         badge.style.backgroundImage = "url(\"" + data.avatar + "\")";
-        badge.className = "tsync-badge";
+        badge.className = 'tsync-badge';
         var tooltip = document.createElement('span');
-        tooltip.className = "tsync-tooltip";
+        tooltip.className = 'tsync-tooltip';
         tooltip.innerText = data.name;
         if (this.siteId === data.siteId) {
-            tooltip.innerText += " (you)";
+            tooltip.innerText += ' (you)';
         }
         badgeWrapper.appendChild(badge);
         badgeWrapper.appendChild(tooltip);
@@ -19257,11 +19277,14 @@ var PresenceController = (function () {
             else {
                 var userData = this.model._collaboratorIds[cursorOp.siteId];
                 userData.position = cursorOp.position;
-                var cursorIndex = this.logootDoc.wireIdentsToIndex(cursorOp.position, 0) + offset;
-                console.log(cursorOp.siteId + " new index: " + cursorIndex);
+                var startIndex = this.logootDoc.wireIdentsToIndex(cursorOp.position.start, 0) + offset;
+                var endIndex = cursorOp.position.end
+                    ? this.logootDoc.wireIdentsToIndex(cursorOp.position.end, 0)
+                    : startIndex;
+                console.log(cursorOp.siteId + " new index: " + startIndex + ", end index: " + endIndex);
                 this.adaptor.setCursor({
                     id: cursorOp.siteId,
-                    range: { index: cursorIndex, length: 0 },
+                    range: { index: startIndex, length: endIndex - startIndex },
                     name: userData.name,
                     color: userData.color
                 });
@@ -19334,8 +19357,8 @@ var PresenceModel = (function () {
             .map(function (collaborator) { return collaborator.siteId; })
             .filter(function (siteId) { return _this._collaboratorIds.hasOwnProperty(siteId); });
         if (alreadyJoined.length > 0) {
-            console.error("The following Site IDs were added to the presence model " +
-                "but they already exist:", alreadyJoined);
+            console.error('The following Site IDs were added to the presence model ' +
+                'but they already exist:', alreadyJoined);
         }
         var justJoined = joining.filter(function (collaborator) { return !_this._collaboratorIds.hasOwnProperty(collaborator.siteId); });
         justJoined.forEach(function (collaborator) {
@@ -19357,12 +19380,18 @@ var PresenceModel = (function () {
         if (leaving.length === 0) {
             return;
         }
-        var alreadyLeft = leaving.map(function (op) { return op.siteId; }).filter(function (collaboratorId) { return !_this._collaboratorIds.hasOwnProperty(collaboratorId); });
+        var alreadyLeft = leaving
+            .map(function (op) { return op.siteId; })
+            .filter(function (collaboratorId) { return !_this._collaboratorIds.hasOwnProperty(collaboratorId); });
         if (alreadyLeft.length > 0) {
-            console.error("Tried to remove the following Site IDs from the presence model " +
-                "but they were missing:", alreadyLeft);
+            console.error('Tried to remove the following Site IDs from the presence model ' +
+                'but they were missing:', alreadyLeft);
         }
-        var justLeft = leaving.map(function (op) { return op.siteId; }).filter(function (collaboratorId) { return _this._collaboratorIds.hasOwnProperty(collaboratorId); });
+        var justLeft = leaving
+            .map(function (op) { return op.siteId; })
+            .filter(function (collaboratorId) {
+            return _this._collaboratorIds.hasOwnProperty(collaboratorId);
+        });
         justLeft.forEach(function (collaboratorId) { return delete _this._collaboratorIds[collaboratorId]; });
         this.leftEvent.notify(justLeft);
     };
@@ -19393,47 +19422,47 @@ function capitalize(text) {
     return words.map(function (word) { return word[0].toUpperCase() + word.slice(1); }).join(' ');
 }
 var ADJECTIVES = [
-    "massive",
-    "impressive",
-    "bearded",
-    "angry",
-    "shaky",
-    "sticky",
-    "fluffy",
-    "frozen",
-    "bonkers",
-    "harsh",
-    "greedy",
-    "magical",
-    "confused",
-    "high-end",
-    "slippery",
-    "vengeful",
-    "stunned",
-    "flickering",
-    "hyperactive",
+    'massive',
+    'impressive',
+    'bearded',
+    'angry',
+    'shaky',
+    'sticky',
+    'fluffy',
+    'frozen',
+    'bonkers',
+    'harsh',
+    'greedy',
+    'magical',
+    'confused',
+    'high-end',
+    'slippery',
+    'vengeful',
+    'stunned',
+    'flickering',
+    'hyperactive'
 ];
 var NOUNS = [
-    "guava jelly",
-    "mango chutney",
-    "ginger jam",
-    "sugar snap peas",
-    "moon cakes",
-    "soda crackers",
-    "banana split",
-    "nougat",
-    "gherkins",
-    "gouda",
-    "flan",
-    "trifle",
-    "dumpling",
-    "ladyfinger",
-    "marmalade",
-    "sushi",
-    "wasabi pea",
-    "falafel",
-    "goulash",
-    "crab cake",
+    'guava jelly',
+    'mango chutney',
+    'ginger jam',
+    'sugar snap peas',
+    'moon cakes',
+    'soda crackers',
+    'banana split',
+    'nougat',
+    'gherkins',
+    'gouda',
+    'flan',
+    'trifle',
+    'dumpling',
+    'ladyfinger',
+    'marmalade',
+    'sushi',
+    'wasabi pea',
+    'falafel',
+    'goulash',
+    'crab cake'
 ];
 
 
@@ -19459,34 +19488,40 @@ var DEFAULT_QUILL_CONFIG = {
     modules: {
         toolbar: [
             ['bold', 'italic', 'underline', 'strike'],
-            ['link', { 'header': [1, 2, 3, 4, 5, false] }],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }]
+            ['link', { header: [1, 2, 3, 4, 5, false] }],
+            [{ color: [] }, { background: [] }],
+            [{ size: ['small', false, 'large', 'huge'] }]
         ]
     }
 };
 var TextSync = (function () {
     function TextSync(instanceConfig, host) {
         if (!instanceConfig) {
-            throw new Error("Pusher Platform instance config must be present to initialise TextSync.");
+            throw new Error('Pusher Platform instance config must be present to initialise TextSync.');
         }
         else if (!instanceConfig.instance) {
-            throw new Error("Instance ID must be present in config when initialising TextSync.");
+            throw new Error('Instance ID must be present in config when initialising TextSync.');
         }
         this.instance = instanceConfig.instance;
         this.host = host || null;
-        this.userName = instanceConfig.user.name || null;
-        this.userEmail = instanceConfig.user.email || null;
+        if (instanceConfig.user) {
+            this.userName = instanceConfig.user.name || null;
+            this.userEmail = instanceConfig.user.email || null;
+        }
+        else {
+            this.userName = null;
+            this.userEmail = null;
+        }
     }
     TextSync.prototype.createEditor = function (editorConfig) {
         var docId = editorConfig.docId || null;
         if (!docId) {
-            throw new Error("docId must be present in config when initialising TextSync.");
+            throw new Error('docId must be present in config when initialising TextSync.');
         }
         var element = editorConfig.element || null;
         var containerElement;
         if (!element) {
-            throw new Error("element must be present in config when initialising TextSync.");
+            throw new Error('element must be present in config when initialising TextSync.');
         }
         else if (element instanceof HTMLElement) {
             containerElement = element;
@@ -19506,11 +19541,11 @@ var TextSync = (function () {
         }
         if (presenceConfig.callback) {
             if (typeof presenceConfig.callback !== 'function') {
-                throw new Error("presenceConfig.callback must be a function.");
+                throw new Error('presenceConfig.callback must be a function.');
             }
         }
         var quillConfig = buildQuillConfig(editorConfig.quillConfig, presenceConfig);
-        var siteId = Math.floor(Math.random() * (Math.pow(2, 32)));
+        var siteId = Math.floor(Math.random() * Math.pow(2, 32));
         var logootDoc = new logoot_doc_1.default(siteId);
         var app = new PusherPlatform.Instance({
             serviceName: 'textsync',
@@ -19522,12 +19557,14 @@ var TextSync = (function () {
         var textSyncInstance = new textsync_1.TextSync(logootDoc, app, docId, siteId, presenceConfig, this.userName, this.userEmail);
         // Hide the editor element until the CSS has loaded
         var cachedDisplayStyle = containerElement.style.display;
-        containerElement.style.display = "none";
+        containerElement.style.display = 'none';
         var quill = initEditor(containerElement, quillConfig, presenceConfig);
-        injectQuillCss(quillConfig).then(function () {
+        injectQuillCss(quillConfig)
+            .then(function () {
             containerElement.style.display = cachedDisplayStyle;
-        }).catch(function () {
-            console.error("Failed to load Quill styles");
+        })
+            .catch(function () {
+            console.error('Failed to load Quill styles');
             containerElement.style.display = cachedDisplayStyle;
         });
         var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId);
@@ -19554,7 +19591,9 @@ function buildQuillConfig(quillConfig, presenceConfig) {
     if (quillConfig.modules == null)
         quillConfig.modules = {};
     quillConfig.modules.history = {
-        delay: 2000, maxStack: 500, userOnly: true
+        delay: 2000,
+        maxStack: 500,
+        userOnly: true
     };
     quillConfig.formats = [
         'background',
@@ -19576,12 +19615,12 @@ function buildQuillConfig(quillConfig, presenceConfig) {
     return quillConfig;
 }
 function injectQuillCss(quillConfig) {
-    quillConfig.theme = "snow";
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.type = "text/css";
-    link.href = "https://cdn.quilljs.com/1.2.4/quill.snow.css";
-    document.getElementsByTagName("head")[0].appendChild(link);
+    quillConfig.theme = 'snow';
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = 'https://cdn.quilljs.com/1.2.4/quill.snow.css';
+    document.getElementsByTagName('head')[0].appendChild(link);
     return new Promise(function (resolve, reject) {
         link.onload = resolve;
         link.onerror = reject;
