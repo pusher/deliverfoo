@@ -2140,17 +2140,18 @@ var Logoot = (function () {
         var _a;
     };
     Logoot.prototype.insertAtoms = function (atoms) {
-        atoms = atoms.sort(function (a, b) { return a.compare(b); });
+        var initialAtomOrder = atoms.slice();
+        atoms.sort(function (a, b) { return a.compare(b); });
         var atomsPointer = 0;
         var seqPointer = 0;
-        var indices = [];
+        var indexMap = {};
         var newSeq = [];
         while (atomsPointer < atoms.length || seqPointer < this.seq.length) {
             var atomsHead = atoms[atomsPointer];
             var seqHead = this.seq[seqPointer];
             if (!seqHead || (atomsHead && atomsHead.lt(seqHead))) {
                 newSeq.push(atomsHead);
-                indices.push(atomsPointer + seqPointer - 1);
+                indexMap[atomsHead.toString()] = atomsPointer + seqPointer - 1;
                 atomsPointer++;
             }
             else {
@@ -2158,6 +2159,7 @@ var Logoot = (function () {
                 seqPointer++;
             }
         }
+        var indices = initialAtomOrder.map(function (atom) { return indexMap[atom.toString()]; });
         this.seq = newSeq;
         return indices;
     };
@@ -2165,15 +2167,16 @@ var Logoot = (function () {
         if (idents.length === 0) {
             return [];
         }
-        idents = idents.sort(function (a, b) { return a.compare(b); });
+        var initialIdentOrder = idents.slice();
+        idents.sort(function (a, b) { return a.compare(b); });
         var deletePointer = 0;
-        var indices = [];
+        var indexMap = {};
         var newSeq = [];
         for (var i = 0; i < this.seq.length; i++) {
             var identToDelete = idents[deletePointer];
             var atomToCheck = this.seq[i];
             if (identToDelete && identToDelete.compare(atomToCheck.ident) === 0) {
-                indices.push(i - deletePointer - 1);
+                indexMap[identToDelete.toString()] = i - deletePointer - 1;
                 deletePointer++;
             }
             else {
@@ -2183,6 +2186,7 @@ var Logoot = (function () {
         if (deletePointer < idents.length) {
             throw new Error('Trying to delete atom that does not exist');
         }
+        var indices = initialIdentOrder.map(function (ident) { return indexMap[ident.toString()]; });
         this.seq = newSeq;
         return indices;
     };
@@ -14319,6 +14323,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var logoot_1 = __webpack_require__(6);
+var editorAdaptor = __webpack_require__(5);
 var logoot_2 = __webpack_require__(6);
 var wire_format_1 = __webpack_require__(7);
 var LogootDoc = (function (_super) {
@@ -14363,7 +14368,7 @@ var LogootDoc = (function (_super) {
                 type: wire_format_1.OpType.Delete,
                 ident: atoms[i].ident.toWire()
             };
-            this.applyDelete([deleteOp]);
+            this.applyDeletes([deleteOp]);
             ops.push(deleteOp);
         }
         return ops;
@@ -14420,23 +14425,50 @@ var LogootDoc = (function (_super) {
      * Applies a set of insert operations to the document model
      * @param {DocOp[]} ops - The operations to apply
      *
-     * @return {number[]} - The indices at which the atoms in each operation
-     *   were inserted.
+     * @return {Operation[]} - An array of editor operations that will apply
+     *   the changes described in the insert operations.
      */
-    LogootDoc.prototype.applyInsertText = function (ops) {
-        var newAtoms = ops.map(function (op) { return logoot_2.Atom.fromWire(op.ident, op.content); });
-        return this.insertAtoms(newAtoms);
+    LogootDoc.prototype.applyInserts = function (ops) {
+        var atomsToInsert = ops.map(function (op) { return logoot_2.Atom.fromWire(op.ident, op.content); });
+        var indices = this.insertAtoms(atomsToInsert);
+        var editorOps = [];
+        for (var i = 0; i < indices.length; i++) {
+            var op = ops[i];
+            var runeIndex = indices[i];
+            var editorOp = {
+                opType: editorAdaptor.OpType.Insert,
+                index: runeIndex,
+                content: op.content.text,
+            };
+            if (op.content.attributes) {
+                editorOp['attributes'] = op.content.attributes;
+            }
+            editorOps.push(editorOp);
+        }
+        editorOps.sort(function (a, b) { return a.index - b.index; });
+        return editorOps;
     };
     /**
      * Applies a set of delete operations to the document model
      * @param {DocOp[]} ops - The operations to apply
      *
-     * @return {number[]} - The indices at which the atoms in each operation
-     *   were deleted.
+     * @return {Operation[]} - An array of editor operations that will apply
+     *   the changes described in the delete operations.
      */
-    LogootDoc.prototype.applyDelete = function (ops) {
+    LogootDoc.prototype.applyDeletes = function (ops) {
         var identsToDelete = ops.map(function (op) { return logoot_2.AtomIdent.fromWire(op.ident); });
-        return this.deleteAtoms(identsToDelete);
+        var indices = this.deleteAtoms(identsToDelete);
+        var editorOps = [];
+        for (var i = 0; i < indices.length; i++) {
+            var op = ops[i];
+            var runeIndex = indices[i];
+            editorOps.push({
+                opType: editorAdaptor.OpType.Delete,
+                index: runeIndex
+            });
+        }
+        editorOps.sort(function (a, b) { return a.index - b.index; });
+        return editorOps;
     };
     return LogootDoc;
 }(logoot_1.default));
@@ -14703,7 +14735,6 @@ exports.makeDeltas = makeDeltas;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var wireFormat = __webpack_require__(7);
-var editorAdaptor = __webpack_require__(5);
 var model_1 = __webpack_require__(35);
 var controller_1 = __webpack_require__(33);
 var badges_1 = __webpack_require__(32);
@@ -14909,32 +14940,18 @@ var TextSync = (function () {
         }, this.broadcastPeriod);
     };
     TextSync.prototype.receiveOps = function (wireMessage) {
+        // If you get your own message, skip it.
         if (wireMessage.siteId === this.siteId) {
             return;
         }
+        // Convert the incoming wire operations (logoot domain) to editor
+        // operations (editor domain).
         var editorOps = [];
+        // Batch the operations for performance reasons.
         var insertOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Insert; });
-        var indices = this.logoot.applyInsertText(insertOps);
-        for (var i = 0; i < indices.length; i++) {
-            var op = insertOps[i];
-            var runeIndex = indices[i];
-            editorOps.push({
-                opType: editorAdaptor.OpType.Insert,
-                index: runeIndex,
-                content: op.content.text,
-                attributes: op.content.attributes
-            });
-        }
+        editorOps = editorOps.concat(this.logoot.applyInserts(insertOps));
         var deleteOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Delete; });
-        indices = this.logoot.applyDelete(deleteOps);
-        for (var i = 0; i < indices.length; i++) {
-            var op = deleteOps[i];
-            var runeIndex = indices[i];
-            editorOps.push({
-                opType: editorAdaptor.OpType.Delete,
-                index: runeIndex
-            });
-        }
+        editorOps = editorOps.concat(this.logoot.applyDeletes(deleteOps));
         this.adaptor.applyOperations(editorOps);
     };
     return TextSync;
