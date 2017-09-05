@@ -14438,7 +14438,7 @@ var LogootDoc = (function (_super) {
             var editorOp = {
                 opType: editorAdaptor.OpType.Insert,
                 index: runeIndex,
-                content: op.content.text,
+                content: op.content.text
             };
             if (op.content.attributes) {
                 editorOp['attributes'] = op.content.attributes;
@@ -15092,6 +15092,7 @@ CursorsModule.prototype._initOptions = function(options) {
     options.hideDelay == undefined ? this.options.hideDelay : options.hideDelay;
   this.options.hideSpeed =
     options.hideSpeed == undefined ? this.options.hideSpeed : options.hideSpeed;
+  this.options.cursorFlagsAlwaysOn = options.cursorFlagsAlwaysOn || false;
 };
 
 CursorsModule.prototype._applyDelta = function(delta) {
@@ -15129,6 +15130,9 @@ CursorsModule.prototype._buildCursor = function(userId, name) {
   selectionEl = el.querySelector('.ql-cursor-selections');
   caretEl = el.querySelector('.ql-cursor-caret-container');
   flagEl = el.querySelector('.ql-cursor-flag');
+  if (this.options.cursorFlagsAlwaysOn) {
+    flagEl.classList.add('ql-cursor-flag-always-on');
+  }
 
   // Set color
   flagEl.style.backgroundColor = cursor.color;
@@ -17192,7 +17196,7 @@ exports = module.exports = __webpack_require__(0)(undefined);
 
 
 // module
-exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 1;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute; }\n", ""]);
+exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute; }\n", ""]);
 
 // exports
 
@@ -19561,7 +19565,8 @@ var TextSync = (function () {
                 throw new Error('presenceConfig.callback must be a function.');
             }
         }
-        var quillConfig = buildQuillConfig(editorConfig.quillConfig, presenceConfig);
+        var cursorLabelsAlwaysOn = presenceConfig.cursorLabelsAlwaysOn || false;
+        var quillConfig = buildQuillConfig(editorConfig.quillConfig, presenceConfig, cursorLabelsAlwaysOn);
         var siteId = Math.floor(Math.random() * Math.pow(2, 32));
         var logootDoc = new logoot_doc_1.default(siteId);
         var app = new PusherPlatform.Instance({
@@ -19603,7 +19608,7 @@ function initEditor(element, quillConfig, presenceConfig) {
     element.appendChild(editor);
     return new Quill(editor, quillConfig);
 }
-function buildQuillConfig(quillConfig, presenceConfig) {
+function buildQuillConfig(quillConfig, presenceConfig, cursorLabelsAlwaysOn) {
     quillConfig = quillConfig || DEFAULT_QUILL_CONFIG;
     if (quillConfig.modules == null)
         quillConfig.modules = {};
@@ -19627,7 +19632,9 @@ function buildQuillConfig(quillConfig, presenceConfig) {
     // Enable cursors
     if (presenceConfig.showCursors) {
         Quill.register('modules/cursors', quill_cursors_1.CursorsModule);
-        quillConfig.modules.cursors = true;
+        quillConfig.modules.cursors = {
+            cursorFlagsAlwaysOn: cursorLabelsAlwaysOn
+        };
     }
     return quillConfig;
 }
