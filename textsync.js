@@ -19525,6 +19525,10 @@ var TextSync = (function () {
         }
         this.instance = instanceConfig.instance;
         this.host = host || null;
+        var bogus = false;
+        if (!!(bogus)) {
+            alert("BOGUS");
+        }
         if (instanceConfig.user) {
             this.userName = instanceConfig.user.name || null;
             this.userEmail = instanceConfig.user.email || null;
