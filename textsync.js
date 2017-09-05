@@ -14753,8 +14753,9 @@ var TextSync = (function () {
         this.presenceConfig = presenceConfig;
         this.outstandingOps = [];
         this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
-        this.broadcastOps();
         this.isFirstDocOpsBatch = true;
+        this.running = true;
+        this.broadcastOps();
         // Remove when we have JWT
         this.name = name;
         this.email = email;
@@ -14869,6 +14870,11 @@ var TextSync = (function () {
                 console.error('subscription terminated by server');
             },
             onError: function (error) {
+                if (error.statusCode === 403) {
+                    console.error('Authentication error: Invalid TextSync instance ID. ' +
+                        'Double check your instance ID or ask a Pusherino for a new one.');
+                    return;
+                }
                 console.error('subscription closed due to error', error);
                 // Remove this when we have proper error GUI support - Jonathan Lloyd
                 alert('Whoops! Something went wrong. Refresh the page to reconnect.');
@@ -14912,6 +14918,9 @@ var TextSync = (function () {
     };
     TextSync.prototype.broadcastOps = function () {
         var _this = this;
+        if (!this.running) {
+            return;
+        }
         if (this.outstandingOps.length > 0) {
             var opsToBroadcast_1 = this.outstandingOps;
             this.outstandingOps = [];
@@ -14927,6 +14936,11 @@ var TextSync = (function () {
                 _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
             })
                 .catch(function (error) {
+                var statusCode = error.statusCode;
+                var isClientError = statusCode && 400 <= statusCode && statusCode < 500;
+                if (isClientError) {
+                    _this.running = false;
+                }
                 console.error(error);
                 _this.outstandingOps = _this.outstandingOps.concat(opsToBroadcast_1);
                 var newBroadcastPeriod = _this.broadcastPeriod * BROADCAST_BACKOFF;
@@ -17196,7 +17210,7 @@ exports = module.exports = __webpack_require__(0)(undefined);
 
 
 // module
-exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute; }\n", ""]);
+exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: -1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute;\n  z-index: -1; }\n", ""]);
 
 // exports
 
