@@ -14344,7 +14344,7 @@ var LogootDoc = (function (_super) {
         var atoms = this._insertText(index, content);
         var ops = atoms.map(function (atom) {
             return {
-                type: wire_format_1.OpType.Insert,
+                opType: wire_format_1.OpType.Insert,
                 ident: atom.ident.toWire(),
                 content: { text: atom.rune, attributes: attributes }
             };
@@ -14365,7 +14365,7 @@ var LogootDoc = (function (_super) {
         var atoms = this.getAtomsToDelete(index, length);
         for (var i = 0; i < length; i++) {
             var deleteOp = {
-                type: wire_format_1.OpType.Delete,
+                opType: wire_format_1.OpType.Delete,
                 ident: atoms[i].ident.toWire()
             };
             this.applyDeletes([deleteOp]);
@@ -14962,9 +14962,9 @@ var TextSync = (function () {
         // operations (editor domain).
         var editorOps = [];
         // Batch the operations for performance reasons.
-        var insertOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Insert; });
+        var insertOps = wireMessage.docOps.filter(function (op) { return op.opType === wireFormat.OpType.Insert; });
         editorOps = editorOps.concat(this.logoot.applyInserts(insertOps));
-        var deleteOps = wireMessage.docOps.filter(function (op) { return op.type === wireFormat.OpType.Delete; });
+        var deleteOps = wireMessage.docOps.filter(function (op) { return op.opType === wireFormat.OpType.Delete; });
         editorOps = editorOps.concat(this.logoot.applyDeletes(deleteOps));
         this.adaptor.applyOperations(editorOps);
     };
