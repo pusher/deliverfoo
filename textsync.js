@@ -14887,15 +14887,15 @@ var TextSync = (function () {
     TextSync.prototype.applyPresOps = function (presOps) {
         var presOpsCopy = JSON.parse(JSON.stringify(presOps));
         var presentCollaborators = presOpsCopy
-            .filter(function (op) { return op.type !== 2; })
+            .filter(function (op) { return op.opType !== 2; })
             .map(function (op) {
-            delete op.type;
+            delete op.opType;
             return op;
         });
         var absentCollaborators = presOpsCopy
-            .filter(function (op) { return op.type === 2; })
+            .filter(function (op) { return op.opType === 2; })
             .map(function (op) {
-            delete op.type;
+            delete op.opType;
             return op;
         });
         if (this.presenceConfig.callback) {
