@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 37);
+/******/ 	return __webpack_require__(__webpack_require__.s = 38);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -1921,13 +1921,35 @@ else {
 Object.defineProperty(exports, "__esModule", { value: true });
 var OpType;
 (function (OpType) {
-    OpType[OpType["Insert"] = 0] = "Insert";
-    OpType[OpType["Delete"] = 1] = "Delete";
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
 })(OpType = exports.OpType || (exports.OpType = {}));
 
 
 /***/ }),
 /* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function isDocOp(object) {
+    return 'ident' in object;
+}
+exports.isDocOp = isDocOp;
+function isCursorOp(object) {
+    return 'position' in object;
+}
+exports.isCursorOp = isCursorOp;
+
+
+/***/ }),
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2242,46 +2264,6 @@ var Logoot = (function () {
     return Logoot;
 }());
 exports.default = Logoot;
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-    OpType[OpType["Split"] = 3] = "Split";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function isDocOp(object) {
-    return 'ident' in object;
-}
-function isCursorOp(object) {
-    return 'position' in object;
-}
-function messageFromOps(ops, siteId) {
-    var docOps = [];
-    var cursorOps = [];
-    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
-        var op = ops_1[_i];
-        if (isDocOp(op)) {
-            docOps.push(op);
-        }
-        else if (isCursorOp(op)) {
-            cursorOps.push(op);
-        }
-    }
-    return {
-        docOps: docOps,
-        cursorOps: cursorOps,
-        siteId: siteId
-    };
-}
-exports.messageFromOps = messageFromOps;
 
 
 /***/ }),
@@ -14322,10 +14304,10 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var logoot_1 = __webpack_require__(6);
-var editorAdaptor = __webpack_require__(5);
-var logoot_2 = __webpack_require__(6);
-var wire_format_1 = __webpack_require__(7);
+var logoot_1 = __webpack_require__(7);
+var logoot_2 = __webpack_require__(7);
+var logootFormat = __webpack_require__(6);
+var editorFormat = __webpack_require__(5);
 var LogootDoc = (function (_super) {
     __extends(LogootDoc, _super);
     function LogootDoc(siteId) {
@@ -14344,7 +14326,7 @@ var LogootDoc = (function (_super) {
         var atoms = this._insertText(index, content);
         var ops = atoms.map(function (atom) {
             return {
-                opType: wire_format_1.OpType.Insert,
+                opType: logootFormat.OpType.Insert,
                 ident: atom.ident.toWire(),
                 content: { text: atom.rune, attributes: attributes }
             };
@@ -14365,7 +14347,7 @@ var LogootDoc = (function (_super) {
         var atoms = this.getAtomsToDelete(index, length);
         for (var i = 0; i < length; i++) {
             var deleteOp = {
-                opType: wire_format_1.OpType.Delete,
+                opType: logootFormat.OpType.Delete,
                 ident: atoms[i].ident.toWire()
             };
             this.applyDeletes([deleteOp]);
@@ -14436,7 +14418,7 @@ var LogootDoc = (function (_super) {
             var op = ops[i];
             var runeIndex = indices[i];
             var editorOp = {
-                opType: editorAdaptor.OpType.Insert,
+                opType: editorFormat.OpType.Insert,
                 index: runeIndex,
                 content: op.content.text
             };
@@ -14463,7 +14445,7 @@ var LogootDoc = (function (_super) {
             var op = ops[i];
             var runeIndex = indices[i];
             editorOps.push({
-                opType: editorAdaptor.OpType.Delete,
+                opType: editorFormat.OpType.Delete,
                 index: runeIndex
             });
         }
@@ -14486,7 +14468,7 @@ exports.default = LogootDoc;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var Delta = __webpack_require__(26);
-var editorAdaptor = __webpack_require__(5);
+var editorFormat = __webpack_require__(5);
 __webpack_require__(30);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
@@ -14691,9 +14673,9 @@ function makeDeltas(operations) {
         var nextOperation = operations[i + 1] || null;
         var runesToRetain = void 0;
         switch (operation.opType) {
-            case editorAdaptor.OpType.Insert:
+            case editorFormat.OpType.Insert:
                 var canSquashIntoNextOp = nextOperation !== null &&
-                    nextOperation.opType === editorAdaptor.OpType.Insert &&
+                    nextOperation.opType === editorFormat.OpType.Insert &&
                     JSON.stringify(nextOperation.attributes) ===
                         JSON.stringify(operation.attributes) &&
                     nextOperation.index === operation.index + 1;
@@ -14711,7 +14693,7 @@ function makeDeltas(operations) {
                     deltas.push(delta);
                 }
                 break;
-            case editorAdaptor.OpType.Delete:
+            case editorFormat.OpType.Delete:
                 runesToRetain = operation.index;
                 delta.retain(runesToRetain);
                 delta.delete(1);
@@ -14734,11 +14716,11 @@ exports.makeDeltas = makeDeltas;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var wireFormat = __webpack_require__(7);
-var model_1 = __webpack_require__(35);
+var wireFormat = __webpack_require__(39);
+var model_1 = __webpack_require__(36);
 var controller_1 = __webpack_require__(33);
 var badges_1 = __webpack_require__(32);
-var name_generator_1 = __webpack_require__(36);
+var name_generator_1 = __webpack_require__(37);
 var MIN_BROADCAST_PERIOD_MS = 1;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
@@ -14753,7 +14735,6 @@ var TextSync = (function () {
         this.presenceConfig = presenceConfig;
         this.outstandingOps = [];
         this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
-        this.isFirstDocOpsBatch = true;
         this.running = true;
         this.broadcastOps();
         // Remove when we have JWT
@@ -14789,9 +14770,9 @@ var TextSync = (function () {
     };
     TextSync.prototype.initPresence = function (presenceConfig) {
         // badges / model can be local vars
-        var presenceModel = new model_1.default(presenceConfig);
+        this.presenceModel = new model_1.default(presenceConfig);
         var badges = new badges_1.default(this.siteId);
-        this.presenceController = new controller_1.default(presenceModel, badges, this.logoot, this.adaptor);
+        this.presenceController = new controller_1.default(this.presenceModel, badges, this.logoot, this.adaptor);
     };
     TextSync.prototype.start = function (adaptor) {
         this.adaptor = adaptor;
@@ -14813,9 +14794,16 @@ var TextSync = (function () {
             path: path,
             onEvent: function (event) {
                 console.debug('event received from server:', JSON.stringify(event.body));
+                /*
+                  docOps --> converted to index --> presence
+                  cursorOps --> converted to index --> presence
+                  presOps --> go straight to presence
+                */
                 if (event.body.siteId !== _this.siteId) {
                     if (event.body.presOps && event.body.presOps.length > 0) {
-                        _this.applyPresOps(event.body.presOps);
+                        // go straight to presence
+                        var presOpsCopy = JSON.parse(JSON.stringify(event.body.presOps));
+                        _this.presenceModel.receivePresOps(presOpsCopy);
                     }
                     if (event.body.docOps && event.body.docOps.length > 0) {
                         // when someone types
@@ -14823,36 +14811,10 @@ var TextSync = (function () {
                             docOps: event.body.docOps,
                             siteId: event.body.siteId
                         });
-                        if (_this.presenceConfig.showCursors) {
-                            console.log('from server?', event.body.siteId === 0);
-                            console.log(event.body.siteId + " has typed.");
-                            if (event.body.siteId !== 0) {
-                                // not coming from server.  not ourselves
-                                var lastDocOp = event.body.docOps[event.body.docOps.length - 1];
-                                var cursorOp = {
-                                    siteId: event.body.siteId,
-                                    position: {
-                                        start: lastDocOp.ident.position
-                                    }
-                                };
-                                // insert op: lastCharIndex + 1
-                                // delete op: lastCharIndex - 1
-                                var offset = event.body.docOps[event.body.docOps.length - 1].opType === 1
-                                    ? 1
-                                    : 0;
-                                _this.presenceController.updateCursorPosition(cursorOp, offset);
-                            }
-                        }
-                        if (_this.presenceConfig.showBadges) {
-                            if (event.body.siteId !== _this.siteId &&
-                                !_this.isFirstDocOpsBatch) {
-                                // same as siteId === 0?
-                                _this.presenceController.triggerStartTypingEvent(event.body.siteId);
-                            }
-                        }
-                        if (_this.isFirstDocOpsBatch) {
-                            _this.isFirstDocOpsBatch = false;
-                        }
+                        _this.presenceController.receiveDocOps({
+                            docOps: event.body.docOps,
+                            siteId: event.body.siteId
+                        });
                     }
                     else if (event.body.cursorOps && event.body.cursorOps.length > 0) {
                         // when someone clicks to a new position
@@ -14883,35 +14845,6 @@ var TextSync = (function () {
     };
     TextSync.prototype.initialContent = function (content) {
         this.logoot.initialContent(content);
-    };
-    TextSync.prototype.applyPresOps = function (presOps) {
-        var presOpsCopy = JSON.parse(JSON.stringify(presOps));
-        var presentCollaborators = presOpsCopy
-            .filter(function (op) { return op.opType !== 2; })
-            .map(function (op) {
-            delete op.opType;
-            return op;
-        });
-        var absentCollaborators = presOpsCopy
-            .filter(function (op) { return op.opType === 2; })
-            .map(function (op) {
-            delete op.opType;
-            return op;
-        });
-        if (this.presenceConfig.callback) {
-            this.presenceConfig.callback({
-                joined: presentCollaborators,
-                left: absentCollaborators
-            });
-        }
-        if (this.presenceConfig.showBadges) {
-            if (presentCollaborators.length > 0) {
-                this.presenceController.add(presentCollaborators);
-            }
-            if (absentCollaborators.length > 0) {
-                this.presenceController.remove(absentCollaborators);
-            }
-        }
     };
     TextSync.prototype.sendOps = function (ops) {
         this.outstandingOps = this.outstandingOps.concat(ops);
@@ -17199,7 +17132,7 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(38)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(40)))
 
 /***/ }),
 /* 18 */
@@ -19219,6 +19152,7 @@ exports.default = Badges;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var ANIMATION_LENGTH = 1000;
+var SERVER_SITE_ID = 0;
 var PresenceController = (function () {
     function PresenceController(model, badges, logootDoc, adaptor) {
         this.model = model;
@@ -19326,6 +19260,32 @@ var PresenceController = (function () {
             }
         }
     };
+    /**
+      * Processes document operations (DocOps)
+      * @param {Message} wireMessage - wire message containing DocOps[]
+      * @returns {void}
+      */
+    PresenceController.prototype.receiveDocOps = function (wireMessage) {
+        if (wireMessage.siteId !== SERVER_SITE_ID) {
+            if (this.model.presenceConfig.showBadges) {
+                this.triggerStartTypingEvent(wireMessage.siteId);
+            }
+            if (this.model.presenceConfig.showCursors) {
+                console.log(wireMessage.siteId + " has typed.");
+                var lastDocOp = wireMessage.docOps[wireMessage.docOps.length - 1];
+                var cursorOp = {
+                    siteId: wireMessage.siteId,
+                    position: {
+                        start: lastDocOp.ident.position
+                    }
+                };
+                // insert op: lastCharIndex + 1
+                // delete op: lastCharIndex - 1
+                var offset = lastDocOp.opType === 1 ? 1 : 0;
+                this.updateCursorPosition(cursorOp, offset);
+            }
+        }
+    };
     return PresenceController;
 }());
 exports.default = PresenceController;
@@ -19366,13 +19326,29 @@ exports.default = PresenceEvent;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Joining"] = 1] = "Joining";
+    OpType[OpType["Leaving"] = 2] = "Leaving";
+})(OpType = exports.OpType || (exports.OpType = {}));
+
+
+/***/ }),
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 var tinycolor = __webpack_require__(4);
 // import tinycolor from 'tinycolor2'
 var event_dispatcher_1 = __webpack_require__(34);
+var format_1 = __webpack_require__(35);
 var PresenceModel = (function () {
     function PresenceModel(presenceConfig) {
-        this.badgesEnabled = presenceConfig.showBadges;
-        this.cursorsEnabled = presenceConfig.showCursors;
+        this.badgesEnabled = presenceConfig.showBadges; // redundant?
+        this.cursorsEnabled = presenceConfig.showCursors; // redundant
+        this.presenceConfig = presenceConfig;
         this._collaboratorIds = {};
         this.joinedEvent = new event_dispatcher_1.default(this);
         this.leftEvent = new event_dispatcher_1.default(this);
@@ -19430,13 +19406,51 @@ var PresenceModel = (function () {
         justLeft.forEach(function (collaboratorId) { return delete _this._collaboratorIds[collaboratorId]; });
         this.leftEvent.notify(justLeft);
     };
+    PresenceModel.prototype.parsePresOps = function (presOps) {
+        var joiningCollaborators = presOps
+            .filter(function (op) { return op.opType === format_1.OpType.Joining; })
+            .map(function (op) {
+            return {
+                siteId: op.siteId,
+                name: op.name,
+                avatar: op.avatar,
+                timestamp: op.timestamp
+            };
+        });
+        var leavingCollaborators = presOps
+            .filter(function (op) { return op.opType === format_1.OpType.Leaving; })
+            .map(function (op) {
+            return { siteId: op.siteId };
+        });
+        return { joiningCollaborators: joiningCollaborators, leavingCollaborators: leavingCollaborators };
+    };
+    PresenceModel.prototype.receivePresOps = function (presOps) {
+        if (!this.presenceConfig.callback && !this.presenceConfig.showBadges) {
+            return;
+        }
+        var _a = this.parsePresOps(presOps), joiningCollaborators = _a.joiningCollaborators, leavingCollaborators = _a.leavingCollaborators;
+        if (this.presenceConfig.callback) {
+            this.presenceConfig.callback({
+                joined: joiningCollaborators,
+                left: leavingCollaborators
+            });
+        }
+        if (this.presenceConfig.showBadges) {
+            if (joiningCollaborators.length > 0) {
+                this.add(joiningCollaborators);
+            }
+            if (leavingCollaborators.length > 0) {
+                this.remove(leavingCollaborators);
+            }
+        }
+    };
     return PresenceModel;
 }());
 exports.default = PresenceModel;
 
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19502,7 +19516,7 @@ var NOUNS = [
 
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19579,8 +19593,13 @@ var TextSync = (function () {
                 throw new Error('presenceConfig.callback must be a function.');
             }
         }
-        var cursorLabelsAlwaysOn = presenceConfig.cursorLabelsAlwaysOn || false;
-        var quillConfig = buildQuillConfig(editorConfig.quillConfig, presenceConfig, cursorLabelsAlwaysOn);
+        else {
+            presenceConfig.callback = null;
+        }
+        if (!presenceConfig.cursorLabelsAlwaysOn) {
+            presenceConfig.cursorLabelsAlwaysOn = false;
+        }
+        var quillConfig = buildQuillConfig(editorConfig.quillConfig, presenceConfig);
         var siteId = Math.floor(Math.random() * Math.pow(2, 32));
         var logootDoc = new logoot_doc_1.default(siteId);
         var app = new PusherPlatform.Instance({
@@ -19622,7 +19641,7 @@ function initEditor(element, quillConfig, presenceConfig) {
     element.appendChild(editor);
     return new Quill(editor, quillConfig);
 }
-function buildQuillConfig(quillConfig, presenceConfig, cursorLabelsAlwaysOn) {
+function buildQuillConfig(quillConfig, presenceConfig) {
     quillConfig = quillConfig || DEFAULT_QUILL_CONFIG;
     if (quillConfig.modules == null)
         quillConfig.modules = {};
@@ -19647,7 +19666,7 @@ function buildQuillConfig(quillConfig, presenceConfig, cursorLabelsAlwaysOn) {
     if (presenceConfig.showCursors) {
         Quill.register('modules/cursors', quill_cursors_1.CursorsModule);
         quillConfig.modules.cursors = {
-            cursorFlagsAlwaysOn: cursorLabelsAlwaysOn
+            cursorFlagsAlwaysOn: presenceConfig.cursorLabelsAlwaysOn
         };
     }
     return quillConfig;
@@ -19668,7 +19687,41 @@ module.exports = TextSync;
 
 
 /***/ }),
-/* 38 */
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var logootFormat = __webpack_require__(6);
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function messageFromOps(ops, siteId) {
+    var docOps = [];
+    var cursorOps = [];
+    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
+        var op = ops_1[_i];
+        if (logootFormat.isDocOp(op)) {
+            docOps.push(op);
+        }
+        else if (logootFormat.isCursorOp(op)) {
+            cursorOps.push(op);
+        }
+    }
+    return {
+        docOps: docOps,
+        cursorOps: cursorOps,
+        siteId: siteId
+    };
+}
+exports.messageFromOps = messageFromOps;
+
+
+/***/ }),
+/* 40 */
 /***/ (function(module, exports) {
 
 var g;
