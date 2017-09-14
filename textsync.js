@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 38);
+/******/ 	return __webpack_require__(__webpack_require__.s = 39);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -205,7 +205,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(31);
+var	fixUrls = __webpack_require__(32);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -522,8 +522,8 @@ function updateLink (link, options, obj) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var pSlice = Array.prototype.slice;
-var objectKeys = __webpack_require__(22);
-var isArguments = __webpack_require__(21);
+var objectKeys = __webpack_require__(23);
+var isArguments = __webpack_require__(22);
 
 var deepEqual = module.exports = function (actual, expected, opts) {
   if (!opts) opts = {};
@@ -1961,7 +1961,7 @@ exports.isCursorOp = isCursorOp;
  * [Research Report] RR-6713, INRIA. 2008, pp.13
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var runes = __webpack_require__(29);
+var runes = __webpack_require__(30);
 var Ident = (function () {
     function Ident(n, siteId) {
         this.n = n;
@@ -2066,7 +2066,7 @@ var Position = (function () {
                 else if (diff === 1 && siteId > prevSiteId) {
                     return [new Ident(prevInt, siteId)];
                 }
-                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
+                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), []));
             }
             case 0: {
                 return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
@@ -2268,6 +2268,40 @@ exports.default = Logoot;
 
 /***/ }),
 /* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var logootFormat = __webpack_require__(6);
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function messageFromOps(ops, siteId) {
+    var docOps = [];
+    var cursorOps = [];
+    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
+        var op = ops_1[_i];
+        if (logootFormat.isDocOp(op)) {
+            docOps.push(op);
+        }
+        else if (logootFormat.isCursorOp(op)) {
+            cursorOps.push(op);
+        }
+    }
+    return {
+        docOps: docOps,
+        cursorOps: cursorOps,
+        siteId: siteId
+    };
+}
+exports.messageFromOps = messageFromOps;
+
+
+/***/ }),
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -3185,7 +3219,7 @@ exports.default = {
 });
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -14195,16 +14229,16 @@ module.exports = __webpack_require__(62);
 /***/ })
 /******/ ]);
 });
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(17).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(18).Buffer))
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(19);
+var content = __webpack_require__(20);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -14229,13 +14263,13 @@ if(false) {
 }
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(20);
+var content = __webpack_require__(21);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -14260,7 +14294,7 @@ if(false) {
 }
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14306,6 +14340,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var logoot_1 = __webpack_require__(7);
 var logoot_2 = __webpack_require__(7);
+var wireFormat = __webpack_require__(8);
 var logootFormat = __webpack_require__(6);
 var editorFormat = __webpack_require__(5);
 var LogootDoc = (function (_super) {
@@ -14314,7 +14349,7 @@ var LogootDoc = (function (_super) {
         return _super.call(this, siteId) || this;
     }
     /**
-     * Alter the model to accomodate inserted content
+     * Alter the model to accommodate inserted content
      * @param {number} index - the insertion index
      * @param {string} content - the new content being inserted
      *
@@ -14334,7 +14369,7 @@ var LogootDoc = (function (_super) {
         return ops;
     };
     /**
-     * Alter the model to accomodate deleted content
+     * Alter the model to accommodate deleted content
      * @param {number} index - the start index of the removed content
      * @param {string} length - the length of the content removed
      *
@@ -14374,13 +14409,13 @@ var LogootDoc = (function (_super) {
     };
     /**
      * Convert an array of WireIdents to a character index
-     * @param {Array<WireIdent>} wireIdents - array of wire idents
+     * @param {WireIdent[]} wireIdents - array of wire idents
      * @param {number} siteId - the site id from which the wireIdents originate
      *
      * @return {number} - a character index
      */
     LogootDoc.prototype.wireIdentsToIndex = function (wireIdents, siteId) {
-        // Array<WireIdent> --> Position
+        // WireIdent[] --> Position
         var position = logoot_2.Position.fromWire(wireIdents);
         // Position --> AtomIdent
         var atomIdent = new logoot_2.AtomIdent(position, 0);
@@ -14452,13 +14487,22 @@ var LogootDoc = (function (_super) {
         editorOps.sort(function (a, b) { return a.index - b.index; });
         return editorOps;
     };
+    LogootDoc.prototype.updateDoc = function (ops) {
+        var editorOps = [];
+        // Batch the operations for performance reasons.
+        var insertOps = ops.filter(function (op) { return op.opType === wireFormat.OpType.Insert; });
+        editorOps = editorOps.concat(this.applyInserts(insertOps));
+        var deleteOps = ops.filter(function (op) { return op.opType === wireFormat.OpType.Delete; });
+        editorOps = editorOps.concat(this.applyDeletes(deleteOps));
+        return editorOps;
+    };
     return LogootDoc;
 }(logoot_1.default));
 exports.default = LogootDoc;
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14467,9 +14511,9 @@ exports.default = LogootDoc;
  * Binding between the textsync document model and that of Quilljs
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var Delta = __webpack_require__(26);
+var Delta = __webpack_require__(27);
 var editorFormat = __webpack_require__(5);
-__webpack_require__(30);
+__webpack_require__(31);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
         this.siteId = Math.floor(Math.random() * Math.pow(2, 32));
@@ -14707,7 +14751,7 @@ exports.makeDeltas = makeDeltas;
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14716,11 +14760,11 @@ exports.makeDeltas = makeDeltas;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var wireFormat = __webpack_require__(39);
-var model_1 = __webpack_require__(36);
-var controller_1 = __webpack_require__(33);
-var badges_1 = __webpack_require__(32);
-var name_generator_1 = __webpack_require__(37);
+var wireFormat = __webpack_require__(8);
+var model_1 = __webpack_require__(37);
+var controller_1 = __webpack_require__(34);
+var badges_1 = __webpack_require__(33);
+var name_generator_1 = __webpack_require__(38);
 var MIN_BROADCAST_PERIOD_MS = 1;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
@@ -14807,7 +14851,7 @@ var TextSync = (function () {
                     }
                     if (event.body.docOps && event.body.docOps.length > 0) {
                         // when someone types
-                        _this.receiveOps({
+                        _this.receiveDocOps({
                             docOps: event.body.docOps,
                             siteId: event.body.siteId
                         });
@@ -14886,19 +14930,14 @@ var TextSync = (function () {
             _this.broadcastOps();
         }, this.broadcastPeriod);
     };
-    TextSync.prototype.receiveOps = function (wireMessage) {
+    TextSync.prototype.receiveDocOps = function (wireMessage) {
         // If you get your own message, skip it.
         if (wireMessage.siteId === this.siteId) {
             return;
         }
         // Convert the incoming wire operations (logoot domain) to editor
         // operations (editor domain).
-        var editorOps = [];
-        // Batch the operations for performance reasons.
-        var insertOps = wireMessage.docOps.filter(function (op) { return op.opType === wireFormat.OpType.Insert; });
-        editorOps = editorOps.concat(this.logoot.applyInserts(insertOps));
-        var deleteOps = wireMessage.docOps.filter(function (op) { return op.opType === wireFormat.OpType.Delete; });
-        editorOps = editorOps.concat(this.logoot.applyDeletes(deleteOps));
+        var editorOps = this.logoot.updateDoc(wireMessage.docOps);
         this.adaptor.applyOperations(editorOps);
     };
     return TextSync;
@@ -14907,13 +14946,13 @@ exports.TextSync = TextSync;
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["CursorsModule"] = CursorsModule;
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__ = __webpack_require__(28);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__ = __webpack_require__(29);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2__ = __webpack_require__(4);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_tinycolor2__);
@@ -15217,7 +15256,7 @@ CursorsModule.prototype._updateSelection = function(
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15338,7 +15377,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15352,9 +15391,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(16)
-var ieee754 = __webpack_require__(24)
-var isArray = __webpack_require__(25)
+var base64 = __webpack_require__(17)
+var ieee754 = __webpack_require__(25)
+var isArray = __webpack_require__(26)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -17135,7 +17174,7 @@ function isnan (val) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(40)))
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -17149,7 +17188,7 @@ exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXIN
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -17163,7 +17202,7 @@ exports.push([module.i, "@-webkit-keyframes flash {\n  0% {\n    opacity: 0; }\n
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -17177,7 +17216,7 @@ exports.push([module.i, ".tsync-badge {\n  opacity: 0;\n  transition: opacity 1.
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 var supportsArgumentsClass = (function(){
@@ -17203,7 +17242,7 @@ function unsupported(object){
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports) {
 
 exports = module.exports = typeof Object.keys === 'function'
@@ -17218,7 +17257,7 @@ function shim (obj) {
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports) {
 
 /**
@@ -17922,7 +17961,7 @@ function merge_tuples (diffs, start, length) {
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -18012,7 +18051,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -18023,13 +18062,13 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var diff = __webpack_require__(23);
+var diff = __webpack_require__(24);
 var equal = __webpack_require__(2);
 var extend = __webpack_require__(3);
-var op = __webpack_require__(27);
+var op = __webpack_require__(28);
 
 
 var NULL_CHARACTER = String.fromCharCode(0);  // Placeholder char for embed in diff()
@@ -18343,7 +18382,7 @@ module.exports = Delta;
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var equal = __webpack_require__(2);
@@ -18488,7 +18527,7 @@ module.exports = lib;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports) {
 
 /*!
@@ -18760,7 +18799,7 @@ module.exports = lib;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18920,13 +18959,13 @@ module.exports.substr = substring
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(18);
+var content = __webpack_require__(19);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -18951,7 +18990,7 @@ if(false) {
 }
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports) {
 
 
@@ -19046,7 +19085,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19145,7 +19184,7 @@ exports.default = Badges;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19292,7 +19331,7 @@ exports.default = PresenceController;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19320,7 +19359,7 @@ exports.default = PresenceEvent;
 
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19334,7 +19373,7 @@ var OpType;
 
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19342,8 +19381,8 @@ var OpType;
 Object.defineProperty(exports, "__esModule", { value: true });
 var tinycolor = __webpack_require__(4);
 // import tinycolor from 'tinycolor2'
-var event_dispatcher_1 = __webpack_require__(34);
-var format_1 = __webpack_require__(35);
+var event_dispatcher_1 = __webpack_require__(35);
+var format_1 = __webpack_require__(36);
 var PresenceModel = (function () {
     function PresenceModel(presenceConfig) {
         this.badgesEnabled = presenceConfig.showBadges; // redundant?
@@ -19450,7 +19489,7 @@ exports.default = PresenceModel;
 
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19516,7 +19555,7 @@ var NOUNS = [
 
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19526,12 +19565,12 @@ var NOUNS = [
  * It is intended to replace an existing
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var Quill = __webpack_require__(9);
-var PusherPlatform = __webpack_require__(8);
-var logoot_doc_1 = __webpack_require__(12);
-var textsync_1 = __webpack_require__(14);
-var quill_adaptor_1 = __webpack_require__(13);
-var quill_cursors_1 = __webpack_require__(15);
+var Quill = __webpack_require__(10);
+var PusherPlatform = __webpack_require__(9);
+var logoot_doc_1 = __webpack_require__(13);
+var textsync_1 = __webpack_require__(15);
+var quill_adaptor_1 = __webpack_require__(14);
+var quill_cursors_1 = __webpack_require__(16);
 var DEFAULT_QUILL_CONFIG = {
     theme: 'snow',
     modules: {
@@ -19630,8 +19669,8 @@ var TextSync = (function () {
 }());
 function initEditor(element, quillConfig, presenceConfig) {
     if (presenceConfig.showBadges) {
-        __webpack_require__(10);
         __webpack_require__(11);
+        __webpack_require__(12);
         var presenceContainer = document.createElement('div');
         presenceContainer.id = 'tsync-presence-container';
         element.appendChild(presenceContainer);
@@ -19684,40 +19723,6 @@ function injectQuillCss(quillConfig) {
     });
 }
 module.exports = TextSync;
-
-
-/***/ }),
-/* 39 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var logootFormat = __webpack_require__(6);
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function messageFromOps(ops, siteId) {
-    var docOps = [];
-    var cursorOps = [];
-    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
-        var op = ops_1[_i];
-        if (logootFormat.isDocOp(op)) {
-            docOps.push(op);
-        }
-        else if (logootFormat.isCursorOp(op)) {
-            cursorOps.push(op);
-        }
-    }
-    return {
-        docOps: docOps,
-        cursorOps: cursorOps,
-        siteId: siteId
-    };
-}
-exports.messageFromOps = messageFromOps;
 
 
 /***/ }),
