@@ -14353,7 +14353,7 @@ var LogootDoc = (function (_super) {
      * @param {number} index - the insertion index
      * @param {string} content - the new content being inserted
      *
-     * @return {DocOp[]} - a description of the required operations
+     * @return {logootFormat.DocOp[]} - a description of the required operations
      *   suitable for transmitting to a remote replica of the doc,
      *   such that they might apply the same insertion.
      */
@@ -14373,7 +14373,7 @@ var LogootDoc = (function (_super) {
      * @param {number} index - the start index of the removed content
      * @param {string} length - the length of the content removed
      *
-     * @return {DocOp[]} - a description of the required operations
+     * @return {logootFormat.DocOp[]} - a description of the required operations
      *   suitable for transmitting to a remote replica of the doc,
      *   such that they might apply the same removal.
      */
@@ -14440,9 +14440,9 @@ var LogootDoc = (function (_super) {
     };
     /**
      * Applies a set of insert operations to the document model
-     * @param {DocOp[]} ops - The operations to apply
+     * @param {logootFormat.DocOp[]} ops - The operations to apply
      *
-     * @return {Operation[]} - An array of editor operations that will apply
+     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
      *   the changes described in the insert operations.
      */
     LogootDoc.prototype.applyInserts = function (ops) {
@@ -14455,7 +14455,7 @@ var LogootDoc = (function (_super) {
             var editorOp = {
                 opType: editorFormat.OpType.Insert,
                 index: runeIndex,
-                content: op.content.text
+                text: op.content.text
             };
             if (op.content.attributes) {
                 editorOp['attributes'] = op.content.attributes;
@@ -14467,9 +14467,9 @@ var LogootDoc = (function (_super) {
     };
     /**
      * Applies a set of delete operations to the document model
-     * @param {DocOp[]} ops - The operations to apply
+     * @param {logootFormat.DocOp[]} ops - The operations to apply
      *
-     * @return {Operation[]} - An array of editor operations that will apply
+     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
      *   the changes described in the delete operations.
      */
     LogootDoc.prototype.applyDeletes = function (ops) {
@@ -14479,10 +14479,11 @@ var LogootDoc = (function (_super) {
         for (var i = 0; i < indices.length; i++) {
             var op = ops[i];
             var runeIndex = indices[i];
-            editorOps.push({
+            var editorOp = {
                 opType: editorFormat.OpType.Delete,
                 index: runeIndex
-            });
+            };
+            editorOps.push(editorOp);
         }
         editorOps.sort(function (a, b) { return a.index - b.index; });
         return editorOps;
@@ -14724,7 +14725,7 @@ function makeDeltas(operations) {
                         JSON.stringify(operation.attributes) &&
                     nextOperation.index === operation.index + 1;
                 if (canSquashIntoNextOp) {
-                    insertBuffer += operation.content;
+                    insertBuffer += operation.text;
                 }
                 else {
                     // Retain
@@ -14732,7 +14733,7 @@ function makeDeltas(operations) {
                     delta.retain(runesToRetain);
                     // Insert
                     var attrs = operation.attributes || {};
-                    delta.insert(insertBuffer + operation.content, QuillAttributes.fromWireAttributes(attrs));
+                    delta.insert(insertBuffer + operation.text, QuillAttributes.fromWireAttributes(attrs));
                     insertBuffer = '';
                     deltas.push(delta);
                 }
@@ -19403,20 +19404,21 @@ var PresenceModel = (function () {
         if (joining.length === 0) {
             return;
         }
-        var alreadyJoined = joining
-            .map(function (collaborator) { return collaborator.siteId; })
-            .filter(function (siteId) { return _this._collaboratorIds.hasOwnProperty(siteId); });
+        var alreadyJoined = joining.filter(function (op) {
+            return _this._collaboratorIds.hasOwnProperty(op.siteId);
+        });
         if (alreadyJoined.length > 0) {
             console.error('The following Site IDs were added to the presence model ' +
                 'but they already exist:', alreadyJoined);
         }
-        var justJoined = joining.filter(function (collaborator) { return !_this._collaboratorIds.hasOwnProperty(collaborator.siteId); });
-        justJoined.forEach(function (collaborator) {
-            var value = { position: null, color: null, name: collaborator.name };
+        var justJoined = joining.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(op.siteId); });
+        // add to data store
+        justJoined.forEach(function (op) {
+            var value = { position: null, color: null, name: op.name };
             if (_this.cursorsEnabled) {
                 value.color = tinycolor.random();
             }
-            _this._collaboratorIds[collaborator.siteId] = value;
+            _this._collaboratorIds[op.siteId] = value;
         });
         this.joinedEvent.notify(justJoined, Object.keys(this._collaboratorIds).length);
     };
@@ -19430,20 +19432,19 @@ var PresenceModel = (function () {
         if (leaving.length === 0) {
             return;
         }
-        var alreadyLeft = leaving
-            .map(function (op) { return op.siteId; })
-            .filter(function (collaboratorId) { return !_this._collaboratorIds.hasOwnProperty(collaboratorId); });
+        var alreadyLeft = leaving.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(op.siteId); });
         if (alreadyLeft.length > 0) {
             console.error('Tried to remove the following Site IDs from the presence model ' +
                 'but they were missing:', alreadyLeft);
         }
-        var justLeft = leaving
-            .map(function (op) { return op.siteId; })
-            .filter(function (collaboratorId) {
-            return _this._collaboratorIds.hasOwnProperty(collaboratorId);
+        var justLeft = leaving.filter(function (op) {
+            return _this._collaboratorIds.hasOwnProperty(op.siteId);
         });
-        justLeft.forEach(function (collaboratorId) { return delete _this._collaboratorIds[collaboratorId]; });
-        this.leftEvent.notify(justLeft);
+        // remove from data store
+        justLeft.forEach(function (op) {
+            delete _this._collaboratorIds[op.siteId];
+        });
+        this.leftEvent.notify(justLeft.map(function (op) { return op.siteId; }));
     };
     PresenceModel.prototype.parsePresOps = function (presOps) {
         var joiningCollaborators = presOps
