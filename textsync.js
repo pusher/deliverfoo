@@ -14733,7 +14733,6 @@ var QuillAdaptor = (function () {
                     return seenBadRune || isBadRune;
                 }, false);
                 if (containsBadRune) {
-                    alert("Unfortunately, we can't handle emoji at the moment. We're working on it!");
                     shouldRejectChange = true;
                     break;
                 }
@@ -14741,6 +14740,7 @@ var QuillAdaptor = (function () {
         }
         if (shouldRejectChange) {
             this.quill.setContents(oldDelta, 'silent');
+            alert("Unfortunately, we can't handle emoji at the moment. We're working on it!");
             return;
         }
         console.log('text change', delta, oldDelta);
