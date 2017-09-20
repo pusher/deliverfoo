@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 39);
+/******/ 	return __webpack_require__(__webpack_require__.s = 37);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -205,7 +205,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(32);
+var	fixUrls = __webpack_require__(31);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -522,8 +522,8 @@ function updateLink (link, options, obj) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var pSlice = Array.prototype.slice;
-var objectKeys = __webpack_require__(25);
-var isArguments = __webpack_require__(24);
+var objectKeys = __webpack_require__(24);
+var isArguments = __webpack_require__(23);
 
 var deepEqual = module.exports = function (actual, expected, opts) {
   if (!opts) opts = {};
@@ -2084,6 +2084,14 @@ var OpType;
     OpType[OpType["Insert"] = 1] = "Insert";
     OpType[OpType["Delete"] = 2] = "Delete";
 })(OpType = exports.OpType || (exports.OpType = {}));
+function isDocOp(object) {
+    return 'opType' in object;
+}
+exports.isDocOp = isDocOp;
+function isCursorOp(object) {
+    return 'range' in object;
+}
+exports.isCursorOp = isCursorOp;
 
 
 /***/ }),
@@ -2428,40 +2436,6 @@ exports.default = Logoot;
 
 /***/ }),
 /* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var logootFormat = __webpack_require__(7);
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function messageFromOps(ops, siteId) {
-    var docOps = [];
-    var cursorOps = [];
-    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
-        var op = ops_1[_i];
-        if (logootFormat.isDocOp(op)) {
-            docOps.push(op);
-        }
-        else if (logootFormat.isCursorOp(op)) {
-            cursorOps.push(op);
-        }
-    }
-    return {
-        docOps: docOps,
-        cursorOps: cursorOps,
-        siteId: siteId
-    };
-}
-exports.messageFromOps = messageFromOps;
-
-
-/***/ }),
-/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -3379,7 +3353,7 @@ exports.default = {
 });
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -14389,16 +14363,16 @@ module.exports = __webpack_require__(62);
 /***/ })
 /******/ ]);
 });
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(18).Buffer))
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(22);
+var content = __webpack_require__(21);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -14423,13 +14397,13 @@ if(false) {
 }
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(23);
+var content = __webpack_require__(22);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -14454,7 +14428,7 @@ if(false) {
 }
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14500,7 +14474,6 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var logoot_1 = __webpack_require__(8);
 var logoot_2 = __webpack_require__(8);
-var wireFormat = __webpack_require__(9);
 var logootFormat = __webpack_require__(7);
 var editorFormat = __webpack_require__(6);
 var LogootDoc = (function (_super) {
@@ -14648,12 +14621,19 @@ var LogootDoc = (function (_super) {
         editorOps.sort(function (a, b) { return a.index - b.index; });
         return editorOps;
     };
+    /**
+     * Applies operations to the document model
+     * @param {logootFormat.DocOp[]} ops - The operations to apply
+     *
+     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
+     *   the changes described.
+     */
     LogootDoc.prototype.updateDoc = function (ops) {
         var editorOps = [];
         // Batch the operations for performance reasons.
-        var insertOps = ops.filter(function (op) { return op.opType === wireFormat.OpType.Insert; });
+        var insertOps = ops.filter(function (op) { return op.opType === logootFormat.OpType.Insert; });
         editorOps = editorOps.concat(this.applyInserts(insertOps));
-        var deleteOps = ops.filter(function (op) { return op.opType === wireFormat.OpType.Delete; });
+        var deleteOps = ops.filter(function (op) { return op.opType === logootFormat.OpType.Delete; });
         editorOps = editorOps.concat(this.applyDeletes(deleteOps));
         return editorOps;
     };
@@ -14663,7 +14643,7 @@ exports.default = LogootDoc;
 
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14673,8 +14653,8 @@ exports.default = LogootDoc;
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var editorFormat = __webpack_require__(6);
-__webpack_require__(31);
-var Delta = __webpack_require__(28);
+__webpack_require__(30);
+var Delta = __webpack_require__(27);
 var runes = __webpack_require__(4);
 var QuillAdaptor = (function () {
     function QuillAdaptor(quill, textsync, docId) {
@@ -14893,37 +14873,37 @@ var QuillAttributes = (function () {
     return QuillAttributes;
 }());
 exports.QuillAttributes = QuillAttributes;
-function makeDeltas(operations) {
+function makeDeltas(docOps) {
     var deltas = [];
     var insertBuffer = '';
-    for (var i = 0; i < operations.length; i++) {
+    for (var i = 0; i < docOps.length; i++) {
         var delta = new Delta();
-        var operation = operations[i];
-        var nextOperation = operations[i + 1] || null;
+        var docOp = docOps[i];
+        var nextDocOp = docOps[i + 1] || null;
         var runesToRetain = void 0;
-        switch (operation.opType) {
+        switch (docOp.opType) {
             case editorFormat.OpType.Insert:
-                var canSquashIntoNextOp = nextOperation !== null &&
-                    nextOperation.opType === editorFormat.OpType.Insert &&
-                    JSON.stringify(nextOperation.attributes) ===
-                        JSON.stringify(operation.attributes) &&
-                    nextOperation.index === operation.index + 1;
+                var canSquashIntoNextOp = nextDocOp !== null &&
+                    nextDocOp.opType === editorFormat.OpType.Insert &&
+                    JSON.stringify(nextDocOp.attributes) ===
+                        JSON.stringify(docOp.attributes) &&
+                    nextDocOp.index === docOp.index + 1;
                 if (canSquashIntoNextOp) {
-                    insertBuffer += operation.text;
+                    insertBuffer += docOp.text;
                 }
                 else {
                     // Retain
-                    runesToRetain = operation.index - insertBuffer.length;
+                    runesToRetain = docOp.index - insertBuffer.length;
                     delta.retain(runesToRetain);
                     // Insert
-                    var attrs = operation.attributes || {};
-                    delta.insert(insertBuffer + operation.text, QuillAttributes.fromWireAttributes(attrs));
+                    var attrs = docOp.attributes || {};
+                    delta.insert(insertBuffer + docOp.text, QuillAttributes.fromWireAttributes(attrs));
                     insertBuffer = '';
                     deltas.push(delta);
                 }
                 break;
             case editorFormat.OpType.Delete:
-                runesToRetain = operation.index;
+                runesToRetain = docOp.index;
                 delta.retain(runesToRetain);
                 delta.delete(1);
                 deltas.push(delta);
@@ -14936,7 +14916,7 @@ exports.makeDeltas = makeDeltas;
 
 
 /***/ }),
-/* 16 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14945,11 +14925,10 @@ exports.makeDeltas = makeDeltas;
  * Uses the textsync service to synchronise LogootDoc instances
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var wireFormat = __webpack_require__(9);
-var model_1 = __webpack_require__(37);
-var controller_1 = __webpack_require__(34);
-var badges_1 = __webpack_require__(33);
-var name_generator_1 = __webpack_require__(38);
+var wireFormat = __webpack_require__(38);
+var model_1 = __webpack_require__(35);
+var controller_1 = __webpack_require__(33);
+var name_generator_1 = __webpack_require__(36);
 var MIN_BROADCAST_PERIOD_MS = 1;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
@@ -14998,10 +14977,8 @@ var TextSync = (function () {
         ]);
     };
     TextSync.prototype.initPresence = function (presenceConfig) {
-        // badges / model can be local vars
-        this.presenceModel = new model_1.default(presenceConfig);
-        var badges = new badges_1.default(this.siteId);
-        this.presenceController = new controller_1.default(this.presenceModel, badges, this.logoot, this.adaptor);
+        var presenceController = new controller_1.default(this.siteId, presenceConfig);
+        this.presenceModel = new model_1.default(this.siteId, this.adaptor, this.logoot, presenceController, presenceConfig);
     };
     TextSync.prototype.start = function (adaptor) {
         this.adaptor = adaptor;
@@ -15031,6 +15008,7 @@ var TextSync = (function () {
                 if (event.body.siteId !== _this.siteId) {
                     if (event.body.presOps && event.body.presOps.length > 0) {
                         // go straight to presence
+                        console.log(event.body.presOps);
                         var presOpsCopy = JSON.parse(JSON.stringify(event.body.presOps));
                         _this.presenceModel.receivePresOps(presOpsCopy);
                     }
@@ -15040,7 +15018,7 @@ var TextSync = (function () {
                             docOps: event.body.docOps,
                             siteId: event.body.siteId
                         });
-                        _this.presenceController.receiveDocOps({
+                        _this.presenceModel.receiveDocOps({
                             docOps: event.body.docOps,
                             siteId: event.body.siteId
                         });
@@ -15048,9 +15026,7 @@ var TextSync = (function () {
                     else if (event.body.cursorOps && event.body.cursorOps.length > 0) {
                         // when someone clicks to a new position
                         console.log(event.body.siteId + " has clicked.");
-                        event.body.cursorOps.forEach(function (cursorOp) {
-                            _this.presenceController.updateCursorPosition(cursorOp);
-                        });
+                        _this.presenceModel.receiveCursorOps(event.body.cursorOps);
                     }
                 }
             },
@@ -15131,13 +15107,13 @@ exports.TextSync = TextSync;
 
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["CursorsModule"] = CursorsModule;
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__ = __webpack_require__(30);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__ = __webpack_require__(29);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2__ = __webpack_require__(5);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_tinycolor2__);
@@ -15441,7 +15417,7 @@ CursorsModule.prototype._updateSelection = function(
 
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15562,7 +15538,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15576,9 +15552,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(18)
-var ieee754 = __webpack_require__(27)
-var isArray = __webpack_require__(20)
+var base64 = __webpack_require__(17)
+var ieee754 = __webpack_require__(26)
+var isArray = __webpack_require__(19)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -17356,10 +17332,10 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(40)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(39)))
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -17370,7 +17346,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -17384,7 +17360,7 @@ exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXIN
 
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -17398,7 +17374,7 @@ exports.push([module.i, "@-webkit-keyframes flash {\n  0% {\n    opacity: 0; }\n
 
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(0)(undefined);
@@ -17412,7 +17388,7 @@ exports.push([module.i, ".tsync-badge {\n  opacity: 0;\n  transition: opacity 1.
 
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ (function(module, exports) {
 
 var supportsArgumentsClass = (function(){
@@ -17438,7 +17414,7 @@ function unsupported(object){
 
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ (function(module, exports) {
 
 exports = module.exports = typeof Object.keys === 'function'
@@ -17453,7 +17429,7 @@ function shim (obj) {
 
 
 /***/ }),
-/* 26 */
+/* 25 */
 /***/ (function(module, exports) {
 
 /**
@@ -18157,7 +18133,7 @@ function merge_tuples (diffs, start, length) {
 
 
 /***/ }),
-/* 27 */
+/* 26 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -18247,13 +18223,13 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 28 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var diff = __webpack_require__(26);
+var diff = __webpack_require__(25);
 var equal = __webpack_require__(2);
 var extend = __webpack_require__(3);
-var op = __webpack_require__(29);
+var op = __webpack_require__(28);
 
 
 var NULL_CHARACTER = String.fromCharCode(0);  // Placeholder char for embed in diff()
@@ -18567,7 +18543,7 @@ module.exports = Delta;
 
 
 /***/ }),
-/* 29 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var equal = __webpack_require__(2);
@@ -18712,7 +18688,7 @@ module.exports = lib;
 
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ (function(module, exports) {
 
 /*!
@@ -18984,13 +18960,13 @@ module.exports = lib;
 
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(21);
+var content = __webpack_require__(20);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -19015,7 +18991,7 @@ if(false) {
 }
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ (function(module, exports) {
 
 
@@ -19110,7 +19086,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19209,22 +19185,20 @@ exports.default = Badges;
 
 
 /***/ }),
-/* 34 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var badges_1 = __webpack_require__(32);
 var ANIMATION_LENGTH = 1000;
-var SERVER_SITE_ID = 0;
 var PresenceController = (function () {
-    function PresenceController(model, badges, logootDoc, adaptor) {
-        this.model = model;
-        this.badges = badges;
-        this.logootDoc = logootDoc;
-        this.adaptor = adaptor;
+    function PresenceController(siteId, config) {
+        this.siteId = siteId;
+        this.config = config;
         this.flashingBadges = {};
-        this.attachListeners();
+        this.badges = new badges_1.default(this.siteId);
     }
     PresenceController.prototype.resetTimeout = function (siteId) {
         clearTimeout(this.flashingBadges[siteId]);
@@ -19238,116 +19212,42 @@ var PresenceController = (function () {
             delete _this.flashingBadges[siteId];
         }, ANIMATION_LENGTH, siteId);
     };
-    PresenceController.prototype.attachListeners = function () {
-        var _this = this;
-        this.model.joinedEvent.attach(function (sender, joining) {
-            joining.sort(function (a, b) {
-                if (a.timestamp > b.timestamp) {
-                    return 1;
-                }
-                else if (a.timestamp < b.timestamp) {
-                    return -1;
-                }
-                else {
-                    return 0;
-                }
-            });
-            if (_this.model.badgesEnabled) {
-                _this.badges.addBadges(joining);
+    PresenceController.prototype.receiveJoining = function (joining) {
+        joining.sort(function (a, b) {
+            if (a.timestamp > b.timestamp) {
+                return 1;
+            }
+            else if (a.timestamp < b.timestamp) {
+                return -1;
+            }
+            else {
+                return 0;
             }
         });
-        this.model.leftEvent.attach(function (sender, leavingSiteIds) {
+        if (this.config.showBadges) {
+            this.badges.addBadges(joining);
+        }
+    };
+    PresenceController.prototype.receiveLeaving = function (leavingSiteIds) {
+        var _this = this;
+        if (this.config.showBadges) {
             leavingSiteIds.forEach(function (siteId, i) {
                 _this.badges.removeBadge(siteId);
             });
-        });
-        this.model.startTypingEvent.attach(function (sender, siteId) {
-            if (_this.flashingBadges[siteId]) {
-                _this.resetTimeout(siteId);
-            }
-            else {
-                _this.badges.startBadgeFlash(siteId);
-                _this.startTimeout(siteId);
-            }
-        });
+        }
     };
     /**
-      * Triggers the start typing event for a collaborator
-      * @param {number} siteId - site id for collaborator
-      * @returns {void}
-      */
-    PresenceController.prototype.triggerStartTypingEvent = function (siteId) {
-        this.model.startTypingEvent.notify(siteId);
-    };
-    /**
-     * Adds new collaborators
-     * @param {AddOp[]} joining - array of 'add collaborator' operations
+     * Triggers the start typing event for a collaborator
+     * @param {number} siteId - site id for collaborator
      * @returns {void}
      */
-    PresenceController.prototype.add = function (joining) {
-        this.model.add(joining);
-    };
-    /**
-      * Removes existing collaborators
-      * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
-      * @returns {void}
-      */
-    PresenceController.prototype.remove = function (leaving) {
-        var _this = this;
-        this.model.remove(leaving);
-        if (this.model.badgesEnabled) {
-            leaving.forEach(function (person) {
-                _this.adaptor.removeCursor(person.siteId);
-            });
+    PresenceController.prototype.triggerStartTypingEvent = function (siteId) {
+        if (this.flashingBadges[siteId]) {
+            this.resetTimeout(siteId);
         }
-    };
-    PresenceController.prototype.updateCursorPosition = function (cursorOp, offset) {
-        if (offset === void 0) { offset = 0; }
-        if (this.model._collaboratorIds.hasOwnProperty(cursorOp.siteId)) {
-            if (cursorOp.position === null) {
-                this.adaptor.removeCursor(cursorOp.siteId);
-            }
-            else {
-                var userData = this.model._collaboratorIds[cursorOp.siteId];
-                userData.position = cursorOp.position;
-                var startIndex = this.logootDoc.wireIdentsToIndex(cursorOp.position.start, 0) + offset;
-                var endIndex = cursorOp.position.end
-                    ? this.logootDoc.wireIdentsToIndex(cursorOp.position.end, 0)
-                    : startIndex;
-                console.log(cursorOp.siteId + " new index: " + startIndex + ", end index: " + endIndex);
-                this.adaptor.setCursor({
-                    id: cursorOp.siteId,
-                    range: { index: startIndex, length: endIndex - startIndex },
-                    name: userData.name,
-                    color: userData.color
-                });
-            }
-        }
-    };
-    /**
-      * Processes document operations (DocOps)
-      * @param {Message} wireMessage - wire message containing DocOps[]
-      * @returns {void}
-      */
-    PresenceController.prototype.receiveDocOps = function (wireMessage) {
-        if (wireMessage.siteId !== SERVER_SITE_ID) {
-            if (this.model.presenceConfig.showBadges) {
-                this.triggerStartTypingEvent(wireMessage.siteId);
-            }
-            if (this.model.presenceConfig.showCursors) {
-                console.log(wireMessage.siteId + " has typed.");
-                var lastDocOp = wireMessage.docOps[wireMessage.docOps.length - 1];
-                var cursorOp = {
-                    siteId: wireMessage.siteId,
-                    position: {
-                        start: lastDocOp.ident.position
-                    }
-                };
-                // insert op: lastCharIndex + 1
-                // delete op: lastCharIndex - 1
-                var offset = lastDocOp.opType === 1 ? 1 : 0;
-                this.updateCursorPosition(cursorOp, offset);
-            }
+        else {
+            this.badges.startBadgeFlash(siteId);
+            this.startTimeout(siteId);
         }
     };
     return PresenceController;
@@ -19356,35 +19256,7 @@ exports.default = PresenceController;
 
 
 /***/ }),
-/* 35 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var PresenceEvent = (function () {
-    function PresenceEvent(sender) {
-        this._sender = sender;
-        this._listeners = [];
-    }
-    PresenceEvent.prototype.attach = function (listener) {
-        this._listeners.push(listener);
-    };
-    PresenceEvent.prototype.notify = function () {
-        var _this = this;
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        this._listeners.forEach(function (listener) { return listener.apply(void 0, [_this._sender].concat(args)); });
-    };
-    return PresenceEvent;
-}());
-exports.default = PresenceEvent;
-
-
-/***/ }),
-/* 36 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19395,104 +19267,79 @@ var OpType;
     OpType[OpType["Joining"] = 1] = "Joining";
     OpType[OpType["Leaving"] = 2] = "Leaving";
 })(OpType = exports.OpType || (exports.OpType = {}));
+function filterByType(input, pred) {
+    return input.reduce(function (output, el) {
+        if (pred(el)) {
+            output.push(el);
+        }
+        return output;
+    }, new Array());
+}
+exports.filterByType = filterByType;
+function isAddOp(object) {
+    return object.opType === OpType.Joining;
+}
+exports.isAddOp = isAddOp;
+function isRemoveOp(object) {
+    return object.opType === OpType.Leaving;
+}
+exports.isRemoveOp = isRemoveOp;
 
 
 /***/ }),
-/* 37 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var tinycolor = __webpack_require__(5);
-// import tinycolor from 'tinycolor2'
-var event_dispatcher_1 = __webpack_require__(35);
-var format_1 = __webpack_require__(36);
+var format_1 = __webpack_require__(34);
+var SERVER_SITE_ID = 0;
 var PresenceModel = (function () {
-    function PresenceModel(presenceConfig) {
-        this.badgesEnabled = presenceConfig.showBadges; // redundant?
-        this.cursorsEnabled = presenceConfig.showCursors; // redundant
+    function PresenceModel(siteId, adaptor, logootDoc, controller, presenceConfig) {
+        this.siteId = siteId;
+        this.adaptor = adaptor;
+        this.logootDoc = logootDoc;
+        this.controller = controller;
         this.presenceConfig = presenceConfig;
         this._collaboratorIds = {};
-        this.joinedEvent = new event_dispatcher_1.default(this);
-        this.leftEvent = new event_dispatcher_1.default(this);
-        this.startTypingEvent = new event_dispatcher_1.default(this);
     }
     /**
-     * Adds new collaborators
-     * @param {AddOp[]} joining - array of 'add collaborator' operations
+     * Processes document operations (DocOps)
+     * @param {Message} wireMessage - wire message containing DocOps[]
      * @returns {void}
      */
-    PresenceModel.prototype.add = function (joining) {
-        var _this = this;
-        if (joining.length === 0) {
-            return;
-        }
-        var alreadyJoined = joining.filter(function (op) {
-            return _this._collaboratorIds.hasOwnProperty(op.siteId);
-        });
-        if (alreadyJoined.length > 0) {
-            console.error('The following Site IDs were added to the presence model ' +
-                'but they already exist:', alreadyJoined);
-        }
-        var justJoined = joining.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(op.siteId); });
-        // add to data store
-        justJoined.forEach(function (op) {
-            var value = { position: null, color: null, name: op.name };
-            if (_this.cursorsEnabled) {
-                value.color = tinycolor.random();
+    PresenceModel.prototype.receiveDocOps = function (wireMessage) {
+        if (wireMessage.siteId !== SERVER_SITE_ID) {
+            if (this.presenceConfig.showBadges) {
+                this.controller.triggerStartTypingEvent(wireMessage.siteId);
             }
-            _this._collaboratorIds[op.siteId] = value;
-        });
-        this.joinedEvent.notify(justJoined, Object.keys(this._collaboratorIds).length);
-    };
-    /**
-     * Removes existing collaborators
-     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
-     * @returns {void}
-     */
-    PresenceModel.prototype.remove = function (leaving) {
-        var _this = this;
-        if (leaving.length === 0) {
-            return;
+            if (this.presenceConfig.showCursors) {
+                console.log(wireMessage.siteId + " has typed.");
+                var lastDocOp = wireMessage.docOps[wireMessage.docOps.length - 1];
+                var cursorOp = [
+                    {
+                        siteId: wireMessage.siteId,
+                        position: {
+                            start: lastDocOp.ident.position
+                        }
+                    }
+                ];
+                // insert op: lastCharIndex + 1
+                // delete op: lastCharIndex - 1
+                var offset = lastDocOp.opType === 1 ? 1 : 0;
+                this.receiveCursorOps(cursorOp, offset);
+            }
         }
-        var alreadyLeft = leaving.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(op.siteId); });
-        if (alreadyLeft.length > 0) {
-            console.error('Tried to remove the following Site IDs from the presence model ' +
-                'but they were missing:', alreadyLeft);
-        }
-        var justLeft = leaving.filter(function (op) {
-            return _this._collaboratorIds.hasOwnProperty(op.siteId);
-        });
-        // remove from data store
-        justLeft.forEach(function (op) {
-            delete _this._collaboratorIds[op.siteId];
-        });
-        this.leftEvent.notify(justLeft.map(function (op) { return op.siteId; }));
-    };
-    PresenceModel.prototype.parsePresOps = function (presOps) {
-        var joiningCollaborators = presOps
-            .filter(function (op) { return op.opType === format_1.OpType.Joining; })
-            .map(function (op) {
-            return {
-                siteId: op.siteId,
-                name: op.name,
-                avatar: op.avatar,
-                timestamp: op.timestamp
-            };
-        });
-        var leavingCollaborators = presOps
-            .filter(function (op) { return op.opType === format_1.OpType.Leaving; })
-            .map(function (op) {
-            return { siteId: op.siteId };
-        });
-        return { joiningCollaborators: joiningCollaborators, leavingCollaborators: leavingCollaborators };
     };
     PresenceModel.prototype.receivePresOps = function (presOps) {
+        var _this = this;
         if (!this.presenceConfig.callback && !this.presenceConfig.showBadges) {
             return;
         }
-        var _a = this.parsePresOps(presOps), joiningCollaborators = _a.joiningCollaborators, leavingCollaborators = _a.leavingCollaborators;
+        var joiningCollaborators = format_1.filterByType(presOps, format_1.isAddOp);
+        var leavingCollaborators = format_1.filterByType(presOps, format_1.isRemoveOp);
         if (this.presenceConfig.callback) {
             this.presenceConfig.callback({
                 joined: joiningCollaborators,
@@ -19507,6 +19354,90 @@ var PresenceModel = (function () {
                 this.remove(leavingCollaborators);
             }
         }
+        if (this.presenceConfig.showCursors) {
+            leavingCollaborators.forEach(function (el) {
+                _this.adaptor.removeCursor(el.siteId);
+            });
+        }
+    };
+    /**
+     * Adds new collaborators
+     * @param {AddOp[]} joining - array of 'add collaborator' operations
+     * @returns {void}
+     */
+    PresenceModel.prototype.add = function (joining) {
+        var _this = this;
+        if (joining.length === 0) {
+            return;
+        }
+        var alreadyJoined = joining.filter(function (op) {
+            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
+        });
+        if (alreadyJoined.length > 0) {
+            console.error('The following Site IDs were added to the presence model ' +
+                'but they already exist:', alreadyJoined);
+        }
+        var justJoined = joining.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
+        // add to data store
+        justJoined.forEach(function (op) {
+            var value = { position: null, color: null, name: op.name };
+            if (_this.presenceConfig.showCursors) {
+                value.color = tinycolor.random();
+            }
+            _this._collaboratorIds[op.siteId] = value;
+        });
+        this.controller.receiveJoining(justJoined);
+    };
+    /**
+     * Removes existing collaborators
+     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
+     * @returns {void}
+     */
+    PresenceModel.prototype.remove = function (leaving) {
+        var _this = this;
+        if (leaving.length === 0) {
+            return;
+        }
+        var alreadyLeft = leaving.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
+        if (alreadyLeft.length > 0) {
+            console.error('Tried to remove the following Site IDs from the presence model ' +
+                'but they were missing:', alreadyLeft);
+        }
+        var justLeft = leaving.filter(function (op) {
+            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
+        });
+        // remove from data store
+        justLeft.forEach(function (op) {
+            delete _this._collaboratorIds[op.siteId];
+        });
+        this.controller.receiveLeaving(justLeft.map(function (op) { return op.siteId; }));
+    };
+    PresenceModel.prototype.receiveCursorOps = function (cursorOps, offset) {
+        var _this = this;
+        if (offset === void 0) { offset = 0; }
+        cursorOps.forEach(function (cursorOp) {
+            if (_this._collaboratorIds.hasOwnProperty(String(cursorOp.siteId))) {
+                if (cursorOp.position === null) {
+                    _this.adaptor.removeCursor(cursorOp.siteId);
+                }
+                else {
+                    var userData = _this._collaboratorIds[cursorOp.siteId];
+                    userData.position = cursorOp.position;
+                    var startIndex = _this.logootDoc.wireIdentsToIndex(cursorOp.position.start, 0) +
+                        offset;
+                    var endIndex = cursorOp.position.end
+                        ? _this.logootDoc.wireIdentsToIndex(cursorOp.position.end, 0)
+                        : startIndex;
+                    console.log(cursorOp.siteId + " new index: " + startIndex + ", end index: " + endIndex);
+                    _this.adaptor.setCursor({
+                        id: cursorOp.siteId,
+                        range: { index: startIndex, length: endIndex - startIndex },
+                        name: userData.name,
+                        color: userData.color
+                    });
+                }
+            }
+        });
     };
     return PresenceModel;
 }());
@@ -19514,7 +19445,7 @@ exports.default = PresenceModel;
 
 
 /***/ }),
-/* 38 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19580,7 +19511,7 @@ var NOUNS = [
 
 
 /***/ }),
-/* 39 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19590,12 +19521,12 @@ var NOUNS = [
  * It is intended to replace an existing
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-var Quill = __webpack_require__(11);
-var PusherPlatform = __webpack_require__(10);
-var logoot_doc_1 = __webpack_require__(14);
-var textsync_1 = __webpack_require__(16);
-var quill_adaptor_1 = __webpack_require__(15);
-var quill_cursors_1 = __webpack_require__(17);
+var Quill = __webpack_require__(10);
+var PusherPlatform = __webpack_require__(9);
+var logoot_doc_1 = __webpack_require__(13);
+var textsync_1 = __webpack_require__(15);
+var quill_adaptor_1 = __webpack_require__(14);
+var quill_cursors_1 = __webpack_require__(16);
 var DEFAULT_QUILL_CONFIG = {
     theme: 'snow',
     modules: {
@@ -19694,8 +19625,8 @@ var TextSync = (function () {
 }());
 function initEditor(element, quillConfig, presenceConfig) {
     if (presenceConfig.showBadges) {
+        __webpack_require__(11);
         __webpack_require__(12);
-        __webpack_require__(13);
         var presenceContainer = document.createElement('div');
         presenceContainer.id = 'tsync-presence-container';
         element.appendChild(presenceContainer);
@@ -19751,7 +19682,36 @@ module.exports = TextSync;
 
 
 /***/ }),
-/* 40 */
+/* 38 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var logootFormat = __webpack_require__(7);
+function messageFromOps(ops, siteId) {
+    var docOps = [];
+    var cursorOps = [];
+    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
+        var op = ops_1[_i];
+        if (logootFormat.isDocOp(op)) {
+            docOps.push(op);
+        }
+        else if (logootFormat.isCursorOp(op)) {
+            cursorOps.push(op);
+        }
+    }
+    return {
+        docOps: docOps,
+        cursorOps: cursorOps,
+        siteId: siteId
+    };
+}
+exports.messageFromOps = messageFromOps;
+
+
+/***/ }),
+/* 39 */
 /***/ (function(module, exports) {
 
 var g;
