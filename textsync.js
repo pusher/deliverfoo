@@ -14637,6 +14637,32 @@ var LogootDoc = (function (_super) {
         editorOps = editorOps.concat(this.applyDeletes(deleteOps));
         return editorOps;
     };
+    LogootDoc.prototype.toEditorCursorOps = function (ops, offset) {
+        var _this = this;
+        if (offset === void 0) { offset = 0; }
+        var editorOps = [];
+        return ops.map(function (cursorOp) {
+            var startIndex = null;
+            var length = 0;
+            if (cursorOp.position !== null) {
+                startIndex =
+                    _this.wireIdentsToIndex(cursorOp.position.start, 0) + offset;
+                var endIndex = cursorOp.position.end
+                    ? _this.wireIdentsToIndex(cursorOp.position.end, 0)
+                    : startIndex;
+                length = endIndex - startIndex;
+            }
+            return {
+                id: cursorOp.siteId,
+                range: {
+                    index: startIndex,
+                    length: length
+                },
+                name: null,
+                color: null
+            };
+        });
+    };
     return LogootDoc;
 }(logoot_1.default));
 exports.default = LogootDoc;
@@ -14677,8 +14703,8 @@ var QuillAdaptor = (function () {
             this.quill.updateContents(delta, 'silent');
         }
     };
-    QuillAdaptor.prototype.setCursor = function (cursorData) {
-        this.cursorModule.setCursor(cursorData.id, cursorData.range, cursorData.name, cursorData.color);
+    QuillAdaptor.prototype.setCursor = function (cursorOp) {
+        this.cursorModule.setCursor(cursorOp);
     };
     QuillAdaptor.prototype.removeCursor = function (siteId) {
         this.cursorModule.removeCursor(siteId);
@@ -14961,11 +14987,11 @@ var TextSync = (function () {
     TextSync.prototype.updateCursor = function (start, end) {
         if (end === void 0) { end = null; }
         var position = null;
-        if (start != null) {
+        if (start !== null) {
             position = {
                 start: this.logoot.newPositionAtIndex(start)
             };
-            if (end != null) {
+            if (end !== null) {
                 position.end = this.logoot.newPositionAtIndex(end);
             }
         }
@@ -15008,25 +15034,24 @@ var TextSync = (function () {
                 if (event.body.siteId !== _this.siteId) {
                     if (event.body.presOps && event.body.presOps.length > 0) {
                         // go straight to presence
-                        console.log(event.body.presOps);
                         var presOpsCopy = JSON.parse(JSON.stringify(event.body.presOps));
                         _this.presenceModel.receivePresOps(presOpsCopy);
                     }
                     if (event.body.docOps && event.body.docOps.length > 0) {
-                        // when someone types
-                        _this.receiveDocOps({
+                        var message = {
                             docOps: event.body.docOps,
                             siteId: event.body.siteId
-                        });
-                        _this.presenceModel.receiveDocOps({
-                            docOps: event.body.docOps,
-                            siteId: event.body.siteId
-                        });
+                        };
+                        _this.receiveDocOps(message);
+                        _this.presenceModel.receiveDocOps(message);
                     }
                     else if (event.body.cursorOps && event.body.cursorOps.length > 0) {
                         // when someone clicks to a new position
                         console.log(event.body.siteId + " has clicked.");
-                        _this.presenceModel.receiveCursorOps(event.body.cursorOps);
+                        _this.receiveCursorOps({
+                            cursorOps: event.body.cursorOps,
+                            siteId: event.body.siteId
+                        });
                     }
                 }
             },
@@ -15092,14 +15117,18 @@ var TextSync = (function () {
         }, this.broadcastPeriod);
     };
     TextSync.prototype.receiveDocOps = function (wireMessage) {
-        // If you get your own message, skip it.
         if (wireMessage.siteId === this.siteId) {
             return;
         }
-        // Convert the incoming wire operations (logoot domain) to editor
-        // operations (editor domain).
-        var editorOps = this.logoot.updateDoc(wireMessage.docOps);
-        this.adaptor.applyOperations(editorOps);
+        var editorDocOps = this.logoot.updateDoc(wireMessage.docOps);
+        this.adaptor.applyOperations(editorDocOps);
+    };
+    TextSync.prototype.receiveCursorOps = function (wireMessage) {
+        if (wireMessage.siteId === this.siteId) {
+            return;
+        }
+        var editorCursorOps = this.logoot.toEditorCursorOps(wireMessage.cursorOps);
+        this.presenceModel.receiveCursorOps(editorCursorOps);
     };
     return TextSync;
 }());
@@ -19292,6 +19321,14 @@ exports.isRemoveOp = isRemoveOp;
 
 "use strict";
 
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var tinycolor = __webpack_require__(5);
 var format_1 = __webpack_require__(34);
@@ -19318,7 +19355,7 @@ var PresenceModel = (function () {
             if (this.presenceConfig.showCursors) {
                 console.log(wireMessage.siteId + " has typed.");
                 var lastDocOp = wireMessage.docOps[wireMessage.docOps.length - 1];
-                var cursorOp = [
+                var cursorOps = [
                     {
                         siteId: wireMessage.siteId,
                         position: {
@@ -19326,13 +19363,19 @@ var PresenceModel = (function () {
                         }
                     }
                 ];
-                // insert op: lastCharIndex + 1
-                // delete op: lastCharIndex - 1
+                // insert op: index_of_last_char + 1
+                // delete op: index_of_last_char - 1
                 var offset = lastDocOp.opType === 1 ? 1 : 0;
-                this.receiveCursorOps(cursorOp, offset);
+                var editorCursorOps = this.logootDoc.toEditorCursorOps(cursorOps, offset);
+                this.receiveCursorOps(editorCursorOps);
             }
         }
     };
+    /**
+     * Processes presence operations (PresOps)
+     * @param {Message} wireMessage - wire message containing PresOp[]
+     * @returns {void}
+     */
     PresenceModel.prototype.receivePresOps = function (presOps) {
         var _this = this;
         if (!this.presenceConfig.callback && !this.presenceConfig.showBadges) {
@@ -19357,6 +19400,27 @@ var PresenceModel = (function () {
         if (this.presenceConfig.showCursors) {
             leavingCollaborators.forEach(function (el) {
                 _this.adaptor.removeCursor(el.siteId);
+            });
+        }
+    };
+    /**
+     * Processes cursor operations (CursorOps)
+     * @param {Message} wireMessage - wire message containing CursorOp[]
+     * @returns {void}
+     */
+    PresenceModel.prototype.receiveCursorOps = function (cursorOps) {
+        var _this = this;
+        if (this.presenceConfig.showCursors) {
+            cursorOps.forEach(function (cursorOp) {
+                if (_this._collaboratorIds.hasOwnProperty(String(cursorOp.id))) {
+                    if (cursorOp.range.index === null) {
+                        _this.adaptor.removeCursor(cursorOp.id);
+                    }
+                    else {
+                        var cursorData = __assign({}, cursorOp, { color: _this._collaboratorIds[cursorOp.id].color, name: _this._collaboratorIds[cursorOp.id].name });
+                        _this.adaptor.setCursor(cursorData);
+                    }
+                }
             });
         }
     };
@@ -19411,33 +19475,6 @@ var PresenceModel = (function () {
             delete _this._collaboratorIds[op.siteId];
         });
         this.controller.receiveLeaving(justLeft.map(function (op) { return op.siteId; }));
-    };
-    PresenceModel.prototype.receiveCursorOps = function (cursorOps, offset) {
-        var _this = this;
-        if (offset === void 0) { offset = 0; }
-        cursorOps.forEach(function (cursorOp) {
-            if (_this._collaboratorIds.hasOwnProperty(String(cursorOp.siteId))) {
-                if (cursorOp.position === null) {
-                    _this.adaptor.removeCursor(cursorOp.siteId);
-                }
-                else {
-                    var userData = _this._collaboratorIds[cursorOp.siteId];
-                    userData.position = cursorOp.position;
-                    var startIndex = _this.logootDoc.wireIdentsToIndex(cursorOp.position.start, 0) +
-                        offset;
-                    var endIndex = cursorOp.position.end
-                        ? _this.logootDoc.wireIdentsToIndex(cursorOp.position.end, 0)
-                        : startIndex;
-                    console.log(cursorOp.siteId + " new index: " + startIndex + ", end index: " + endIndex);
-                    _this.adaptor.setCursor({
-                        id: cursorOp.siteId,
-                        range: { index: startIndex, length: endIndex - startIndex },
-                        name: userData.name,
-                        color: userData.color
-                    });
-                }
-            }
-        });
     };
     return PresenceModel;
 }());
