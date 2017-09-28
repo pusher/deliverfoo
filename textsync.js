@@ -14789,6 +14789,9 @@ var QuillAdaptor = (function () {
     QuillAdaptor.prototype.removeCursor = function (siteId) {
         this.cursorModule.removeCursor(siteId);
     };
+    QuillAdaptor.prototype.disable = function () {
+        this.quill.disable();
+    };
     QuillAdaptor.prototype.displayError = function (error) {
         console.error(error);
     };
@@ -15040,9 +15043,10 @@ var MIN_BROADCAST_PERIOD_MS = 1;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
 var TextSync = (function () {
-    function TextSync(logoot, pusher, docId, siteId, presenceConfig, notifier, name, email) {
+    function TextSync(logoot, pusher, docId, siteId, presenceConfig, notifier, name, email, defaultText) {
         if (name === void 0) { name = ''; }
         if (email === void 0) { email = ''; }
+        if (defaultText === void 0) { defaultText = ''; }
         this.logoot = logoot;
         this.pusher = pusher;
         this.docId = docId;
@@ -15051,6 +15055,7 @@ var TextSync = (function () {
         this.outstandingOps = [];
         this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
         this.running = true;
+        this.defaultText = defaultText;
         this.notifier = notifier;
         this.broadcastOps();
         // Remove when we have JWT
@@ -15089,9 +15094,29 @@ var TextSync = (function () {
         this.presenceModel = new model_1.default(this.siteId, this.adaptor, this.logoot, presenceController, presenceConfig);
     };
     TextSync.prototype.start = function (adaptor) {
+        var _this = this;
         this.adaptor = adaptor;
         this.initPresence(this.presenceConfig);
-        this.subscribe(this.name, this.email);
+        this.initDocument().then(function () {
+            _this.subscribe(_this.name, _this.email);
+        });
+    };
+    TextSync.prototype.initDocument = function () {
+        var promise;
+        if (this.defaultText) {
+            var body = { text: this.defaultText };
+            promise = this.pusher.request({
+                method: 'POST',
+                path: "/docs/" + this.docId + "/initialise-document",
+                body: body
+            });
+        }
+        else {
+            promise = new Promise(function (resolve, reject) { return resolve(); });
+        }
+        return promise.catch(function (err) {
+            console.error('Unable to initialise default content', err);
+        });
     };
     TextSync.prototype.subscribe = function (name, email) {
         var _this = this;
@@ -15112,7 +15137,7 @@ var TextSync = (function () {
                   docOps --> converted to index --> presence
                   cursorOps --> converted to index --> presence
                   presOps --> go straight to presence
-                */
+                 */
                 if (event.body.siteId !== _this.siteId) {
                     if (event.body.presOps && event.body.presOps.length > 0) {
                         // go straight to presence
@@ -15147,10 +15172,12 @@ var TextSync = (function () {
                 if (error.statusCode === 403) {
                     console.error('Authentication error: Invalid TextSync instance ID. ' +
                         'Double check your instance ID or ask a Pusherino for a new one.');
+                    _this.adaptor.disable();
                     return;
                 }
                 console.error('subscription closed due to error', error);
                 _this.notifier.notify('Whoops! Something went wrong. Please refresh the page to reconnect.', notifications.NotificationType.Error, true);
+                _this.adaptor.disable();
             }
         });
     };
@@ -22854,7 +22881,8 @@ var TextSync = (function () {
             host: this.host,
             logger: new PusherPlatform.ConsoleLogger(1)
         });
-        var textSyncInstance = new textsync_1.TextSync(logootDoc, app, docId, siteId, presenceConfig, notifier, this.userName, this.userEmail);
+        var defaultText = editorConfig.defaultText || '';
+        var textSyncInstance = new textsync_1.TextSync(logootDoc, app, docId, siteId, presenceConfig, notifier, this.userName, this.userEmail, defaultText);
         // Hide the editor element until the CSS has loaded
         var cachedDisplayStyle = containerElement.style.display;
         containerElement.style.display = 'none';
