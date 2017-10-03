@@ -2505,6 +2505,9 @@ var Logoot = (function () {
         }
         return out;
     };
+    Logoot.prototype.toJSON = function () {
+        return JSON.stringify(this.seq);
+    };
     Logoot.min = exports.ABS_MIN_ATOM_IDENT;
     Logoot.max = exports.ABS_MAX_ATOM_IDENT;
     return Logoot;
@@ -15312,7 +15315,7 @@ CursorsModule.prototype.removeCursor = function(userId) {
   delete this.cursors[userId];
 };
 
-CursorsModule.prototype.setCursor = function(userId, range, name, color) {
+CursorsModule.prototype.setCursor = function({userId, range, name, color}) {
   // Init cursor if it doesn't exist
   if (!this.cursors[userId]) {
     this.cursors[userId] = {
