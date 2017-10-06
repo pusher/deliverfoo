@@ -15315,7 +15315,8 @@ CursorsModule.prototype.removeCursor = function(userId) {
   delete this.cursors[userId];
 };
 
-CursorsModule.prototype.setCursor = function({userId, range, name, color}) {
+CursorsModule.prototype.setCursor = function({ id, range, name, color }) {
+  const userId = id;
   // Init cursor if it doesn't exist
   if (!this.cursors[userId]) {
     this.cursors[userId] = {
