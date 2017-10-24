@@ -15046,12 +15046,13 @@ var MIN_BROADCAST_PERIOD_MS = 1;
 var MAX_BROADCAST_PERIOD_MS = 10000;
 var BROADCAST_BACKOFF = 1.2;
 var TextSync = (function () {
-    function TextSync(logoot, pusher, docId, siteId, options, notifier) {
+    function TextSync(logoot, pusher, docId, siteId, options, presenceElement, notifier) {
         this.logoot = logoot;
         this.pusher = pusher;
         this.docId = docId;
         this.siteId = siteId;
         this.options = options;
+        this.presenceElement = presenceElement;
         this.outstandingOps = [];
         this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
         this.running = true;
@@ -15086,8 +15087,8 @@ var TextSync = (function () {
             }
         ]);
     };
-    TextSync.prototype.initPresence = function (presenceConfig) {
-        var presenceController = new controller_1.default(this.siteId, presenceConfig);
+    TextSync.prototype.initPresence = function (presenceConfig, presenceElement) {
+        var presenceController = new controller_1.default(this.siteId, presenceConfig, presenceElement);
         this.presenceModel = new model_1.default(this.siteId, this.adaptor, this.logoot, presenceController, presenceConfig);
     };
     TextSync.prototype.start = function (adaptor) {
@@ -15099,7 +15100,7 @@ var TextSync = (function () {
             onJoined: this.options.onCollaboratorsJoined,
             onLeft: this.options.onCollaboratorsLeft
         };
-        this.initPresence(presenceConfig);
+        this.initPresence(presenceConfig, this.presenceElement);
         this.initDocument().then(function () {
             _this.subscribe(_this.name, _this.email);
         });
@@ -17578,7 +17579,7 @@ exports = module.exports = __webpack_require__(0)(undefined);
 
 
 // module
-exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute;\n  pointer-events: none; }\n", ""]);
+exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursors, .ql-cursors div {\n  position: static;\n  display: block;\n  box-sizing: content-box; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute;\n  pointer-events: none; }\n", ""]);
 
 // exports
 
@@ -22512,9 +22513,10 @@ var TextSync = (function () {
         var notifier = new notifications.Notifier(validatedOptions.errorNotifications, validatedOptions.onError);
         var containerElement = validatedOptions.element;
         var docId = validatedOptions.docId;
+        var presenceElement = initPresenceContainer(containerElement, validatedOptions);
         var siteId = Math.floor(Math.random() * Math.pow(2, 32));
         var logootDoc = new logoot_doc_1.default(siteId);
-        var textSyncInstance = new textsync_1.TextSync(logootDoc, this.app, docId, siteId, validatedOptions, notifier);
+        var textSyncInstance = new textsync_1.TextSync(logootDoc, this.app, docId, siteId, validatedOptions, presenceElement, notifier);
         // Hide the editor element until the CSS has loaded
         var cachedDisplayStyle = containerElement.style.display;
         containerElement.style.display = 'none';
@@ -22537,14 +22539,18 @@ var TextSync = (function () {
     };
     return TextSync;
 }());
-function initEditor(element, validatedOptions, quillConfig) {
-    if (validatedOptions.collaboratorBadges) {
-        __webpack_require__(12);
-        __webpack_require__(13);
-        var presenceContainer = document.createElement('div');
-        presenceContainer.id = 'tsync-presence-container';
-        element.appendChild(presenceContainer);
+function initPresenceContainer(element, validatedOptions) {
+    if (!validatedOptions.collaboratorBadges) {
+        return null;
     }
+    __webpack_require__(12);
+    __webpack_require__(13);
+    var presenceContainer = document.createElement('div');
+    presenceContainer.id = 'tsync-presence-container';
+    element.appendChild(presenceContainer);
+    return presenceContainer;
+}
+function initEditor(element, validatedOptions, quillConfig) {
     var editor = document.createElement('div');
     editor.id = 'tsync-editor';
     element.appendChild(editor);
@@ -22584,9 +22590,9 @@ module.exports = TextSync;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Badges = (function () {
-    function Badges(siteId) {
+    function Badges(siteId, targetElement) {
         this.siteId = siteId;
-        this.targetElement = document.querySelector('#tsync-presence-container');
+        this.targetElement = targetElement;
         this.addBadges = this.addBadges.bind(this);
         this.addToDOM = this.addToDOM.bind(this);
         this.removeBadge = this.removeBadge.bind(this);
@@ -22685,11 +22691,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var badges_1 = __webpack_require__(38);
 var ANIMATION_LENGTH = 1000;
 var PresenceController = (function () {
-    function PresenceController(siteId, config) {
+    function PresenceController(siteId, config, element) {
         this.siteId = siteId;
         this.config = config;
         this.flashingBadges = {};
-        this.badges = new badges_1.default(this.siteId);
+        this.badges = new badges_1.default(this.siteId, element);
     }
     PresenceController.prototype.resetTimeout = function (siteId) {
         clearTimeout(this.flashingBadges[siteId]);
