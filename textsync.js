@@ -43,9 +43,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
 /******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
@@ -73,7 +70,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 39);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -205,7 +202,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(38);
+var	fixUrls = __webpack_require__(29);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -524,8 +521,8 @@ function updateLink (link, options, obj) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Noty = __webpack_require__(32);
-__webpack_require__(36);
+var Noty = __webpack_require__(26);
+__webpack_require__(27);
 var NOTY_THEME = 'mint';
 var NOTIFICATION_TIMEOUT_MS = 4000;
 var NotificationType;
@@ -599,197 +596,325 @@ function notyNotification(message, toastType, permanent) {
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var pSlice = Array.prototype.slice;
-var objectKeys = __webpack_require__(29);
-var isArguments = __webpack_require__(28);
+"use strict";
 
-var deepEqual = module.exports = function (actual, expected, opts) {
-  if (!opts) opts = {};
-  // 7.1. All identical values are equivalent, as determined by ===.
-  if (actual === expected) {
-    return true;
-
-  } else if (actual instanceof Date && expected instanceof Date) {
-    return actual.getTime() === expected.getTime();
-
-  // 7.3. Other pairs that do not both pass typeof value == 'object',
-  // equivalence is determined by ==.
-  } else if (!actual || !expected || typeof actual != 'object' && typeof expected != 'object') {
-    return opts.strict ? actual === expected : actual == expected;
-
-  // 7.4. For all other Object pairs, including Array objects, equivalence is
-  // determined by having the same number of owned properties (as verified
-  // with Object.prototype.hasOwnProperty.call), the same set of keys
-  // (although not necessarily the same order), equivalent values for every
-  // corresponding key, and an identical 'prototype' property. Note: this
-  // accounts for both named and indexed properties on Arrays.
-  } else {
-    return objEquiv(actual, expected, opts);
-  }
-}
-
-function isUndefinedOrNull(value) {
-  return value === null || value === undefined;
-}
-
-function isBuffer (x) {
-  if (!x || typeof x !== 'object' || typeof x.length !== 'number') return false;
-  if (typeof x.copy !== 'function' || typeof x.slice !== 'function') {
-    return false;
-  }
-  if (x.length > 0 && typeof x[0] !== 'number') return false;
-  return true;
-}
-
-function objEquiv(a, b, opts) {
-  var i, key;
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b))
-    return false;
-  // an identical 'prototype' property.
-  if (a.prototype !== b.prototype) return false;
-  //~~~I've managed to break Object.keys through screwy arguments passing.
-  //   Converting to array solves the problem.
-  if (isArguments(a)) {
-    if (!isArguments(b)) {
-      return false;
+/**
+ * This module describes a generic Logoot model.
+ *
+ * See Stephane Weiss, Pascal Urso, Pascal Molli. Logoot: a P2P collaborative editing system.
+ * [Research Report] RR-6713, INRIA. 2008, pp.13
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+var runes = __webpack_require__(4);
+var Ident = (function () {
+    function Ident(n, siteId) {
+        this.n = n;
+        this.siteId = siteId;
     }
-    a = pSlice.call(a);
-    b = pSlice.call(b);
-    return deepEqual(a, b, opts);
-  }
-  if (isBuffer(a)) {
-    if (!isBuffer(b)) {
-      return false;
+    Ident.fromWire = function (object) {
+        return new Ident(object.n, object.siteId);
+    };
+    Ident.prototype.toWire = function () {
+        return { n: this.n, siteId: this.siteId };
+    };
+    Ident.prototype.compare = function (that) {
+        if (this.n > that.n)
+            return 1;
+        if (this.n < that.n)
+            return -1;
+        if (this.siteId > that.siteId)
+            return 1;
+        if (this.siteId < that.siteId)
+            return -1;
+        return 0;
+    };
+    Ident.prototype.lt = function (that) {
+        return this.compare(that) === -1;
+    };
+    Ident.prototype.toString = function () {
+        return '(' + this.n + ', ' + this.siteId + ')';
+    };
+    return Ident;
+}());
+exports.Ident = Ident;
+var Position = (function () {
+    function Position(idents) {
+        this.idents = idents;
     }
-    if (a.length !== b.length) return false;
-    for (i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
+    Position.fromWire = function (object) {
+        var is = [];
+        for (var _i = 0, object_1 = object; _i < object_1.length; _i++) {
+            var i = object_1[_i];
+            is.push(Ident.fromWire(i));
+        }
+        return new Position(is);
+    };
+    Position.prototype.toWire = function () {
+        var is = [];
+        for (var _i = 0, _a = this.idents; _i < _a.length; _i++) {
+            var i = _a[_i];
+            is.push(i.toWire());
+        }
+        return is;
+    };
+    Object.defineProperty(Position.prototype, "length", {
+        get: function () {
+            return this.idents.length;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Position.prototype.i = function (i) {
+        return this.idents[i];
+    };
+    Position.prototype.slice = function (i) {
+        return new Position(this.idents.slice(i));
+    };
+    Position.prototype.compare = function (that) {
+        if (this.length === 0 && that.length === 0)
+            return 0;
+        if (this.length === 0)
+            return -1;
+        if (that.length === 0)
+            return 1;
+        switch (this.i(0).compare(that.i(0))) {
+            case 1:
+                return 1;
+            case -1:
+                return -1;
+            case 0:
+                return this.slice(1).compare(that.slice(1));
+        }
+        throw new Error('Impossible');
+    };
+    Position.prototype.toString = function () {
+        return this.idents.toString();
+    };
+    Position.between = function (prevPos, nextPos, siteId) {
+        return new Position(Position.genIdentList(siteId, prevPos.idents, nextPos.idents));
+    };
+    Position.genIdentList = function (siteId, prevPos, nextPos) {
+        prevPos = prevPos.length > 0 ? prevPos : Logoot.min.position.idents;
+        nextPos = nextPos.length > 0 ? nextPos : Logoot.max.position.idents;
+        var prevHead = prevPos[0];
+        var nextHead = nextPos[0];
+        var prevInt = prevHead.n;
+        var nextInt = nextHead.n;
+        var prevSiteId = prevHead.siteId;
+        switch (prevHead.compare(nextHead)) {
+            case -1: {
+                var diff = nextInt - prevInt;
+                if (diff > 1) {
+                    return [new Ident(this.genIdentIntBetween(prevInt, nextInt), siteId)];
+                }
+                else if (diff === 1 && siteId > prevSiteId) {
+                    return [new Ident(prevInt, siteId)];
+                }
+                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), []));
+            }
+            case 0: {
+                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
+            }
+            case 1: {
+                throw new Error('"Next" position was less than "previous" position.');
+            }
+        }
+        throw new Error('Impossible');
+    };
+    Position.genIdentIntBetween = function (min, max) {
+        // We might do something more interesting later
+        return min + 1;
+    };
+    return Position;
+}());
+exports.Position = Position;
+var AtomIdent = (function () {
+    function AtomIdent(position, clock) {
+        this.position = position;
+        this.clock = clock;
     }
-    return true;
-  }
-  try {
-    var ka = objectKeys(a),
-        kb = objectKeys(b);
-  } catch (e) {//happens when one is a string literal and the other isn't
-    return false;
-  }
-  // having the same number of owned properties (keys incorporates
-  // hasOwnProperty)
-  if (ka.length != kb.length)
-    return false;
-  //the same set of keys (although not necessarily the same order),
-  ka.sort();
-  kb.sort();
-  //~~~cheap key test
-  for (i = ka.length - 1; i >= 0; i--) {
-    if (ka[i] != kb[i])
-      return false;
-  }
-  //equivalent values for every corresponding key, and
-  //~~~possibly expensive deep test
-  for (i = ka.length - 1; i >= 0; i--) {
-    key = ka[i];
-    if (!deepEqual(a[key], b[key], opts)) return false;
-  }
-  return typeof a === typeof b;
-}
+    AtomIdent.fromWire = function (object) {
+        return new AtomIdent(Position.fromWire(object.position), object.clock);
+    };
+    AtomIdent.prototype.toWire = function () {
+        return { position: this.position.toWire(), clock: this.clock };
+    };
+    AtomIdent.between = function (prevAtomIdent, nextAtomIdent, siteId, clock) {
+        return new AtomIdent(Position.between(prevAtomIdent.position, nextAtomIdent.position, siteId), clock);
+    };
+    AtomIdent.prototype.compare = function (that) {
+        return this.position.compare(that.position);
+    };
+    AtomIdent.prototype.lt = function (that) {
+        return this.compare(that) === -1;
+    };
+    AtomIdent.prototype.toString = function () {
+        return '{' + this.position + ',' + this.clock + '}';
+    };
+    return AtomIdent;
+}());
+exports.AtomIdent = AtomIdent;
+var Atom = (function () {
+    function Atom(ident, rune) {
+        this.ident = ident;
+        this.rune = rune;
+        var isSingleRune = runes(rune).length === 1;
+        if (!isSingleRune) {
+            throw new Error('Atom content must be single unicode character');
+        }
+    }
+    Atom.fromWire = function (ident, content) {
+        return new Atom(AtomIdent.fromWire(ident), content.text);
+    };
+    Atom.prototype.compare = function (that) {
+        return this.ident.compare(that.ident);
+    };
+    Atom.prototype.lt = function (that) {
+        return this.compare(that) === -1;
+    };
+    Atom.prototype.toString = function () {
+        return 'Atom(' + this.ident + ')';
+    };
+    return Atom;
+}());
+exports.Atom = Atom;
+var MAX_POS = 32767;
+exports.ABS_MIN_ATOM_IDENT = new AtomIdent(new Position([new Ident(0, 0)]), 0);
+exports.ABS_MAX_ATOM_IDENT = new AtomIdent(new Position([new Ident(MAX_POS, 0)]), 1);
+var Logoot = (function () {
+    function Logoot(siteId) {
+        this.seq = [new Atom(Logoot.min, ' '), new Atom(Logoot.max, ' ')];
+        this.siteId = siteId;
+        this._clock = 0;
+    }
+    Logoot.prototype._insertText = function (index, content) {
+        var atoms = [];
+        var atomBeforeTextBlock = this.seq[index];
+        var atomAfterTextBlock = this.seq[index + 1];
+        var atomJustInserted;
+        var runesToInsert = runes(content);
+        for (var _i = 0, runesToInsert_1 = runesToInsert; _i < runesToInsert_1.length; _i++) {
+            var rune = runesToInsert_1[_i];
+            var prevAtom = atomJustInserted || atomBeforeTextBlock;
+            var nextAtom = atomAfterTextBlock;
+            var newAtom = this.newAtomBetween(prevAtom, nextAtom, rune);
+            atoms.push(newAtom);
+            atomJustInserted = newAtom;
+        }
+        (_a = this.seq).splice.apply(_a, [index + 1, 0].concat(atoms));
+        return atoms;
+        var _a;
+    };
+    Logoot.prototype.insertAtoms = function (atoms) {
+        var initialAtomOrder = atoms.slice();
+        atoms.sort(function (a, b) { return a.compare(b); });
+        var atomsPointer = 0;
+        var seqPointer = 0;
+        var indexMap = {};
+        var newSeq = [];
+        while (atomsPointer < atoms.length || seqPointer < this.seq.length) {
+            var atomsHead = atoms[atomsPointer];
+            var seqHead = this.seq[seqPointer];
+            if (!seqHead || (atomsHead && atomsHead.lt(seqHead))) {
+                newSeq.push(atomsHead);
+                indexMap[atomsHead.toString()] = atomsPointer + seqPointer - 1;
+                atomsPointer++;
+            }
+            else {
+                newSeq.push(seqHead);
+                seqPointer++;
+            }
+        }
+        var indices = initialAtomOrder.map(function (atom) { return indexMap[atom.toString()]; });
+        this.seq = newSeq;
+        return indices;
+    };
+    Logoot.prototype.deleteAtoms = function (idents) {
+        if (idents.length === 0) {
+            return [];
+        }
+        var initialIdentOrder = idents.slice();
+        idents.sort(function (a, b) { return a.compare(b); });
+        var deletePointer = 0;
+        var indexMap = {};
+        var newSeq = [];
+        for (var i = 0; i < this.seq.length; i++) {
+            var identToDelete = idents[deletePointer];
+            var atomToCheck = this.seq[i];
+            if (identToDelete && identToDelete.compare(atomToCheck.ident) === 0) {
+                indexMap[identToDelete.toString()] = i - deletePointer - 1;
+                deletePointer++;
+            }
+            else {
+                newSeq.push(atomToCheck);
+            }
+        }
+        if (deletePointer < idents.length) {
+            throw new Error('Trying to delete atom that does not exist');
+        }
+        var indices = initialIdentOrder.map(function (ident) { return indexMap[ident.toString()]; });
+        this.seq = newSeq;
+        return indices;
+    };
+    Logoot.prototype.initialContent = function (content) {
+        var runesToInsert = runes(content);
+        var atoms = [];
+        for (var i = 0; i < runesToInsert.length; i++) {
+            var position = new Position([
+                new Ident(MAX_POS - 1, 0),
+                new Ident(i, 0)
+            ]);
+            var siteId = 2 + i;
+            var content_1 = runesToInsert[i];
+            atoms.push(new Atom(new AtomIdent(position, siteId), content_1));
+        }
+        this.insertAtoms(atoms);
+    };
+    Logoot.prototype.newAtomBetween = function (x, y, content) {
+        return new Atom(AtomIdent.between(x.ident, y.ident, this.siteId, this.clock), content);
+    };
+    Logoot.prototype.getSurroundingAtoms = function (index) {
+        var nullAtomOffset = 1;
+        return [this.seq[index], this.seq[index + nullAtomOffset]];
+    };
+    Logoot.prototype.getAtomsToDelete = function (index, length) {
+        var nullAtomOffset = 1;
+        return this.seq.slice(index + nullAtomOffset, index + nullAtomOffset + length);
+    };
+    Object.defineProperty(Logoot.prototype, "clock", {
+        get: function () {
+            return this._clock++;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Logoot.prototype, "docLength", {
+        get: function () {
+            return this.seq.length - 2;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Logoot.prototype.debugStr = function () {
+        var out = '';
+        for (var _i = 0, _a = this.seq; _i < _a.length; _i++) {
+            var atom = _a[_i];
+            out += atom.toString() + '\n';
+        }
+        return out;
+    };
+    Logoot.prototype.toJSON = function () {
+        return JSON.stringify(this.seq);
+    };
+    Logoot.min = exports.ABS_MIN_ATOM_IDENT;
+    Logoot.max = exports.ABS_MAX_ATOM_IDENT;
+    return Logoot;
+}());
+exports.default = Logoot;
 
 
 /***/ }),
 /* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var hasOwn = Object.prototype.hasOwnProperty;
-var toStr = Object.prototype.toString;
-
-var isArray = function isArray(arr) {
-	if (typeof Array.isArray === 'function') {
-		return Array.isArray(arr);
-	}
-
-	return toStr.call(arr) === '[object Array]';
-};
-
-var isPlainObject = function isPlainObject(obj) {
-	if (!obj || toStr.call(obj) !== '[object Object]') {
-		return false;
-	}
-
-	var hasOwnConstructor = hasOwn.call(obj, 'constructor');
-	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
-	// Not own constructor property must be Object
-	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) {
-		return false;
-	}
-
-	// Own properties are enumerated firstly, so to speed up,
-	// if last one is own, then all properties are own.
-	var key;
-	for (key in obj) { /**/ }
-
-	return typeof key === 'undefined' || hasOwn.call(obj, key);
-};
-
-module.exports = function extend() {
-	var options, name, src, copy, copyIsArray, clone;
-	var target = arguments[0];
-	var i = 1;
-	var length = arguments.length;
-	var deep = false;
-
-	// Handle a deep copy situation
-	if (typeof target === 'boolean') {
-		deep = target;
-		target = arguments[1] || {};
-		// skip the boolean and the target
-		i = 2;
-	}
-	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
-		target = {};
-	}
-
-	for (; i < length; ++i) {
-		options = arguments[i];
-		// Only deal with non-null/undefined values
-		if (options != null) {
-			// Extend the base object
-			for (name in options) {
-				src = target[name];
-				copy = options[name];
-
-				// Prevent never-ending loop
-				if (target !== copy) {
-					// Recurse if we're merging plain objects or arrays
-					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
-						if (copyIsArray) {
-							copyIsArray = false;
-							clone = src && isArray(src) ? src : [];
-						} else {
-							clone = src && isPlainObject(src) ? src : {};
-						}
-
-						// Never move original objects, clone them
-						target[name] = extend(deep, clone, copy);
-
-					// Don't bring in undefined values
-					} else if (typeof copy !== 'undefined') {
-						target[name] = copy;
-					}
-				}
-			}
-		}
-	}
-
-	// Return the modified object
-	return target;
-};
-
-
-/***/ }),
-/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -949,7 +1074,51 @@ module.exports.substr = substring
 
 
 /***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function isDocOp(object) {
+    return 'ident' in object;
+}
+exports.isDocOp = isDocOp;
+function isCursorOp(object) {
+    return 'position' in object;
+}
+exports.isCursorOp = isCursorOp;
+
+
+/***/ }),
 /* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Insert"] = 1] = "Insert";
+    OpType[OpType["Delete"] = 2] = "Delete";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function isDocOp(object) {
+    return 'opType' in object;
+}
+exports.isDocOp = isDocOp;
+function isCursorOp(object) {
+    return 'range' in object;
+}
+exports.isCursorOp = isCursorOp;
+
+
+/***/ }),
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_RESULT__;// TinyColor v1.4.1
@@ -2151,47 +2320,103 @@ else {
 
 
 /***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function isDocOp(object) {
-    return 'opType' in object;
-}
-exports.isDocOp = isDocOp;
-function isCursorOp(object) {
-    return 'range' in object;
-}
-exports.isCursorOp = isCursorOp;
-
-
-/***/ }),
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var pSlice = Array.prototype.slice;
+var objectKeys = __webpack_require__(36);
+var isArguments = __webpack_require__(37);
 
-Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Insert"] = 1] = "Insert";
-    OpType[OpType["Delete"] = 2] = "Delete";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function isDocOp(object) {
-    return 'ident' in object;
+var deepEqual = module.exports = function (actual, expected, opts) {
+  if (!opts) opts = {};
+  // 7.1. All identical values are equivalent, as determined by ===.
+  if (actual === expected) {
+    return true;
+
+  } else if (actual instanceof Date && expected instanceof Date) {
+    return actual.getTime() === expected.getTime();
+
+  // 7.3. Other pairs that do not both pass typeof value == 'object',
+  // equivalence is determined by ==.
+  } else if (!actual || !expected || typeof actual != 'object' && typeof expected != 'object') {
+    return opts.strict ? actual === expected : actual == expected;
+
+  // 7.4. For all other Object pairs, including Array objects, equivalence is
+  // determined by having the same number of owned properties (as verified
+  // with Object.prototype.hasOwnProperty.call), the same set of keys
+  // (although not necessarily the same order), equivalent values for every
+  // corresponding key, and an identical 'prototype' property. Note: this
+  // accounts for both named and indexed properties on Arrays.
+  } else {
+    return objEquiv(actual, expected, opts);
+  }
 }
-exports.isDocOp = isDocOp;
-function isCursorOp(object) {
-    return 'position' in object;
+
+function isUndefinedOrNull(value) {
+  return value === null || value === undefined;
 }
-exports.isCursorOp = isCursorOp;
+
+function isBuffer (x) {
+  if (!x || typeof x !== 'object' || typeof x.length !== 'number') return false;
+  if (typeof x.copy !== 'function' || typeof x.slice !== 'function') {
+    return false;
+  }
+  if (x.length > 0 && typeof x[0] !== 'number') return false;
+  return true;
+}
+
+function objEquiv(a, b, opts) {
+  var i, key;
+  if (isUndefinedOrNull(a) || isUndefinedOrNull(b))
+    return false;
+  // an identical 'prototype' property.
+  if (a.prototype !== b.prototype) return false;
+  //~~~I've managed to break Object.keys through screwy arguments passing.
+  //   Converting to array solves the problem.
+  if (isArguments(a)) {
+    if (!isArguments(b)) {
+      return false;
+    }
+    a = pSlice.call(a);
+    b = pSlice.call(b);
+    return deepEqual(a, b, opts);
+  }
+  if (isBuffer(a)) {
+    if (!isBuffer(b)) {
+      return false;
+    }
+    if (a.length !== b.length) return false;
+    for (i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+  try {
+    var ka = objectKeys(a),
+        kb = objectKeys(b);
+  } catch (e) {//happens when one is a string literal and the other isn't
+    return false;
+  }
+  // having the same number of owned properties (keys incorporates
+  // hasOwnProperty)
+  if (ka.length != kb.length)
+    return false;
+  //the same set of keys (although not necessarily the same order),
+  ka.sort();
+  kb.sort();
+  //~~~cheap key test
+  for (i = ka.length - 1; i >= 0; i--) {
+    if (ka[i] != kb[i])
+      return false;
+  }
+  //equivalent values for every corresponding key, and
+  //~~~possibly expensive deep test
+  for (i = ka.length - 1; i >= 0; i--) {
+    key = ka[i];
+    if (!deepEqual(a[key], b[key], opts)) return false;
+  }
+  return typeof a === typeof b;
+}
 
 
 /***/ }),
@@ -2200,1109 +2425,103 @@ exports.isCursorOp = isCursorOp;
 
 "use strict";
 
-/**
- * This module describes a generic Logoot model.
- *
- * See Stephane Weiss, Pascal Urso, Pascal Molli. Logoot: a P2P collaborative editing system.
- * [Research Report] RR-6713, INRIA. 2008, pp.13
- */
-Object.defineProperty(exports, "__esModule", { value: true });
-var runes = __webpack_require__(5);
-var Ident = (function () {
-    function Ident(n, siteId) {
-        this.n = n;
-        this.siteId = siteId;
-    }
-    Ident.fromWire = function (object) {
-        return new Ident(object.n, object.siteId);
-    };
-    Ident.prototype.toWire = function () {
-        return { n: this.n, siteId: this.siteId };
-    };
-    Ident.prototype.compare = function (that) {
-        if (this.n > that.n)
-            return 1;
-        if (this.n < that.n)
-            return -1;
-        if (this.siteId > that.siteId)
-            return 1;
-        if (this.siteId < that.siteId)
-            return -1;
-        return 0;
-    };
-    Ident.prototype.lt = function (that) {
-        return this.compare(that) === -1;
-    };
-    Ident.prototype.toString = function () {
-        return '(' + this.n + ', ' + this.siteId + ')';
-    };
-    return Ident;
-}());
-exports.Ident = Ident;
-var Position = (function () {
-    function Position(idents) {
-        this.idents = idents;
-    }
-    Position.fromWire = function (object) {
-        var is = [];
-        for (var _i = 0, object_1 = object; _i < object_1.length; _i++) {
-            var i = object_1[_i];
-            is.push(Ident.fromWire(i));
-        }
-        return new Position(is);
-    };
-    Position.prototype.toWire = function () {
-        var is = [];
-        for (var _i = 0, _a = this.idents; _i < _a.length; _i++) {
-            var i = _a[_i];
-            is.push(i.toWire());
-        }
-        return is;
-    };
-    Object.defineProperty(Position.prototype, "length", {
-        get: function () {
-            return this.idents.length;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Position.prototype.i = function (i) {
-        return this.idents[i];
-    };
-    Position.prototype.slice = function (i) {
-        return new Position(this.idents.slice(i));
-    };
-    Position.prototype.compare = function (that) {
-        if (this.length === 0 && that.length === 0)
-            return 0;
-        if (this.length === 0)
-            return -1;
-        if (that.length === 0)
-            return 1;
-        switch (this.i(0).compare(that.i(0))) {
-            case 1:
-                return 1;
-            case -1:
-                return -1;
-            case 0:
-                return this.slice(1).compare(that.slice(1));
-        }
-        throw new Error('Impossible');
-    };
-    Position.prototype.toString = function () {
-        return this.idents.toString();
-    };
-    Position.between = function (prevPos, nextPos, siteId) {
-        return new Position(Position.genIdentList(siteId, prevPos.idents, nextPos.idents));
-    };
-    Position.genIdentList = function (siteId, prevPos, nextPos) {
-        prevPos = prevPos.length > 0 ? prevPos : Logoot.min.position.idents;
-        nextPos = nextPos.length > 0 ? nextPos : Logoot.max.position.idents;
-        var prevHead = prevPos[0];
-        var nextHead = nextPos[0];
-        var prevInt = prevHead.n;
-        var nextInt = nextHead.n;
-        var prevSiteId = prevHead.siteId;
-        switch (prevHead.compare(nextHead)) {
-            case -1: {
-                var diff = nextInt - prevInt;
-                if (diff > 1) {
-                    return [new Ident(this.genIdentIntBetween(prevInt, nextInt), siteId)];
-                }
-                else if (diff === 1 && siteId > prevSiteId) {
-                    return [new Ident(prevInt, siteId)];
-                }
-                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), []));
-            }
-            case 0: {
-                return [prevHead].concat(this.genIdentList(siteId, prevPos.slice(1), nextPos.slice(1)));
-            }
-            case 1: {
-                throw new Error('"Next" position was less than "previous" position.');
-            }
-        }
-        throw new Error('Impossible');
-    };
-    Position.genIdentIntBetween = function (min, max) {
-        // We might do something more interesting later
-        return min + 1;
-    };
-    return Position;
-}());
-exports.Position = Position;
-var AtomIdent = (function () {
-    function AtomIdent(position, clock) {
-        this.position = position;
-        this.clock = clock;
-    }
-    AtomIdent.fromWire = function (object) {
-        return new AtomIdent(Position.fromWire(object.position), object.clock);
-    };
-    AtomIdent.prototype.toWire = function () {
-        return { position: this.position.toWire(), clock: this.clock };
-    };
-    AtomIdent.between = function (prevAtomIdent, nextAtomIdent, siteId, clock) {
-        return new AtomIdent(Position.between(prevAtomIdent.position, nextAtomIdent.position, siteId), clock);
-    };
-    AtomIdent.prototype.compare = function (that) {
-        return this.position.compare(that.position);
-    };
-    AtomIdent.prototype.lt = function (that) {
-        return this.compare(that) === -1;
-    };
-    AtomIdent.prototype.toString = function () {
-        return '{' + this.position + ',' + this.clock + '}';
-    };
-    return AtomIdent;
-}());
-exports.AtomIdent = AtomIdent;
-var Atom = (function () {
-    function Atom(ident, rune) {
-        this.ident = ident;
-        this.rune = rune;
-        var isSingleRune = runes(rune).length === 1;
-        if (!isSingleRune) {
-            throw new Error('Atom content must be single unicode character');
-        }
-    }
-    Atom.fromWire = function (ident, content) {
-        return new Atom(AtomIdent.fromWire(ident), content.text);
-    };
-    Atom.prototype.compare = function (that) {
-        return this.ident.compare(that.ident);
-    };
-    Atom.prototype.lt = function (that) {
-        return this.compare(that) === -1;
-    };
-    Atom.prototype.toString = function () {
-        return 'Atom(' + this.ident + ')';
-    };
-    return Atom;
-}());
-exports.Atom = Atom;
-var MAX_POS = 32767;
-exports.ABS_MIN_ATOM_IDENT = new AtomIdent(new Position([new Ident(0, 0)]), 0);
-exports.ABS_MAX_ATOM_IDENT = new AtomIdent(new Position([new Ident(MAX_POS, 0)]), 1);
-var Logoot = (function () {
-    function Logoot(siteId) {
-        this.seq = [new Atom(Logoot.min, ' '), new Atom(Logoot.max, ' ')];
-        this.siteId = siteId;
-        this._clock = 0;
-    }
-    Logoot.prototype._insertText = function (index, content) {
-        var atoms = [];
-        var atomBeforeTextBlock = this.seq[index];
-        var atomAfterTextBlock = this.seq[index + 1];
-        var atomJustInserted;
-        var runesToInsert = runes(content);
-        for (var _i = 0, runesToInsert_1 = runesToInsert; _i < runesToInsert_1.length; _i++) {
-            var rune = runesToInsert_1[_i];
-            var prevAtom = atomJustInserted || atomBeforeTextBlock;
-            var nextAtom = atomAfterTextBlock;
-            var newAtom = this.newAtomBetween(prevAtom, nextAtom, rune);
-            atoms.push(newAtom);
-            atomJustInserted = newAtom;
-        }
-        (_a = this.seq).splice.apply(_a, [index + 1, 0].concat(atoms));
-        return atoms;
-        var _a;
-    };
-    Logoot.prototype.insertAtoms = function (atoms) {
-        var initialAtomOrder = atoms.slice();
-        atoms.sort(function (a, b) { return a.compare(b); });
-        var atomsPointer = 0;
-        var seqPointer = 0;
-        var indexMap = {};
-        var newSeq = [];
-        while (atomsPointer < atoms.length || seqPointer < this.seq.length) {
-            var atomsHead = atoms[atomsPointer];
-            var seqHead = this.seq[seqPointer];
-            if (!seqHead || (atomsHead && atomsHead.lt(seqHead))) {
-                newSeq.push(atomsHead);
-                indexMap[atomsHead.toString()] = atomsPointer + seqPointer - 1;
-                atomsPointer++;
-            }
-            else {
-                newSeq.push(seqHead);
-                seqPointer++;
-            }
-        }
-        var indices = initialAtomOrder.map(function (atom) { return indexMap[atom.toString()]; });
-        this.seq = newSeq;
-        return indices;
-    };
-    Logoot.prototype.deleteAtoms = function (idents) {
-        if (idents.length === 0) {
-            return [];
-        }
-        var initialIdentOrder = idents.slice();
-        idents.sort(function (a, b) { return a.compare(b); });
-        var deletePointer = 0;
-        var indexMap = {};
-        var newSeq = [];
-        for (var i = 0; i < this.seq.length; i++) {
-            var identToDelete = idents[deletePointer];
-            var atomToCheck = this.seq[i];
-            if (identToDelete && identToDelete.compare(atomToCheck.ident) === 0) {
-                indexMap[identToDelete.toString()] = i - deletePointer - 1;
-                deletePointer++;
-            }
-            else {
-                newSeq.push(atomToCheck);
-            }
-        }
-        if (deletePointer < idents.length) {
-            throw new Error('Trying to delete atom that does not exist');
-        }
-        var indices = initialIdentOrder.map(function (ident) { return indexMap[ident.toString()]; });
-        this.seq = newSeq;
-        return indices;
-    };
-    Logoot.prototype.initialContent = function (content) {
-        var runesToInsert = runes(content);
-        var atoms = [];
-        for (var i = 0; i < runesToInsert.length; i++) {
-            var position = new Position([
-                new Ident(MAX_POS - 1, 0),
-                new Ident(i, 0)
-            ]);
-            var siteId = 2 + i;
-            var content_1 = runesToInsert[i];
-            atoms.push(new Atom(new AtomIdent(position, siteId), content_1));
-        }
-        this.insertAtoms(atoms);
-    };
-    Logoot.prototype.newAtomBetween = function (x, y, content) {
-        return new Atom(AtomIdent.between(x.ident, y.ident, this.siteId, this.clock), content);
-    };
-    Logoot.prototype.getSurroundingAtoms = function (index) {
-        var nullAtomOffset = 1;
-        return [this.seq[index], this.seq[index + nullAtomOffset]];
-    };
-    Logoot.prototype.getAtomsToDelete = function (index, length) {
-        var nullAtomOffset = 1;
-        return this.seq.slice(index + nullAtomOffset, index + nullAtomOffset + length);
-    };
-    Object.defineProperty(Logoot.prototype, "clock", {
-        get: function () {
-            return this._clock++;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Logoot.prototype, "docLength", {
-        get: function () {
-            return this.seq.length - 2;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Logoot.prototype.debugStr = function () {
-        var out = '';
-        for (var _i = 0, _a = this.seq; _i < _a.length; _i++) {
-            var atom = _a[_i];
-            out += atom.toString() + '\n';
-        }
-        return out;
-    };
-    Logoot.prototype.toJSON = function () {
-        return JSON.stringify(this.seq);
-    };
-    Logoot.min = exports.ABS_MIN_ATOM_IDENT;
-    Logoot.max = exports.ABS_MAX_ATOM_IDENT;
-    return Logoot;
-}());
-exports.default = Logoot;
+
+var hasOwn = Object.prototype.hasOwnProperty;
+var toStr = Object.prototype.toString;
+
+var isArray = function isArray(arr) {
+	if (typeof Array.isArray === 'function') {
+		return Array.isArray(arr);
+	}
+
+	return toStr.call(arr) === '[object Array]';
+};
+
+var isPlainObject = function isPlainObject(obj) {
+	if (!obj || toStr.call(obj) !== '[object Object]') {
+		return false;
+	}
+
+	var hasOwnConstructor = hasOwn.call(obj, 'constructor');
+	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasOwn.call(obj.constructor.prototype, 'isPrototypeOf');
+	// Not own constructor property must be Object
+	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) {
+		return false;
+	}
+
+	// Own properties are enumerated firstly, so to speed up,
+	// if last one is own, then all properties are own.
+	var key;
+	for (key in obj) { /**/ }
+
+	return typeof key === 'undefined' || hasOwn.call(obj, key);
+};
+
+module.exports = function extend() {
+	var options, name, src, copy, copyIsArray, clone;
+	var target = arguments[0];
+	var i = 1;
+	var length = arguments.length;
+	var deep = false;
+
+	// Handle a deep copy situation
+	if (typeof target === 'boolean') {
+		deep = target;
+		target = arguments[1] || {};
+		// skip the boolean and the target
+		i = 2;
+	}
+	if (target == null || (typeof target !== 'object' && typeof target !== 'function')) {
+		target = {};
+	}
+
+	for (; i < length; ++i) {
+		options = arguments[i];
+		// Only deal with non-null/undefined values
+		if (options != null) {
+			// Extend the base object
+			for (name in options) {
+				src = target[name];
+				copy = options[name];
+
+				// Prevent never-ending loop
+				if (target !== copy) {
+					// Recurse if we're merging plain objects or arrays
+					if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
+						if (copyIsArray) {
+							copyIsArray = false;
+							clone = src && isArray(src) ? src : [];
+						} else {
+							clone = src && isPlainObject(src) ? src : {};
+						}
+
+						// Never move original objects, clone them
+						target[name] = extend(deep, clone, copy);
+
+					// Don't bring in undefined values
+					} else if (typeof copy !== 'undefined') {
+						target[name] = copy;
+					}
+				}
+			}
+		}
+	}
+
+	// Return the modified object
+	return target;
+};
 
 
 /***/ }),
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(true)
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else if(typeof exports === 'object')
-		exports["PusherPlatform"] = factory();
-	else
-		root["PusherPlatform"] = factory();
-})(this, function() {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports, __webpack_require__) {
-
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var subscription_1 = __webpack_require__(2);
-var resumable_subscription_1 = __webpack_require__(3);
-function responseHeadersObj(headerStr) {
-    var headers = {};
-    if (!headerStr) {
-        return headers;
-    }
-    var headerPairs = headerStr.split('\u000d\u000a');
-    for (var i = 0; i < headerPairs.length; i++) {
-        var headerPair = headerPairs[i];
-        var index = headerPair.indexOf('\u003a\u0020');
-        if (index > 0) {
-            var key = headerPair.substring(0, index);
-            var val = headerPair.substring(index + 2);
-            headers[key] = val;
-        }
-    }
-    return headers;
-}
-exports.responseHeadersObj = responseHeadersObj;
-var ErrorResponse = (function (_super) {
-    __extends(ErrorResponse, _super);
-    function ErrorResponse(statusCode, headers, info) {
-        var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
-        Object.setPrototypeOf(_this, ErrorResponse.prototype);
-        _this.statusCode = statusCode;
-        _this.headers = headers;
-        _this.info = info;
-        return _this;
-    }
-    ErrorResponse.fromXHR = function (xhr) {
-        return new ErrorResponse(xhr.status, responseHeadersObj(xhr.getAllResponseHeaders()), xhr.responseText);
-    };
-    return ErrorResponse;
-}(Error));
-exports.ErrorResponse = ErrorResponse;
-var NetworkError = (function (_super) {
-    __extends(NetworkError, _super);
-    function NetworkError(error) {
-        var _this = _super.call(this, error) || this;
-        //TODO: ugly hack to make the instanceof calls work. We might have to find a better solution.
-        Object.setPrototypeOf(_this, NetworkError.prototype);
-        _this.error = error;
-        return _this;
-    }
-    return NetworkError;
-}(Error));
-exports.NetworkError = NetworkError;
-// Follows https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
-var XhrReadyState;
-(function (XhrReadyState) {
-    XhrReadyState[XhrReadyState["UNSENT"] = 0] = "UNSENT";
-    XhrReadyState[XhrReadyState["OPENED"] = 1] = "OPENED";
-    XhrReadyState[XhrReadyState["HEADERS_RECEIVED"] = 2] = "HEADERS_RECEIVED";
-    XhrReadyState[XhrReadyState["LOADING"] = 3] = "LOADING";
-    XhrReadyState[XhrReadyState["DONE"] = 4] = "DONE";
-})(XhrReadyState = exports.XhrReadyState || (exports.XhrReadyState = {}));
-var BaseClient = (function () {
-    function BaseClient(options) {
-        this.options = options;
-        var host = options.host.replace(/\/$/, '');
-        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + host;
-        this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
-    }
-    BaseClient.prototype.request = function (options) {
-        var xhr = this.createXHR(this.baseURL, options);
-        return new Promise(function (resolve, reject) {
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        resolve(xhr.responseText);
-                    }
-                    else {
-                        reject(ErrorResponse.fromXHR(xhr));
-                    }
-                }
-            };
-            xhr.send(JSON.stringify(options.body));
-        });
-    };
-    BaseClient.prototype.newSubscription = function (subOptions) {
-        return new subscription_1.Subscription(this.createXHR(this.baseURL, {
-            method: "SUBSCRIBE",
-            path: subOptions.path,
-            headers: {},
-            body: null,
-        }), subOptions);
-    };
-    BaseClient.prototype.newResumableSubscription = function (subOptions) {
-        var _this = this;
-        return new resumable_subscription_1.ResumableSubscription(function () {
-            return _this.createXHR(_this.baseURL, {
-                method: "SUBSCRIBE",
-                path: subOptions.path,
-                headers: {},
-                body: null,
-            });
-        }, subOptions);
-    };
-    BaseClient.prototype.createXHR = function (baseURL, options) {
-        var XMLHttpRequest = this.XMLHttpRequest;
-        var xhr = new XMLHttpRequest();
-        var path = options.path.replace(/^\/+/, "");
-        var endpoint = baseURL + "/" + path;
-        xhr.open(options.method.toUpperCase(), endpoint, true);
-        if (options.body) {
-            xhr.setRequestHeader("content-type", "application/json");
-        }
-        if (options.jwt) {
-            xhr.setRequestHeader("authorization", "Bearer " + options.jwt);
-        }
-        for (var key in options.headers) {
-            xhr.setRequestHeader(key, options.headers[key]);
-        }
-        return xhr;
-    };
-    return BaseClient;
-}());
-exports.BaseClient = BaseClient;
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var LogLevel;
-(function (LogLevel) {
-    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
-    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
-    LogLevel[LogLevel["INFO"] = 3] = "INFO";
-    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
-    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
-})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
 /**
- * Default implementation of the Logger. Wraps standards console calls.
- * Logs only calls that are at or above the threshold (verbose/debug/info/warn/error)
- * If error is passed, it will append the message to the error object.
+ * Outward facing facade for TextSync of a Quilljs document.
+ * It is intended to replace an existing
  */
-var ConsoleLogger = (function () {
-    function ConsoleLogger(threshold) {
-        if (threshold === void 0) { threshold = 2; }
-        this.threshold = threshold;
-    }
-    ConsoleLogger.prototype.log = function (logFunction, level, message, error) {
-        if (level >= this.threshold) {
-            var loggerSignature = "Logger." + LogLevel[level];
-            if (error) {
-                console.group();
-                logFunction(loggerSignature + ": " + message);
-                logFunction(error);
-                console.groupEnd();
-            }
-            else {
-                logFunction(loggerSignature + ": " + message);
-            }
-        }
-    };
-    ConsoleLogger.prototype.verbose = function (message, error) {
-        this.log(console.log, LogLevel.VERBOSE, message, error);
-    };
-    ConsoleLogger.prototype.debug = function (message, error) {
-        this.log(console.log, LogLevel.DEBUG, message, error);
-    };
-    ConsoleLogger.prototype.info = function (message, error) {
-        this.log(console.info, LogLevel.INFO, message, error);
-    };
-    ConsoleLogger.prototype.warn = function (message, error) {
-        this.log(console.warn, LogLevel.WARNING, message, error);
-    };
-    ConsoleLogger.prototype.error = function (message, error) {
-        this.log(console.error, LogLevel.ERROR, message, error);
-    };
-    return ConsoleLogger;
-}());
-exports.ConsoleLogger = ConsoleLogger;
-var EmptyLogger = (function () {
-    function EmptyLogger() {
-    }
-    EmptyLogger.prototype.verbose = function (message, error) { };
-    ;
-    EmptyLogger.prototype.debug = function (message, error) { };
-    ;
-    EmptyLogger.prototype.info = function (message, error) { };
-    ;
-    EmptyLogger.prototype.warn = function (message, error) { };
-    ;
-    EmptyLogger.prototype.error = function (message, error) { };
-    ;
-    return EmptyLogger;
-}());
-exports.EmptyLogger = EmptyLogger;
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
-var SubscriptionState;
-(function (SubscriptionState) {
-    SubscriptionState[SubscriptionState["UNOPENED"] = 0] = "UNOPENED";
-    SubscriptionState[SubscriptionState["OPENING"] = 1] = "OPENING";
-    SubscriptionState[SubscriptionState["OPEN"] = 2] = "OPEN";
-    SubscriptionState[SubscriptionState["ENDING"] = 3] = "ENDING";
-    SubscriptionState[SubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
-})(SubscriptionState = exports.SubscriptionState || (exports.SubscriptionState = {}));
-// Asserts that the subscription state is one of the specified values,
-// otherwise logs the current value.
-function assertState(stateEnum, states) {
-    var _this = this;
-    if (states === void 0) { states = []; }
-    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
-    var expected = states.join(', ');
-    var actual = stateEnum[this.state];
-    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
-    if (!check) {
-        console.trace();
-    }
-}
-exports.assertState = assertState;
-;
-// Callback pattern: (onOpen onEvent* (onEnd|onError)) | onError
-// A call to `unsubscribe()` will call `options.onEnd()`;
-// a call to `unsubscribe(someError)` will call `options.onError(someError)`.
-var Subscription = (function () {
-    function Subscription(xhr, options) {
-        var _this = this;
-        this.xhr = xhr;
-        this.options = options;
-        this.state = SubscriptionState.UNOPENED;
-        this.gotEOS = false;
-        this.lastNewlineIndex = 0;
-        this.assertState = assertState.bind(this, SubscriptionState);
-        if (options.lastEventId) {
-            this.xhr.setRequestHeader("Last-Event-Id", options.lastEventId);
-        }
-        this.xhr.onreadystatechange = function () {
-            if (_this.xhr.readyState === base_client_1.XhrReadyState.UNSENT ||
-                _this.xhr.readyState === base_client_1.XhrReadyState.OPENED ||
-                _this.xhr.readyState === base_client_1.XhrReadyState.HEADERS_RECEIVED) {
-                // Too early for us to do anything.
-                _this.assertState(['OPENING']);
-            }
-            else if (_this.xhr.readyState === base_client_1.XhrReadyState.LOADING) {
-                // The headers have loaded and we have partial body text.
-                // We can get this one multiple times.
-                _this.assertState(['OPENING', 'OPEN', 'ENDING']);
-                if (_this.xhr.status === 200) {
-                    // We've received a successful response header.
-                    // The partial body text is a partial JSON message stream.
-                    if (_this.state === SubscriptionState.OPENING) {
-                        _this.state = SubscriptionState.OPEN;
-                        if (_this.options.onOpen) {
-                            _this.options.onOpen();
-                        }
-                    }
-                    _this.assertState(['OPEN', 'ENDING']);
-                    var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
-                    _this.assertState(['OPEN', 'ENDING']);
-                    if (err != null) {
-                        _this.state = SubscriptionState.ENDED;
-                        if (err.statusCode != 204) {
-                            if (_this.options.onError) {
-                                _this.options.onError(err);
-                            }
-                        }
-                        // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
-                        // and so we will not call the event handler again.
-                        // Finish with options.onError instead of the options.onEnd.
-                    }
-                    else {
-                        // We consumed some response text, and all's fine. We expect more text.
-                    }
-                }
-                else {
-                    // Error response. Wait until the response completes (state 4) before erroring.
-                    _this.assertState(['OPENING']);
-                }
-            }
-            else if (_this.xhr.readyState === base_client_1.XhrReadyState.DONE) {
-                // This is the last time onreadystatechange is called.
-                if (_this.xhr.status === 200) {
-                    if (_this.state === SubscriptionState.OPENING) {
-                        _this.state = SubscriptionState.OPEN;
-                        if (_this.options.onOpen) {
-                            _this.options.onOpen();
-                        }
-                    }
-                    _this.assertState(['OPEN', 'ENDING']);
-                    var err = _this.onChunk();
-                    if (err !== null && err !== undefined) {
-                        _this.state = SubscriptionState.ENDED;
-                        if (err.statusCode === 204) {
-                            if (_this.options.onEnd) {
-                                _this.options.onEnd();
-                            }
-                        }
-                        else {
-                            if (_this.options.onError) {
-                                _this.options.onError(err);
-                            }
-                        }
-                    }
-                    else if (_this.state <= SubscriptionState.ENDING) {
-                        if (_this.options.onError) {
-                            _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
-                        }
-                    }
-                    else {
-                        // Stream ended normally.
-                        if (_this.options.onEnd) {
-                            _this.options.onEnd();
-                        }
-                    }
-                }
-                else {
-                    // The server responded with a bad status code (finish with onError).
-                    // Finish with an error.
-                    _this.assertState(['OPENING', 'OPEN', 'ENDED']);
-                    if (_this.state === SubscriptionState.ENDED) {
-                        // We aborted the request deliberately, and called onError/onEnd elsewhere.
-                    }
-                    else if (_this.xhr.status === 0) {
-                        _this.options.onError(new base_client_1.NetworkError("Connection lost."));
-                    }
-                    else {
-                        _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
-                    }
-                }
-            }
-        };
-    }
-    Subscription.prototype.open = function (jwt) {
-        if (this.state !== SubscriptionState.UNOPENED) {
-            throw new Error("Called .open() on Subscription object in unexpected state: " + this.state);
-        }
-        this.state = SubscriptionState.OPENING;
-        if (jwt) {
-            this.xhr.setRequestHeader("authorization", "Bearer " + jwt);
-        }
-        this.xhr.send();
-    };
-    // calls options.onEvent 0+ times, then possibly returns an error.
-    // idempotent.
-    Subscription.prototype.onChunk = function () {
-        this.assertState(['OPEN']);
-        var response = this.xhr.responseText;
-        var newlineIndex = response.lastIndexOf("\n");
-        if (newlineIndex > this.lastNewlineIndex) {
-            var rawEvents = response.slice(this.lastNewlineIndex, newlineIndex).split("\n");
-            this.lastNewlineIndex = newlineIndex;
-            for (var _i = 0, rawEvents_1 = rawEvents; _i < rawEvents_1.length; _i++) {
-                var rawEvent = rawEvents_1[_i];
-                if (rawEvent.length === 0) {
-                    continue; // FIXME why? This should be a protocol error
-                }
-                var data = JSON.parse(rawEvent);
-                var err = this.onMessage(data);
-                if (err != null) {
-                    return err;
-                }
-            }
-        }
-    };
-    // calls options.onEvent 0+ times, then returns an Error or null
-    Subscription.prototype.onMessage = function (message) {
-        this.assertState(['OPEN']);
-        if (this.gotEOS) {
-            return new Error("Got another message after EOS message");
-        }
-        if (!Array.isArray(message)) {
-            return new Error("Message is not an array");
-        }
-        if (message.length < 1) {
-            return new Error("Message is empty array");
-        }
-        switch (message[0]) {
-            case 0:
-                return null;
-            case 1:
-                return this.onEventMessage(message);
-            case 255:
-                return this.onEOSMessage(message);
-            default:
-                return new Error("Unknown Message: " + JSON.stringify(message));
-        }
-    };
-    // EITHER calls options.onEvent, OR returns an error
-    Subscription.prototype.onEventMessage = function (eventMessage) {
-        this.assertState(['OPEN']);
-        if (eventMessage.length !== 4) {
-            return new Error("Event message has " + eventMessage.length + " elements (expected 4)");
-        }
-        var _ = eventMessage[0], id = eventMessage[1], headers = eventMessage[2], body = eventMessage[3];
-        if (typeof id !== "string") {
-            return new Error("Invalid event ID in message: " + JSON.stringify(eventMessage));
-        }
-        if (typeof headers !== "object" || Array.isArray(headers)) {
-            return new Error("Invalid event headers in message: " + JSON.stringify(eventMessage));
-        }
-        if (this.options.onEvent) {
-            this.options.onEvent({ eventId: id, headers: headers, body: body });
-        }
-    };
-    // calls options.onEvent 0+ times, then possibly returns an error
-    Subscription.prototype.onEOSMessage = function (eosMessage) {
-        this.assertState(['OPEN']);
-        if (eosMessage.length !== 4) {
-            return new Error("EOS message has " + eosMessage.length + " elements (expected 4)");
-        }
-        var _ = eosMessage[0], statusCode = eosMessage[1], headers = eosMessage[2], info = eosMessage[3];
-        if (typeof statusCode !== "number") {
-            return new Error("Invalid EOS Status Code");
-        }
-        if (typeof headers !== "object" || Array.isArray(headers)) {
-            return new Error("Invalid EOS Headers");
-        }
-        this.state = SubscriptionState.ENDING;
-        return new base_client_1.ErrorResponse(statusCode, headers, info);
-    };
-    Subscription.prototype.unsubscribe = function (err) {
-        this.state = SubscriptionState.ENDED;
-        this.xhr.abort();
-        if (err) {
-            if (this.options.onError) {
-                this.options.onError(err);
-            }
-        }
-        else {
-            if (this.options.onEnd) {
-                this.options.onEnd();
-            }
-        }
-    };
-    return Subscription;
-}());
-exports.Subscription = Subscription;
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var subscription_1 = __webpack_require__(2);
-var retry_strategy_1 = __webpack_require__(4);
-var ResumableSubscriptionState;
-(function (ResumableSubscriptionState) {
-    ResumableSubscriptionState[ResumableSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
-    ResumableSubscriptionState[ResumableSubscriptionState["OPENING"] = 1] = "OPENING";
-    ResumableSubscriptionState[ResumableSubscriptionState["OPEN"] = 2] = "OPEN";
-    ResumableSubscriptionState[ResumableSubscriptionState["ENDING"] = 3] = "ENDING";
-    ResumableSubscriptionState[ResumableSubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
-})(ResumableSubscriptionState = exports.ResumableSubscriptionState || (exports.ResumableSubscriptionState = {}));
-// Asserts that the subscription state is one of the specified values,
-// otherwise logs the current value.
-function assertState(stateEnum, states) {
-    var _this = this;
-    if (states === void 0) { states = []; }
-    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
-    var expected = states.join(', ');
-    var actual = stateEnum[this.state];
-    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
-    if (!check) {
-        console.trace();
-    }
-}
-exports.assertState = assertState;
-;
-// pattern of callbacks: ((onOpening (onOpen onEvent*)?)? (onError|onEnd)) | onError
-var ResumableSubscription = (function () {
-    function ResumableSubscription(xhrSource, options) {
-        this.xhrSource = xhrSource;
-        this.options = options;
-        this.state = ResumableSubscriptionState.UNOPENED;
-        this.assertState = assertState.bind(this, ResumableSubscriptionState);
-        this.lastEventIdReceived = options.lastEventId;
-        this.logger = options.logger;
-        if (options.retryStrategy !== undefined) {
-            this.retryStrategy = options.retryStrategy;
-        }
-        else {
-            this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({
-                logger: this.logger
-            });
-        }
-    }
-    ResumableSubscription.prototype.tryNow = function () {
-        var _this = this;
-        this.state = ResumableSubscriptionState.OPENING;
-        var newXhr = this.xhrSource();
-        this.subscription = new subscription_1.Subscription(newXhr, {
-            path: this.options.path,
-            lastEventId: this.lastEventIdReceived,
-            onOpen: function () {
-                _this.assertState(['OPENING']);
-                _this.state = ResumableSubscriptionState.OPEN;
-                if (_this.options.onOpen) {
-                    _this.options.onOpen();
-                }
-                _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
-            },
-            onEvent: function (event) {
-                _this.assertState(['OPEN']);
-                if (_this.options.onEvent) {
-                    _this.options.onEvent(event);
-                }
-                console.assert(!_this.lastEventIdReceived ||
-                    parseInt(event.eventId) > parseInt(_this.lastEventIdReceived), 'Expected the current event id to be larger than the previous one');
-                _this.lastEventIdReceived = event.eventId;
-            },
-            onEnd: function () {
-                _this.state = ResumableSubscriptionState.ENDED;
-                if (_this.options.onEnd) {
-                    _this.options.onEnd();
-                }
-            },
-            onError: function (error) {
-                _this.state = ResumableSubscriptionState.OPENING;
-                _this.retryStrategy.attemptRetry(error)
-                    .then(function () {
-                    if (_this.options.onRetry !== undefined) {
-                        _this.options.onRetry();
-                    }
-                    else {
-                        _this.tryNow();
-                    }
-                })
-                    .catch(function (error) {
-                    _this.state = ResumableSubscriptionState.ENDED;
-                    if (_this.options.onError) {
-                        _this.options.onError(error);
-                    }
-                });
-            },
-            logger: this.logger
-        });
-        if (this.options.tokenProvider) {
-            this.options.tokenProvider.fetchToken().then(function (jwt) {
-                _this.subscription.open(jwt);
-            }).catch(function (err) {
-                if (_this.options.onError)
-                    _this.options.onError(err);
-            });
-        }
-        else {
-            this.subscription.open(null);
-        }
-    };
-    ResumableSubscription.prototype.open = function () {
-        this.tryNow();
-    };
-    ResumableSubscription.prototype.unsubscribe = function (error) {
-        this.subscription.unsubscribe(error); // We'll get onEnd and bubble this up
-    };
-    return ResumableSubscription;
-}());
-exports.ResumableSubscription = ResumableSubscription;
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
-var logger_1 = __webpack_require__(1);
-var Retry = (function () {
-    function Retry(waitTimeMillis) {
-        this.waitTimeMillis = waitTimeMillis;
-    }
-    return Retry;
-}());
-exports.Retry = Retry;
-var DoNotRetry = (function () {
-    function DoNotRetry(error) {
-        this.error = error;
-    }
-    return DoNotRetry;
-}());
-exports.DoNotRetry = DoNotRetry;
-var ExponentialBackoffRetryStrategy = (function () {
-    function ExponentialBackoffRetryStrategy(options) {
-        this.limit = 6;
-        this.retryCount = 0;
-        this.maxBackoffMillis = 30000;
-        this.defaultBackoffMillis = 1000;
-        this.currentBackoffMillis = this.defaultBackoffMillis;
-        if (options.limit)
-            this.limit = options.limit;
-        if (options.initialBackoffMillis) {
-            this.currentBackoffMillis = options.initialBackoffMillis;
-            this.defaultBackoffMillis = options.defaultBackoffMillis;
-        }
-        if (options.maxBackoffMillis)
-            this.maxBackoffMillis = options.maxBackoffMillis;
-        if (options.logger !== undefined) {
-            this.logger = options.logger;
-        }
-        else {
-            this.logger = new logger_1.EmptyLogger();
-        }
-    }
-    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
-        this.logger.verbose(this.constructor.name + ":  Error received", error);
-        if (this.retryCount >= this.limit && this.limit > 0) {
-            this.logger.verbose(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
-            return new DoNotRetry(error);
-        }
-        var retryable = this.isRetryable(error);
-        if (retryable.isRetryable) {
-            if (retryable.backoffMillis) {
-                this.retryCount += 1;
-                return new Retry(retryable.backoffMillis);
-            }
-            else {
-                this.currentBackoffMillis = this.calulateMillisToRetry();
-                this.retryCount += 1;
-                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMillis);
-                return new Retry(this.currentBackoffMillis);
-            }
-        }
-        else {
-            this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
-            return new DoNotRetry(error);
-        }
-    };
-    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var shouldRetry = _this.shouldRetry(error);
-            if (shouldRetry instanceof DoNotRetry) {
-                reject(error);
-            }
-            else if (shouldRetry instanceof Retry) {
-                window.setTimeout(resolve, shouldRetry.waitTimeMillis);
-            }
-        });
-    };
-    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
-        var retryable = {
-            isRetryable: false
-        };
-        //We allow network errors
-        if (error instanceof base_client_1.NetworkError)
-            retryable.isRetryable = true;
-        else if (error instanceof base_client_1.ErrorResponse) {
-            //Only retry after is allowed
-            if (error.headers["Retry-After"]) {
-                retryable.isRetryable = true;
-                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
-            }
-        }
-        return retryable;
-    };
-    ExponentialBackoffRetryStrategy.prototype.reset = function () {
-        this.retryCount = 0;
-        this.currentBackoffMillis = this.defaultBackoffMillis;
-    };
-    ExponentialBackoffRetryStrategy.prototype.calulateMillisToRetry = function () {
-        if (this.currentBackoffMillis >= this.maxBackoffMillis || this.currentBackoffMillis * 2 >= this.maxBackoffMillis) {
-            return this.maxBackoffMillis;
-        }
-        if (this.retryCount > 0) {
-            return this.currentBackoffMillis * 2;
-        }
-        return this.currentBackoffMillis;
-    };
-    return ExponentialBackoffRetryStrategy;
-}());
-exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
 var __assign = (this && this.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
@@ -3312,126 +2531,166 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var base_client_1 = __webpack_require__(0);
-var logger_1 = __webpack_require__(1);
-var HOST_BASE = "pusherplatform.io";
-var Instance = (function () {
-    function Instance(options) {
-        if (!options.instance)
-            throw new Error('Expected `instance` property in Instance options!');
-        if (options.instance.split(":").length !== 3)
-            throw new Error('The instance property is in the wrong format!');
-        if (!options.serviceName)
-            throw new Error('Expected `serviceName` property in Instance options!');
-        if (!options.serviceVersion)
-            throw new Error('Expected `serviceVersion` property in Instance otpions!');
-        var splitInstance = options.instance.split(":");
-        this.platformVersion = splitInstance[0];
-        this.cluster = splitInstance[1];
-        this.instanceId = splitInstance[2];
-        this.serviceName = options.serviceName;
-        this.serviceVersion = options.serviceVersion;
-        this.tokenProvider = options.tokenProvider;
-        if (options.host) {
-            this.host = options.host;
+var Quill = __webpack_require__(11);
+var PusherPlatform = __webpack_require__(17);
+var logoot_doc_1 = __webpack_require__(18);
+var editor_1 = __webpack_require__(19);
+var textsync_1 = __webpack_require__(20);
+var quill_adaptor_1 = __webpack_require__(31);
+var quill_cursors_1 = __webpack_require__(39);
+var notifications = __webpack_require__(2);
+var validate_options_1 = __webpack_require__(41);
+var logger_1 = __webpack_require__(42);
+var DEFAULT_QUILL_CONFIG = {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['link', { header: [1, 2, 3, 4, 5, false] }],
+            [{ color: [] }, { background: [] }],
+            [{ size: ['small', false, 'large', 'huge'] }]
+        ],
+        history: {
+            delay: 2000,
+            maxStack: 500,
+            userOnly: true
         }
-        else {
-            this.host = this.cluster + "." + HOST_BASE;
-        }
-        this.client = options.client || new base_client_1.BaseClient({
-            encrypted: options.encrypted,
-            host: this.host
-        });
-        if (options.logger !== undefined) {
-            this.logger = options.logger;
-        }
-        else {
-            this.logger = new logger_1.ConsoleLogger();
-        }
-    }
-    Instance.prototype.request = function (options) {
-        var _this = this;
-        options.path = this.absPath(options.path);
-        var tokenProvider = options.tokenProvider || this.tokenProvider;
-        if (!options.jwt && tokenProvider) {
-            return tokenProvider.fetchToken().then(function (jwt) {
-                return _this.client.request(__assign({ jwt: jwt }, options));
-            });
-        }
-        else {
-            return this.client.request(options);
-        }
-    };
-    Instance.prototype.subscribe = function (options) {
-        options.path = this.absPath(options.path);
-        options.logger = this.logger;
-        var subscription = this.client.newSubscription(options);
-        var tokenProvider = options.tokenProvider || this.tokenProvider;
-        if (options.jwt) {
-            subscription.open(options.jwt);
-        }
-        else if (tokenProvider) {
-            tokenProvider.fetchToken().then(function (jwt) {
-                subscription.open(jwt);
-            }).catch(function (err) {
-                subscription.unsubscribe(err);
-            });
-        }
-        else {
-            subscription.open(null);
-        }
-        return subscription;
-    };
-    Instance.prototype.resumableSubscribe = function (options) {
-        if (!options.logger)
-            options.logger = this.logger;
-        options.logger = this.logger;
-        options.path = this.absPath(options.path);
-        var tokenProvider = options.tokenProvider || this.tokenProvider;
-        var resumableSubscription = this.client.newResumableSubscription(__assign({ tokenProvider: tokenProvider }, options));
-        resumableSubscription.open();
-        return resumableSubscription;
-    };
-    Instance.prototype.absPath = function (relativePath) {
-        return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.instanceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
-    };
-    return Instance;
-}());
-exports.default = Instance;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var instance_1 = __webpack_require__(5);
-exports.Instance = instance_1.default;
-var base_client_1 = __webpack_require__(0);
-exports.BaseClient = base_client_1.BaseClient;
-var logger_1 = __webpack_require__(1);
-exports.ConsoleLogger = logger_1.ConsoleLogger;
-exports.EmptyLogger = logger_1.EmptyLogger;
-var resumable_subscription_1 = __webpack_require__(3);
-exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
-var retry_strategy_1 = __webpack_require__(4);
-exports.ExponentialBackoffRetryStrategy = retry_strategy_1.ExponentialBackoffRetryStrategy;
-var subscription_1 = __webpack_require__(2);
-exports.Subscription = subscription_1.Subscription;
-exports.default = {
-    Instance: instance_1.default,
-    BaseClient: base_client_1.BaseClient,
-    ResumableSubscription: resumable_subscription_1.ResumableSubscription, Subscription: subscription_1.Subscription,
-    ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
-    ConsoleLogger: logger_1.ConsoleLogger, EmptyLogger: logger_1.EmptyLogger
+    },
+    formats: [
+        'background',
+        'bold',
+        'color',
+        'italic',
+        'link',
+        'size',
+        'strike',
+        'underline',
+        'header',
+        'list'
+    ]
 };
+var TextSync = (function () {
+    function TextSync(config, host) {
+        if (!config) {
+            throw new Error('Config must be present to initialise TextSync.');
+        }
+        else if (!config.instanceLocator) {
+            throw new Error('`instanceLocator` must be present in config when initialising TextSync.');
+        }
+        var logLevel = this.getLogLevel(config);
+        this.logger = new logger_1.Logger(logLevel);
+        this.instanceLocator = config.instanceLocator;
+        this.host = host || null;
+        this.app = new PusherPlatform.Instance({
+            serviceName: 'textsync',
+            serviceVersion: 'v1',
+            instance: this.instanceLocator,
+            host: this.host,
+            logger: new PusherPlatform.ConsoleLogger(logLevel)
+        });
+    }
+    TextSync.prototype.createEditor = function (options) {
+        var _this = this;
+        var validatedOptions = {};
+        var validator = validate_options_1.default(validatedOptions, options);
+        // required
+        validator('docId', undefined, true);
+        validator('element', undefined, true);
+        // optional
+        validator('collaboratorBadges', true);
+        validator('cursors', true);
+        validator('cursorLabelsAlwaysOn', false);
+        validator('onCollaboratorsJoined', null);
+        validator('onCollaboratorsLeft', null);
+        validator('onCollaboratorsLeft', null);
+        validator('errorNotifications', true);
+        validator('richText', true);
+        validator('name', null);
+        validator('email', null);
+        validatedOptions.defaultText = options.defaultText || '';
+        var notifier = new notifications.Notifier(validatedOptions.errorNotifications, validatedOptions.onError);
+        var containerElement = validatedOptions.element;
+        var docId = validatedOptions.docId;
+        var presenceElement = initPresenceContainer(containerElement, validatedOptions);
+        var siteId = Math.floor(Math.random() * Math.pow(2, 32));
+        var logootDoc = new logoot_doc_1.default(siteId);
+        var textSyncInstance = new textsync_1.TextSync(logootDoc, this.app, docId, siteId, validatedOptions, presenceElement, notifier, this.logger);
+        // Hide the editor element until the CSS has loaded
+        var cachedDisplayStyle = containerElement.style.display;
+        containerElement.style.display = 'none';
+        var quillConfig = buildQuillConfig(validatedOptions);
+        return injectQuillCss(quillConfig)
+            .then(function () {
+            containerElement.style.display = cachedDisplayStyle;
+            return initEditor(containerElement, validatedOptions, quillConfig);
+        })
+            .then(function (quill) {
+            var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId, notifier, _this.logger);
+            // initialise TextSync
+            textSyncInstance.start(quillAdaptor);
+            return new editor_1.default(quill);
+        })
+            .catch(function (err) {
+            notifier.notify('Failed to create textsync editor', undefined, true);
+            _this.logger.error(err);
+            throw new Error("There was a problem creating the textsync editor: " + err.message);
+        });
+    };
+    TextSync.prototype.getLogLevel = function (config) {
+        var logLevel;
+        if (config.debug) {
+            logLevel = logger_1.LogLevel.DEBUG;
+        }
+        else {
+            logLevel =
+                 true ? logger_1.LogLevel.ERROR : logger_1.LogLevel.INFO;
+        }
+        return logLevel;
+    };
+    return TextSync;
+}());
+function initPresenceContainer(element, validatedOptions) {
+    if (!validatedOptions.collaboratorBadges) {
+        return null;
+    }
+    __webpack_require__(43);
+    __webpack_require__(45);
+    var presenceContainer = document.createElement('div');
+    presenceContainer.id = 'tsync-presence-container';
+    element.appendChild(presenceContainer);
+    return presenceContainer;
+}
+function initEditor(element, validatedOptions, quillConfig) {
+    var editor = document.createElement('div');
+    editor.id = 'tsync-editor';
+    element.appendChild(editor);
+    return new Quill(editor, quillConfig);
+}
+function buildQuillConfig(validatedOptions) {
+    var qlConfig = __assign({}, DEFAULT_QUILL_CONFIG);
+    // Enable cursors
+    if (validatedOptions.cursors) {
+        Quill.register('modules/cursors', quill_cursors_1.CursorsModule);
+        qlConfig.modules.cursors = {
+            cursorFlagsAlwaysOn: validatedOptions.cursorLabelsAlwaysOn
+        };
+    }
+    return qlConfig;
+}
+function injectQuillCss(quillConfig) {
+    quillConfig.theme = 'snow';
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = 'https://cdn.quilljs.com/1.2.4/quill.snow.css';
+    document.getElementsByTagName('head')[0].appendChild(link);
+    return new Promise(function (resolve, reject) {
+        link.onload = resolve;
+        link.onerror = reject;
+    });
+}
+module.exports = TextSync;
 
-
-/***/ })
-/******/ ]);
-});
 
 /***/ }),
 /* 11 */
@@ -14444,1398 +13703,10 @@ module.exports = __webpack_require__(62);
 /***/ })
 /******/ ]);
 });
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
 
 /***/ }),
 /* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(26);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {"insertAt":"top"}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(1)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./animations.css", function() {
-			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./animations.css");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(27);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {"insertAt":"top"}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(1)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./badge-styles.css", function() {
-			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./badge-styles.css");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var Editor = (function () {
-    function Editor(quill) {
-        this.quill = quill;
-    }
-    Editor.prototype.getText = function (index, length) {
-        return this.quill.getText(index, length);
-    };
-    Editor.prototype.getContents = function (index, length) {
-        var delta = this.quill.getContents(index, length);
-        var contents = delta.ops.map(function (op) {
-            var c = { text: op.insert };
-            if (op.attributes) {
-                c['attributes'] = op.attributes;
-            }
-            return c;
-        });
-        return contents;
-    };
-    return Editor;
-}());
-exports.default = Editor;
-
-
-/***/ }),
-/* 15 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var LogLevel;
-(function (LogLevel) {
-    LogLevel[LogLevel["ERROR"] = 1] = "ERROR";
-    LogLevel[LogLevel["INFO"] = 2] = "INFO";
-    LogLevel[LogLevel["DEBUG"] = 3] = "DEBUG";
-})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
-var Logger = (function () {
-    function Logger(logLevel) {
-        if (logLevel === void 0) { logLevel = 1; }
-        this.logLevel = logLevel;
-    }
-    Logger.prototype.log = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        console.log.apply(console, args);
-    };
-    Logger.prototype.error = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        if (this.logLevel >= LogLevel.ERROR) {
-            console.error.apply(console, args);
-        }
-    };
-    Logger.prototype.info = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        if (this.logLevel >= LogLevel.INFO) {
-            console.info.apply(console, args);
-        }
-    };
-    Logger.prototype.debug = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        if (this.logLevel >= LogLevel.DEBUG) {
-            console.debug.apply(console, args);
-        }
-    };
-    return Logger;
-}());
-exports.Logger = Logger;
-
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * This module specialises the generic Logoot model to be one which indexes
- * the text in a document.
- *
- * Each Logoot "Atom" represents a range of text
- * from the document, stored as the length of the range. The index within
- * the document for a particular atom can be found by summing the values
- * of all previous atoms.
- *
- * The document is manipulated via insert and delete methods, whose
- * parameters are expressed in the text document domain. In addition to
- * mutating the Logoot representation as requested, these methods return
- * lists of Operations expressed in the Logoot domain, which, if passed
- * to the applyOps method of another instance, will recreate the same
- * changes which were made here.
- *
- * Similarly, apply methods return a list of operations in the text document
- * domain which can be applied to a rendered view of the document when
- * applying operations from remotely.
- *
- * In summary:
- * - Changes to the text which this LogootDoc represents (i.e. interactively
- *   in an editor) are applied using insert/delete methods.
- * - insert/delete methods return Operations which can be transmitted to
- *   remote instances.
- * - Apply methods return a set of changes to the text which arose from the
- *   remote Operations.
- */
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var logoot_1 = __webpack_require__(9);
-var logoot_2 = __webpack_require__(9);
-var logootFormat = __webpack_require__(8);
-var editorFormat = __webpack_require__(7);
-var LogootDoc = (function (_super) {
-    __extends(LogootDoc, _super);
-    function LogootDoc(siteId) {
-        return _super.call(this, siteId) || this;
-    }
-    /**
-     * Alter the model to accommodate inserted content
-     * @param {number} index - the insertion index
-     * @param {string} content - the new content being inserted
-     *
-     * @return {logootFormat.DocOp[]} - a description of the required operations
-     *   suitable for transmitting to a remote replica of the doc,
-     *   such that they might apply the same insertion.
-     */
-    LogootDoc.prototype.insertText = function (index, content, attributes) {
-        var atoms = this._insertText(index, content);
-        var ops = atoms.map(function (atom) {
-            return {
-                opType: logootFormat.OpType.Insert,
-                ident: atom.ident.toWire(),
-                content: { text: atom.rune, attributes: attributes }
-            };
-        });
-        return ops;
-    };
-    /**
-     * Alter the model to accommodate deleted content
-     * @param {number} index - the start index of the removed content
-     * @param {string} length - the length of the content removed
-     *
-     * @return {logootFormat.DocOp[]} - a description of the required operations
-     *   suitable for transmitting to a remote replica of the doc,
-     *   such that they might apply the same removal.
-     */
-    LogootDoc.prototype.deleteText = function (index, length) {
-        var ops = [];
-        var atoms = this.getAtomsToDelete(index, length);
-        for (var i = 0; i < length; i++) {
-            var deleteOp = {
-                opType: logootFormat.OpType.Delete,
-                ident: atoms[i].ident.toWire()
-            };
-            this.applyDeletes([deleteOp]);
-            ops.push(deleteOp);
-        }
-        return ops;
-    };
-    /**
-     * Convert an AtomIdent to a character index
-     * @param {AtomIdent} atomIdent - an atomIdent
-     *
-     * @return {number} - a character index
-     */
-    LogootDoc.prototype.atomIdentToIndex = function (atomIdent) {
-        for (var i = 0; i < this.seq.length; i++) {
-            var currentAtom = this.seq[i];
-            var isNextIdent = currentAtom.ident.compare(atomIdent) != -1;
-            if (isNextIdent) {
-                return i - 1;
-            }
-        }
-        throw new Error("Out of range: " + JSON.stringify(atomIdent));
-    };
-    /**
-     * Convert an array of WireIdents to a character index
-     * @param {WireIdent[]} wireIdents - array of wire idents
-     * @param {number} siteId - the site id from which the wireIdents originate
-     *
-     * @return {number} - a character index
-     */
-    LogootDoc.prototype.wireIdentsToIndex = function (wireIdents, siteId) {
-        // WireIdent[] --> Position
-        var position = logoot_2.Position.fromWire(wireIdents);
-        // Position --> AtomIdent
-        var atomIdent = new logoot_2.AtomIdent(position, 0);
-        // AtomIdent --> number
-        var index = this.atomIdentToIndex(atomIdent);
-        return index;
-    };
-    /**
-     * Generate a new position at a given character index
-     * @param {number} charIndex - the index at which to generate the new
-     *    position
-     *
-     * @return {WireIdent[]} - A unique position in the document
-     */
-    LogootDoc.prototype.newPositionAtIndex = function (charIndex) {
-        if (charIndex > this.docLength - 1) {
-            throw new Error("Index out of range: " + charIndex);
-        }
-        var _a = this.getSurroundingAtoms(charIndex), atomBefore = _a[0], atomAfter = _a[1];
-        var atomIdent = logoot_2.AtomIdent.between(atomBefore.ident, atomAfter.ident, 0, 0);
-        return atomIdent.toWire().position;
-    };
-    /**
-     * Applies a set of insert operations to the document model
-     * @param {logootFormat.DocOp[]} ops - The operations to apply
-     *
-     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
-     *   the changes described in the insert operations.
-     */
-    LogootDoc.prototype.applyInserts = function (ops) {
-        var atomsToInsert = ops.map(function (op) { return logoot_2.Atom.fromWire(op.ident, op.content); });
-        var indices = this.insertAtoms(atomsToInsert);
-        var editorOps = [];
-        for (var i = 0; i < indices.length; i++) {
-            var op = ops[i];
-            var runeIndex = indices[i];
-            var editorOp = {
-                opType: editorFormat.OpType.Insert,
-                index: runeIndex,
-                text: op.content.text
-            };
-            if (op.content.attributes) {
-                editorOp['attributes'] = op.content.attributes;
-            }
-            editorOps.push(editorOp);
-        }
-        editorOps.sort(function (a, b) { return a.index - b.index; });
-        return editorOps;
-    };
-    /**
-     * Applies a set of delete operations to the document model
-     * @param {logootFormat.DocOp[]} ops - The operations to apply
-     *
-     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
-     *   the changes described in the delete operations.
-     */
-    LogootDoc.prototype.applyDeletes = function (ops) {
-        var identsToDelete = ops.map(function (op) { return logoot_2.AtomIdent.fromWire(op.ident); });
-        var indices = this.deleteAtoms(identsToDelete);
-        var editorOps = [];
-        for (var i = 0; i < indices.length; i++) {
-            var op = ops[i];
-            var runeIndex = indices[i];
-            var editorOp = {
-                opType: editorFormat.OpType.Delete,
-                index: runeIndex
-            };
-            editorOps.push(editorOp);
-        }
-        editorOps.sort(function (a, b) { return a.index - b.index; });
-        return editorOps;
-    };
-    /**
-     * Applies operations to the document model
-     * @param {logootFormat.DocOp[]} ops - The operations to apply
-     *
-     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
-     *   the changes described.
-     */
-    LogootDoc.prototype.updateDoc = function (ops) {
-        var editorOps = [];
-        // Batch the operations for performance reasons.
-        var insertOps = ops.filter(function (op) { return op.opType === logootFormat.OpType.Insert; });
-        editorOps = editorOps.concat(this.applyInserts(insertOps));
-        var deleteOps = ops.filter(function (op) { return op.opType === logootFormat.OpType.Delete; });
-        editorOps = editorOps.concat(this.applyDeletes(deleteOps));
-        return editorOps;
-    };
-    LogootDoc.prototype.toEditorCursorOps = function (ops, offset) {
-        var _this = this;
-        if (offset === void 0) { offset = 0; }
-        var editorOps = [];
-        return ops.map(function (cursorOp) {
-            var startIndex = null;
-            var length = 0;
-            if (cursorOp.position !== null) {
-                startIndex =
-                    _this.wireIdentsToIndex(cursorOp.position.start, 0) + offset;
-                var endIndex = cursorOp.position.end
-                    ? _this.wireIdentsToIndex(cursorOp.position.end, 0)
-                    : startIndex;
-                length = endIndex - startIndex;
-            }
-            return {
-                id: cursorOp.siteId,
-                range: {
-                    index: startIndex,
-                    length: length
-                },
-                name: null,
-                color: null
-            };
-        });
-    };
-    return LogootDoc;
-}(logoot_1.default));
-exports.default = LogootDoc;
-
-
-/***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * Binding between the textsync document model and that of Quilljs
- */
-Object.defineProperty(exports, "__esModule", { value: true });
-var editorFormat = __webpack_require__(7);
-var notifications = __webpack_require__(2);
-__webpack_require__(37);
-var Delta = __webpack_require__(33);
-var runes = __webpack_require__(5);
-var QuillAdaptor = (function () {
-    function QuillAdaptor(quill, textsync, docId, notifier, logger) {
-        this.siteId = Math.floor(Math.random() * Math.pow(2, 32));
-        this.docId = docId;
-        this.logger = logger;
-        this.quill = quill;
-        this.textsync = textsync;
-        this.cursorModule = quill.getModule('cursors');
-        this.notifier = notifier;
-        // The "empty" Quill document is a single newline. It can't be removed, so we need
-        // to initialise the textsync document with it.
-        this.textsync.initialContent('\n');
-        this.quill.setText('');
-        this.quill.on('text-change', this.editorChange.bind(this));
-        this.quill.on('selection-change', this.selectionChange.bind(this));
-    }
-    QuillAdaptor.prototype.applyOperations = function (operations) {
-        var deltas = makeDeltas(operations);
-        for (var _i = 0, deltas_1 = deltas; _i < deltas_1.length; _i++) {
-            var delta = deltas_1[_i];
-            this.quill.updateContents(delta, 'silent');
-        }
-    };
-    QuillAdaptor.prototype.setCursor = function (cursorOp) {
-        this.cursorModule.setCursor(cursorOp);
-    };
-    QuillAdaptor.prototype.removeCursor = function (siteId) {
-        this.cursorModule.removeCursor(siteId);
-    };
-    QuillAdaptor.prototype.disable = function () {
-        this.quill.disable();
-    };
-    QuillAdaptor.prototype.displayError = function (error) {
-        this.logger.error(error);
-    };
-    QuillAdaptor.prototype.selectionChange = function (range, oldRange, source) {
-        this.logger.debug('selection change');
-        if (range) {
-            this.logger.debug('range == ', range, source);
-            var start = range.index;
-            var end = range.length > 0 ? start + range.length : null;
-            this.textsync.updateCursor(start, end);
-        }
-        else {
-            this.logger.debug(this.siteId + " has defocussed");
-            this.textsync.updateCursor(null);
-        }
-    };
-    QuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
-        // This is a temporary ban of emoji until we have full support.
-        // If you are reading this after 01/11/17 strike up a conversation
-        // about why we haven't fixed emoji yet! - Jonathan Lloyd
-        var shouldRejectChange = false;
-        for (var _i = 0, _a = delta.ops; _i < _a.length; _i++) {
-            var deltaOp = _a[_i];
-            if (deltaOp.insert) {
-                var containsBadRune = runes(deltaOp.insert).reduce(function (acc, val) {
-                    var seenBadRune = acc;
-                    var isBadRune = val.length > 1;
-                    return seenBadRune || isBadRune;
-                }, false);
-                if (containsBadRune) {
-                    shouldRejectChange = true;
-                    break;
-                }
-            }
-        }
-        if (shouldRejectChange) {
-            this.quill.setContents(oldDelta, 'silent');
-            this.notifier.notify("Sadly we can't handle emoji at the moment. We're working on it!", notifications.NotificationType.Warning);
-            return;
-        }
-        this.logger.debug('text change', delta, oldDelta);
-        // The character index which the delta operation we are currently processing
-        var changeIndex = 0;
-        // The difference we need to apply when indexing in to the oldDelta by character, because
-        // we have deleted characters from the document which still exist in the oldDelta.
-        var oldDeltaChangeOffset = 0;
-        this.logger.debug('received event from editor:', JSON.stringify(delta));
-        for (var _b = 0, _c = delta.ops; _b < _c.length; _b++) {
-            var deltaOp = _c[_b];
-            if (deltaOp.hasOwnProperty('retain')) {
-                // "retain" ops may carry an "attributes" field to indicate that the text has not
-                // changed, but the attributes have.
-                if (deltaOp.hasOwnProperty('attributes')) {
-                    // If the attributes have changed for a portion of text, we may have to handle
-                    // this as multiple changes, because the previous attributes of the text might
-                    // not be consistent for the whole span we are trying to merge a new attribute
-                    // in to.
-                    // We look at the previous delta (which represents the entire document before
-                    // this changeset) in order to merge the new attribute set in to each
-                    // different combination of attributes that previous applied.
-                    var oldDeltaIndex = changeIndex + oldDeltaChangeOffset;
-                    var affectedDelta = oldDelta.slice(oldDeltaIndex, oldDeltaIndex + deltaOp.retain);
-                    for (var _d = 0, _e = affectedDelta.ops; _d < _e.length; _d++) {
-                        var affectedOp = _e[_d];
-                        var mergedAttrs = Object.assign({}, affectedOp.attributes, deltaOp.attributes);
-                        var wireAttrs = QuillAttributes.toWireAttributes(mergedAttrs);
-                        if (changeIndex == this.quill.getLength() - 1) {
-                            this.quill.formatText(changeIndex, 1, { header: false, list: false }, 'silent'); // fishy. formatting could be any block level, not just header
-                            this.quill.insertText(changeIndex, '\n', mergedAttrs, 'silent');
-                            this.textsync.insertText(changeIndex, affectedOp.insert, wireAttrs);
-                        }
-                        else {
-                            this.textsync.deleteText(changeIndex, affectedOp.insert.length);
-                            this.textsync.insertText(changeIndex, affectedOp.insert, wireAttrs);
-                        }
-                        changeIndex += affectedOp.insert.length;
-                    }
-                }
-                else {
-                    changeIndex += deltaOp.retain;
-                }
-            }
-            else if (deltaOp.hasOwnProperty('insert')) {
-                this.textsync.insertText(changeIndex, deltaOp.insert, QuillAttributes.toWireAttributes(deltaOp.attributes));
-                changeIndex += deltaOp.insert.length;
-            }
-            else if (deltaOp.hasOwnProperty('delete')) {
-                this.textsync.deleteText(changeIndex, deltaOp.delete);
-                oldDeltaChangeOffset += deltaOp.delete;
-            }
-        }
-    };
-    return QuillAdaptor;
-}());
-exports.default = QuillAdaptor;
-var QuillAttributes = (function () {
-    function QuillAttributes() {
-        this.bold = false;
-        this.italic = false;
-        this.underline = false;
-        this.strike = false;
-        this.header = false;
-        this.link = undefined;
-        this.size = undefined;
-        this.color = undefined;
-        this.background = undefined;
-        this.list = undefined;
-    }
-    QuillAttributes.fromWireAttributes = function (wireAttrs) {
-        var quillAttrs = new QuillAttributes();
-        quillAttrs.bold = wireAttrs.bold || false;
-        quillAttrs.italic = wireAttrs.italic || false;
-        quillAttrs.underline = wireAttrs.underline || false;
-        quillAttrs.strike = wireAttrs.strikethrough || false;
-        quillAttrs.link = wireAttrs.hyperlink || '';
-        quillAttrs.header = wireAttrs.header || false;
-        quillAttrs.size = wireAttrs.size || '';
-        quillAttrs.color = wireAttrs.color || '';
-        quillAttrs.background = wireAttrs.background || '';
-        quillAttrs.list = QuillAttributes.listFromWireAttributes(wireAttrs.list);
-        return quillAttrs;
-    };
-    QuillAttributes.fromDeltaAttributes = function (attrs) {
-        var quillAttrs = new QuillAttributes();
-        if (attrs) {
-            quillAttrs.bold = attrs.bold || false;
-            quillAttrs.italic = attrs.italic || false;
-            quillAttrs.underline = attrs.underline || false;
-            quillAttrs.strike = attrs.strike || false;
-            quillAttrs.link = attrs.link || '';
-            quillAttrs.header = attrs.link || false;
-            quillAttrs.size = attrs.size || '';
-            quillAttrs.color = attrs.color || '';
-            quillAttrs.background = attrs.background || '';
-            quillAttrs.list = attrs.list || '';
-        }
-        return quillAttrs;
-    };
-    QuillAttributes.toWireAttributes = function (quillAttrs) {
-        var attrs = {};
-        if (quillAttrs) {
-            if (quillAttrs.bold)
-                attrs.bold = true;
-            if (quillAttrs.italic)
-                attrs.italic = true;
-            if (quillAttrs.underline)
-                attrs.underline = true;
-            if (quillAttrs.strike)
-                attrs.strikethrough = true;
-            if (quillAttrs.link)
-                attrs.hyperlink = quillAttrs.link;
-            if (quillAttrs.header)
-                attrs.header = quillAttrs.header;
-            if (quillAttrs.size)
-                attrs.size = quillAttrs.size;
-            if (quillAttrs.color)
-                attrs.color = quillAttrs.color;
-            if (quillAttrs.background)
-                attrs.background = quillAttrs.background;
-            if (quillAttrs.list)
-                attrs.list = QuillAttributes.listFromDeltaType(quillAttrs.list);
-        }
-        return attrs;
-    };
-    QuillAttributes.listFromDeltaType = function (deltaList) {
-        if (deltaList == 'bullet') {
-            return 1;
-        }
-        else if (deltaList == 'ordered') {
-            return 2;
-        }
-        else {
-            return undefined;
-        }
-    };
-    QuillAttributes.listFromWireAttributes = function (e) {
-        if (e == 1) {
-            return 'bullet';
-        }
-        else if (e == 2) {
-            return 'ordered';
-        }
-        else {
-            return undefined;
-        }
-    };
-    return QuillAttributes;
-}());
-exports.QuillAttributes = QuillAttributes;
-function makeDeltas(docOps) {
-    var deltas = [];
-    var insertBuffer = '';
-    for (var i = 0; i < docOps.length; i++) {
-        var delta = new Delta();
-        var docOp = docOps[i];
-        var nextDocOp = docOps[i + 1] || null;
-        var runesToRetain = void 0;
-        switch (docOp.opType) {
-            case editorFormat.OpType.Insert:
-                var canSquashIntoNextOp = nextDocOp !== null &&
-                    nextDocOp.opType === editorFormat.OpType.Insert &&
-                    JSON.stringify(nextDocOp.attributes) ===
-                        JSON.stringify(docOp.attributes) &&
-                    nextDocOp.index === docOp.index + 1;
-                if (canSquashIntoNextOp) {
-                    insertBuffer += docOp.text;
-                }
-                else {
-                    // Retain
-                    runesToRetain = docOp.index - insertBuffer.length;
-                    delta.retain(runesToRetain);
-                    // Insert
-                    var attrs = docOp.attributes || {};
-                    delta.insert(insertBuffer + docOp.text, QuillAttributes.fromWireAttributes(attrs));
-                    insertBuffer = '';
-                    deltas.push(delta);
-                }
-                break;
-            case editorFormat.OpType.Delete:
-                runesToRetain = docOp.index;
-                delta.retain(runesToRetain);
-                delta.delete(1);
-                deltas.push(delta);
-                break;
-        }
-    }
-    return deltas;
-}
-exports.makeDeltas = makeDeltas;
-
-
-/***/ }),
-/* 18 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * Uses the textsync service to synchronise LogootDoc instances
- */
-Object.defineProperty(exports, "__esModule", { value: true });
-var wireFormat = __webpack_require__(45);
-var model_1 = __webpack_require__(43);
-var controller_1 = __webpack_require__(41);
-var notifications = __webpack_require__(2);
-var name_generator_1 = __webpack_require__(44);
-var MIN_BROADCAST_PERIOD_MS = 1;
-var MAX_BROADCAST_PERIOD_MS = 10000;
-var BROADCAST_BACKOFF = 1.2;
-var TextSync = (function () {
-    function TextSync(logoot, pusher, docId, siteId, options, presenceElement, notifier, logger) {
-        this.logoot = logoot;
-        this.pusher = pusher;
-        this.docId = docId;
-        this.siteId = siteId;
-        this.options = options;
-        this.presenceElement = presenceElement;
-        this.outstandingOps = [];
-        this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
-        this.running = true;
-        this.defaultText = options.defaultText;
-        this.logger = logger;
-        this.notifier = notifier;
-        this.broadcastOps();
-        // Remove when we have JWT
-        this.name = this.options.name || name_generator_1.createAnonName();
-        this.email = this.options.email;
-    }
-    TextSync.prototype.insertText = function (index, content, attributes) {
-        this.sendOps(this.logoot.insertText(index, content, attributes));
-    };
-    TextSync.prototype.deleteText = function (index, length) {
-        this.sendOps(this.logoot.deleteText(index, length));
-    };
-    TextSync.prototype.updateCursor = function (start, end) {
-        if (end === void 0) { end = null; }
-        var position = null;
-        if (start !== null) {
-            position = {
-                start: this.logoot.newPositionAtIndex(start)
-            };
-            if (end !== null) {
-                position.end = this.logoot.newPositionAtIndex(end);
-            }
-        }
-        this.sendOps([
-            {
-                siteId: this.siteId,
-                position: position
-            }
-        ]);
-    };
-    TextSync.prototype.initPresence = function (presenceConfig, presenceElement) {
-        var presenceController = new controller_1.default(this.siteId, presenceConfig, presenceElement, this.logger);
-        this.presenceModel = new model_1.default(this.siteId, this.adaptor, this.logoot, presenceController, presenceConfig, this.logger);
-    };
-    TextSync.prototype.start = function (adaptor) {
-        var _this = this;
-        this.adaptor = adaptor;
-        var presenceConfig = {
-            showBadges: this.options.collaboratorBadges,
-            showCursors: this.options.cursors,
-            onJoined: this.options.onCollaboratorsJoined,
-            onLeft: this.options.onCollaboratorsLeft
-        };
-        this.initPresence(presenceConfig, this.presenceElement);
-        this.initDocument().then(function () {
-            _this.subscribe(_this.name, _this.email);
-        });
-    };
-    TextSync.prototype.initDocument = function () {
-        var _this = this;
-        var promise;
-        if (this.defaultText) {
-            var body = { text: this.defaultText };
-            promise = this.pusher.request({
-                method: 'POST',
-                path: "/docs/" + this.docId + "/initialise-document",
-                body: body
-            });
-        }
-        else {
-            promise = new Promise(function (resolve, reject) { return resolve(); });
-        }
-        return promise.catch(function (err) {
-            _this.logger.error('Unable to initialise default content', err);
-        });
-    };
-    TextSync.prototype.subscribe = function (name, email) {
-        var _this = this;
-        this.logger.info('Connecting to server...');
-        var path = "/docs/" + this.docId + "?siteId=" + this.siteId;
-        // Remove when we have JWT
-        var encodedName = encodeURIComponent(name);
-        path += "&name=" + encodedName;
-        if (email) {
-            var encodedEmail = encodeURIComponent(email);
-            path += "&email=" + encodedEmail;
-        }
-        this.pusher.resumableSubscribe({
-            path: path,
-            onEvent: function (event) {
-                _this.logger.info('event received from server:', JSON.stringify(event.body));
-                if (event.body.siteId !== _this.siteId) {
-                    if (event.body.presOps && event.body.presOps.length > 0) {
-                        // go straight to presence
-                        var presOpsCopy = JSON.parse(JSON.stringify(event.body.presOps));
-                        _this.presenceModel.receivePresOps(presOpsCopy);
-                    }
-                    if (event.body.docOps && event.body.docOps.length > 0) {
-                        var message = {
-                            docOps: event.body.docOps,
-                            siteId: event.body.siteId
-                        };
-                        _this.receiveDocOps(message);
-                        _this.presenceModel.receiveDocOps(message);
-                    }
-                    else if (event.body.cursorOps && event.body.cursorOps.length > 0) {
-                        // when someone clicks to a new position
-                        _this.logger.debug(event.body.siteId + " has clicked.");
-                        _this.receiveCursorOps({
-                            cursorOps: event.body.cursorOps,
-                            siteId: event.body.siteId
-                        });
-                    }
-                }
-            },
-            onOpen: function () {
-                _this.logger.info('subscription opened successfully');
-            },
-            onEnd: function () {
-                _this.logger.error('subscription terminated by server');
-            },
-            onError: function (error) {
-                if (error.statusCode === 403) {
-                    _this.logger.error('Authentication error: Invalid TextSync instance ID. ' +
-                        'Double check your instance ID or ask a Pusherino for a new one.');
-                    _this.adaptor.disable();
-                    return;
-                }
-                _this.logger.error('subscription closed due to error', error);
-                _this.notifier.notify('Whoops! Something went wrong. Please refresh the page to reconnect.', notifications.NotificationType.Error, true);
-                _this.adaptor.disable();
-            }
-        });
-    };
-    TextSync.prototype.initialContent = function (content) {
-        this.logoot.initialContent(content);
-    };
-    TextSync.prototype.sendOps = function (ops) {
-        this.outstandingOps = this.outstandingOps.concat(ops);
-    };
-    TextSync.prototype.broadcastOps = function () {
-        var _this = this;
-        if (!this.running) {
-            return;
-        }
-        if (this.outstandingOps.length > 0) {
-            var opsToBroadcast_1 = this.outstandingOps;
-            this.outstandingOps = [];
-            var body = wireFormat.messageFromOps(opsToBroadcast_1, this.siteId);
-            this.logger.debug('Broadcasting operations to server:', JSON.stringify(body));
-            this.pusher
-                .request({
-                method: 'POST',
-                path: "/docs/" + this.docId,
-                body: body
-            })
-                .then(function () {
-                _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
-            })
-                .catch(function (error) {
-                var statusCode = error.statusCode;
-                var isClientError = statusCode && 400 <= statusCode && statusCode < 500;
-                if (isClientError) {
-                    _this.running = false;
-                }
-                _this.logger.error(error);
-                _this.outstandingOps = _this.outstandingOps.concat(opsToBroadcast_1);
-                var newBroadcastPeriod = _this.broadcastPeriod * BROADCAST_BACKOFF;
-                if (newBroadcastPeriod < MAX_BROADCAST_PERIOD_MS) {
-                    _this.broadcastPeriod = newBroadcastPeriod;
-                }
-            });
-        }
-        setTimeout(function () {
-            _this.broadcastOps();
-        }, this.broadcastPeriod);
-    };
-    TextSync.prototype.receiveDocOps = function (wireMessage) {
-        if (wireMessage.siteId === this.siteId) {
-            return;
-        }
-        var editorDocOps = this.logoot.updateDoc(wireMessage.docOps);
-        this.adaptor.applyOperations(editorDocOps);
-    };
-    TextSync.prototype.receiveCursorOps = function (wireMessage) {
-        if (wireMessage.siteId === this.siteId) {
-            return;
-        }
-        var editorCursorOps = this.logoot.toEditorCursorOps(wireMessage.cursorOps);
-        this.presenceModel.receiveCursorOps(editorCursorOps);
-    };
-    return TextSync;
-}());
-exports.TextSync = TextSync;
-
-
-/***/ }),
-/* 19 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function prepareValidator(validatedOptions, userOptions) {
-    return function (option, defaultValue, isRequired) {
-        if (isRequired) {
-            if (!userOptions.hasOwnProperty(option) ||
-                userOptions[option] === undefined ||
-                userOptions[option] === null) {
-                throw new Error("Property `" + option + "` must be present when initialising TextSync");
-            }
-        }
-        if (option === 'docId') {
-            var docId = userOptions[option];
-            var validDocId = new RegExp(/^[A-Za-z0-9-]{1,32}$/);
-            if (!validDocId.test(docId)) {
-                throw new Error("Invalid `docId`: a valid `docId` must be no longer than 32 characters, and only contain A-Z, a-z, 0-9 and '-' (hyphen).");
-            }
-            validatedOptions[option] = userOptions[option];
-            return;
-        }
-        if (option === 'element') {
-            var element = userOptions[option];
-            var containerElement = void 0;
-            if (element instanceof HTMLElement) {
-                containerElement = element;
-            }
-            else if (document.querySelector(element)) {
-                containerElement = document.querySelector(element);
-            }
-            else {
-                throw new Error("Could not find element " + element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
-            }
-            // add HTMLElement and not string
-            validatedOptions[option] = containerElement;
-            return;
-        }
-        if (option === 'onCollaboratorsJoined' ||
-            option === 'onCollaboratorsLeft' ||
-            option === 'onError') {
-            if (userOptions.hasOwnProperty(option)) {
-                if (typeof userOptions[option] !== 'function') {
-                    throw new Error("`" + option + "` must be a function.");
-                }
-            }
-        }
-        if (option === 'name') {
-            validatedOptions.name =
-                userOptions[option] ||
-                    userOptions.userName ||
-                    userOptions.username ||
-                    null;
-            return;
-        }
-        if (option === 'email') {
-            validatedOptions.email =
-                userOptions[option] || userOptions.userEmail || null;
-            return;
-        }
-        if (!isRequired && userOptions.hasOwnProperty(option)) {
-            validatedOptions[option] = userOptions[option];
-        }
-        else {
-            validatedOptions[option] = defaultValue;
-        }
-    };
-}
-exports.default = prepareValidator;
-
-
-/***/ }),
-/* 20 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (immutable) */ __webpack_exports__["CursorsModule"] = CursorsModule;
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__ = __webpack_require__(35);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2__ = __webpack_require__(6);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_tinycolor2__);
-
-
-
-var DEFAULTS = {
-  template: [
-    '<span class="ql-cursor-selections"></span>',
-    '<span class="ql-cursor-caret-container">',
-    '  <span class="ql-cursor-caret"></span>',
-    '</span>',
-    '<div class="ql-cursor-flag">',
-    '  <small class="ql-cursor-name"></small>',
-    '  <span class="ql-cursor-flag-flap"></span>',
-    '</div>'
-  ].join(''),
-  autoRegisterListener: true,
-  hideDelay: 3000,
-  hideSpeed: 400
-};
-
-function CursorsModule(quill, options) {
-  this.quill = quill;
-  this._initOptions(options);
-  this.cursors = {};
-  this.container = this.quill.addContainer('ql-cursors');
-
-  if (this.options.autoRegisterListener) {
-    this.registerTextChangeListener();
-  }
-  window.addEventListener('resize', this.update.bind(this));
-}
-
-CursorsModule.prototype.registerTextChangeListener = function() {
-  this.quill.on(
-    this.quill.constructor.events.TEXT_CHANGE,
-    this._applyDelta.bind(this)
-  );
-};
-
-CursorsModule.prototype.clearCursors = function() {
-  Object.keys(this.cursors).forEach(this.removeCursor.bind(this));
-};
-
-CursorsModule.prototype.moveCursor = function(userId, range) {
-  var cursor = this.cursors[userId];
-  if (cursor) {
-    cursor.range = range;
-    cursor.el.classList.remove('hidden');
-    this._updateCursor(cursor);
-    // TODO Implement cursor hiding timeout like 0.20/benbro?
-  }
-};
-
-CursorsModule.prototype.removeCursor = function(userId) {
-  var cursor = this.cursors[userId];
-  if (cursor) cursor.el.parentNode.removeChild(cursor.el);
-  delete this.cursors[userId];
-};
-
-CursorsModule.prototype.setCursor = function({ id, range, name, color }) {
-  const userId = id;
-  // Init cursor if it doesn't exist
-  if (!this.cursors[userId]) {
-    this.cursors[userId] = {
-      userId: userId,
-      color: color,
-      range: range,
-      el: null,
-      selectionEl: null,
-      caretEl: null,
-      flagEl: null
-    };
-
-    // Build and init the remaining cursor elements
-    this._buildCursor(userId, name);
-  }
-
-  // Move and update cursor
-  window.setTimeout(
-    function() {
-      this.moveCursor(userId, range);
-    }.bind(this)
-  );
-
-  return this.cursors[userId];
-};
-
-CursorsModule.prototype.shiftCursors = function(index, length) {
-  var cursor;
-
-  Object.keys(this.cursors).forEach(function(userId) {
-    if ((cursor = this.cursors[userId]) && cursor.range) {
-      // If characters we're added or there is no selection
-      // advance start/end if it's greater or equal than index
-      if (length > 0 || cursor.range.length == 0) {
-        this._shiftCursor(userId, index - 1, length);
-      } else {
-        // Else if characters were removed
-        // move start/end back if it's only greater than index
-        this._shiftCursor(userId, index, length);
-      }
-    }
-  }, this);
-};
-
-CursorsModule.prototype.update = function() {
-  Object.keys(this.cursors).map(
-    function(key) {
-      this._updateCursor(this.cursors[key]);
-    }.bind(this)
-  );
-};
-
-CursorsModule.prototype._initOptions = function(options) {
-  this.options = DEFAULTS;
-  this.options.template = options.template || this.options.template;
-  this.options.autoRegisterListener =
-    options.autoRegisterListener == false
-      ? options.autoRegisterListener
-      : this.options.autoRegisterListener;
-  this.options.hideDelay =
-    options.hideDelay == undefined ? this.options.hideDelay : options.hideDelay;
-  this.options.hideSpeed =
-    options.hideSpeed == undefined ? this.options.hideSpeed : options.hideSpeed;
-  this.options.cursorFlagsAlwaysOn = options.cursorFlagsAlwaysOn || false;
-};
-
-CursorsModule.prototype._applyDelta = function(delta) {
-  var index = 0;
-
-  delta.ops.forEach(function(op) {
-    var length = 0;
-
-    if (op.insert) {
-      length = op.insert.length || 1;
-      this.shiftCursors(index, length);
-    } else if (op.delete) {
-      this.shiftCursors(index, -1 * op.delete);
-    } else if (op.retain) {
-      // Is this really needed?
-      //this.shiftCursors(index, 0);
-      length = op.retain;
-    }
-
-    index += length;
-  }, this);
-
-  this.update();
-};
-
-CursorsModule.prototype._buildCursor = function(userId, name) {
-  var cursor = this.cursors[userId];
-  var el = document.createElement('span');
-  var selectionEl;
-  var caretEl;
-  var flagEl;
-
-  el.classList.add('ql-cursor');
-  el.innerHTML = this.options.template;
-  selectionEl = el.querySelector('.ql-cursor-selections');
-  caretEl = el.querySelector('.ql-cursor-caret-container');
-  flagEl = el.querySelector('.ql-cursor-flag');
-  if (this.options.cursorFlagsAlwaysOn) {
-    flagEl.classList.add('ql-cursor-flag-always-on');
-  }
-
-  // Set color
-  flagEl.style.backgroundColor = cursor.color;
-  caretEl.querySelector('.ql-cursor-caret').style.backgroundColor =
-    cursor.color;
-
-  el.querySelector('.ql-cursor-name').innerText = name;
-
-  // Set flag delay, speed
-  flagEl.style.transitionDelay = this.options.hideDelay + 'ms';
-  flagEl.style.transitionDuration = this.options.hideSpeed + 'ms';
-
-  this.container.appendChild(el);
-
-  // Set cursor elements
-  cursor.el = el;
-  cursor.selectionEl = selectionEl;
-  cursor.caretEl = caretEl;
-  cursor.flagEl = flagEl;
-};
-
-CursorsModule.prototype._shiftCursor = function(userId, index, length) {
-  var cursor = this.cursors[userId];
-  if (cursor.range.index > index) cursor.range.index += length;
-};
-
-CursorsModule.prototype._hideCursor = function(userId) {
-  var cursor = this.cursors[userId];
-  if (cursor) cursor.el.classList.add('hidden');
-};
-
-CursorsModule.prototype._updateCursor = function(cursor) {
-  if (!cursor || !cursor.range) return;
-
-  var containerRect = this.quill.container.getBoundingClientRect();
-  var startLeaf = this.quill.getLeaf(cursor.range.index);
-  var endLeaf = this.quill.getLeaf(cursor.range.index + cursor.range.length);
-  var range = document.createRange();
-  var rects;
-
-  // Sanity check
-  if (
-    !startLeaf ||
-    !endLeaf ||
-    !startLeaf[0] ||
-    !endLeaf[0] ||
-    startLeaf[1] < 0 ||
-    endLeaf[1] < 0 ||
-    !startLeaf[0].domNode ||
-    !endLeaf[0].domNode
-  ) {
-    return this._hideCursor(cursor.userId);
-  }
-
-  range.setStart(startLeaf[0].domNode, startLeaf[1]);
-  range.setEnd(endLeaf[0].domNode, endLeaf[1]);
-  rects = __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix___default.a.getClientRects(range);
-
-  this._updateCaret(cursor, endLeaf);
-  this._updateSelection(cursor, rects, containerRect);
-};
-
-CursorsModule.prototype._updateCaret = function(cursor, leaf) {
-  var rect,
-    index = cursor.range.index + cursor.range.length;
-
-  // The only time a valid offset of 0 can occur is when the cursor is positioned
-  // before the first character in a line, and it will be the case that the start
-  // and end points of the range will be exactly the same... if they are not then
-  // a block selection is taking place and we need to offset the character position
-  // by -1;
-  if (
-    index > 0 &&
-    leaf[1] === 0 &&
-    cursor.range.index !== cursor.range.index + cursor.range.length
-  ) {
-    index--;
-  }
-
-  rect = this.quill.getBounds(index);
-
-  cursor.caretEl.style.top = rect.top + 'px';
-  cursor.caretEl.style.left = rect.left + 'px';
-  cursor.caretEl.style.height = rect.height + 'px';
-
-  cursor.flagEl.style.top = rect.top + 'px';
-  cursor.flagEl.style.left = rect.left + 'px';
-};
-
-CursorsModule.prototype._updateSelection = function(
-  cursor,
-  rects,
-  containerRect
-) {
-  function createSelectionBlock(rect) {
-    var selectionBlockEl = document.createElement('span');
-
-    selectionBlockEl.classList.add('ql-cursor-selection-block');
-    selectionBlockEl.style.top = rect.top - containerRect.top + 'px';
-    selectionBlockEl.style.left = rect.left - containerRect.left + 'px';
-    selectionBlockEl.style.width = rect.width + 'px';
-    selectionBlockEl.style.height = rect.height + 'px';
-    selectionBlockEl.style.backgroundColor = __WEBPACK_IMPORTED_MODULE_1_tinycolor2___default()(cursor.color)
-      .setAlpha(0.3)
-      .toString();
-
-    return selectionBlockEl;
-  }
-
-  // Wipe the slate clean
-  cursor.selectionEl.innerHTML = null;
-
-  var index = [];
-  var rectIndex;
-
-  [].forEach.call(
-    rects,
-    function(rect) {
-      rectIndex = '' + rect.top + rect.left + rect.width + rect.height;
-
-      // Note: Safari throws a rect with length 1 when caret with no selection.
-      // A check was addedfor to avoid drawing those carets - they show up on blinking.
-      if (!~index.indexOf(rectIndex) && rect.width > 1) {
-        index.push(rectIndex);
-        cursor.selectionEl.appendChild(createSelectionBlock(rect));
-      }
-    },
-    this
-  );
-};
-
-// Quill.register('modules/cursors', CursorsModule);
-
-
-/***/ }),
-/* 21 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.byteLength = byteLength
-exports.toByteArray = toByteArray
-exports.fromByteArray = fromByteArray
-
-var lookup = []
-var revLookup = []
-var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
-
-var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-for (var i = 0, len = code.length; i < len; ++i) {
-  lookup[i] = code[i]
-  revLookup[code.charCodeAt(i)] = i
-}
-
-revLookup['-'.charCodeAt(0)] = 62
-revLookup['_'.charCodeAt(0)] = 63
-
-function placeHoldersCount (b64) {
-  var len = b64.length
-  if (len % 4 > 0) {
-    throw new Error('Invalid string. Length must be a multiple of 4')
-  }
-
-  // the number of equal signs (place holders)
-  // if there are two placeholders, than the two characters before it
-  // represent one byte
-  // if there is only one, then the three characters before it represent 2 bytes
-  // this is just a cheap hack to not do indexOf twice
-  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
-}
-
-function byteLength (b64) {
-  // base64 is 4/3 + up to two characters of the original data
-  return (b64.length * 3 / 4) - placeHoldersCount(b64)
-}
-
-function toByteArray (b64) {
-  var i, l, tmp, placeHolders, arr
-  var len = b64.length
-  placeHolders = placeHoldersCount(b64)
-
-  arr = new Arr((len * 3 / 4) - placeHolders)
-
-  // if there are placeholders, only get up to the last complete 4 chars
-  l = placeHolders > 0 ? len - 4 : len
-
-  var L = 0
-
-  for (i = 0; i < l; i += 4) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
-    arr[L++] = (tmp >> 16) & 0xFF
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
-  }
-
-  if (placeHolders === 2) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
-    arr[L++] = tmp & 0xFF
-  } else if (placeHolders === 1) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
-  }
-
-  return arr
-}
-
-function tripletToBase64 (num) {
-  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
-}
-
-function encodeChunk (uint8, start, end) {
-  var tmp
-  var output = []
-  for (var i = start; i < end; i += 3) {
-    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
-    output.push(tripletToBase64(tmp))
-  }
-  return output.join('')
-}
-
-function fromByteArray (uint8) {
-  var tmp
-  var len = uint8.length
-  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
-  var output = ''
-  var parts = []
-  var maxChunkLength = 16383 // must be multiple of 3
-
-  // go through the array every three bytes, we'll deal with trailing stuff later
-  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
-  }
-
-  // pad the end with zeros, but make sure to not forget the extra bytes
-  if (extraBytes === 1) {
-    tmp = uint8[len - 1]
-    output += lookup[tmp >> 2]
-    output += lookup[(tmp << 4) & 0x3F]
-    output += '=='
-  } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
-    output += lookup[tmp >> 10]
-    output += lookup[(tmp >> 4) & 0x3F]
-    output += lookup[(tmp << 2) & 0x3F]
-    output += '='
-  }
-
-  parts.push(output)
-
-  return parts.join('')
-}
-
-
-/***/ }),
-/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15849,9 +13720,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(21)
-var ieee754 = __webpack_require__(31)
-var isArray = __webpack_require__(23)
+var base64 = __webpack_require__(14)
+var ieee754 = __webpack_require__(15)
+var isArray = __webpack_require__(16)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -17629,822 +15500,158 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(46)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
 
 /***/ }),
-/* 23 */
+/* 13 */
 /***/ (function(module, exports) {
 
-var toString = {}.toString;
+var g;
 
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
 
 
 /***/ }),
-/* 24 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(0)(undefined);
-// imports
+"use strict";
 
 
-// module
-exports.push([module.i, ".noty_layout_mixin, #noty_layout__top, #noty_layout__topLeft, #noty_layout__topCenter, #noty_layout__topRight, #noty_layout__bottom, #noty_layout__bottomLeft, #noty_layout__bottomCenter, #noty_layout__bottomRight, #noty_layout__center, #noty_layout__centerLeft, #noty_layout__centerRight {\n  position: fixed;\n  margin: 0;\n  padding: 0;\n  z-index: 9999999;\n  -webkit-transform: translateZ(0) scale(1, 1);\n  transform: translateZ(0) scale(1, 1);\n  -webkit-backface-visibility: hidden;\n  backface-visibility: hidden;\n  -webkit-font-smoothing: subpixel-antialiased;\n  filter: blur(0);\n  -webkit-filter: blur(0);\n  max-width: 90%; }\n\n#noty_layout__top {\n  top: 0;\n  left: 5%;\n  width: 90%; }\n\n#noty_layout__topLeft {\n  top: 20px;\n  left: 20px;\n  width: 325px; }\n\n#noty_layout__topCenter {\n  top: 5%;\n  left: 50%;\n  width: 325px;\n  -webkit-transform: translate(-webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__topRight {\n  top: 20px;\n  right: 20px;\n  width: 325px; }\n\n#noty_layout__bottom {\n  bottom: 0;\n  left: 5%;\n  width: 90%; }\n\n#noty_layout__bottomLeft {\n  bottom: 20px;\n  left: 20px;\n  width: 325px; }\n\n#noty_layout__bottomCenter {\n  bottom: 5%;\n  left: 50%;\n  width: 325px;\n  -webkit-transform: translate(-webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__bottomRight {\n  bottom: 20px;\n  right: 20px;\n  width: 325px; }\n\n#noty_layout__center {\n  top: 50%;\n  left: 50%;\n  width: 325px;\n  -webkit-transform: translate(-webkit-calc(-50% - .5px), -webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(calc(-50% - .5px), calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__centerLeft {\n  top: 50%;\n  left: 20px;\n  width: 325px;\n  -webkit-transform: translate(0, -webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(0, calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__centerRight {\n  top: 50%;\n  right: 20px;\n  width: 325px;\n  -webkit-transform: translate(0, -webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(0, calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n.noty_progressbar {\n  display: none; }\n\n.noty_has_timeout.noty_has_progressbar .noty_progressbar {\n  display: block;\n  position: absolute;\n  left: 0;\n  bottom: 0;\n  height: 3px;\n  width: 100%;\n  background-color: #646464;\n  opacity: 0.2;\n  filter: alpha(opacity=10); }\n\n.noty_bar {\n  -webkit-backface-visibility: hidden;\n  -webkit-transform: translate(0, 0) translateZ(0) scale(1, 1);\n  -ms-transform: translate(0, 0) scale(1, 1);\n  transform: translate(0, 0) scale(1, 1);\n  -webkit-font-smoothing: subpixel-antialiased;\n  overflow: hidden; }\n\n.noty_effects_open {\n  opacity: 0;\n  -webkit-transform: translate(50%);\n  -ms-transform: translate(50%);\n  transform: translate(50%);\n  -webkit-animation: noty_anim_in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  animation: noty_anim_in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  -webkit-animation-fill-mode: forwards;\n  animation-fill-mode: forwards; }\n\n.noty_effects_close {\n  -webkit-animation: noty_anim_out 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  animation: noty_anim_out 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  -webkit-animation-fill-mode: forwards;\n  animation-fill-mode: forwards; }\n\n.noty_fix_effects_height {\n  -webkit-animation: noty_anim_height 75ms ease-out;\n  animation: noty_anim_height 75ms ease-out; }\n\n.noty_close_with_click {\n  cursor: pointer; }\n\n.noty_close_button {\n  position: absolute;\n  top: 2px;\n  right: 2px;\n  font-weight: bold;\n  width: 20px;\n  height: 20px;\n  text-align: center;\n  line-height: 20px;\n  background-color: rgba(0, 0, 0, 0.05);\n  border-radius: 2px;\n  cursor: pointer;\n  -webkit-transition: all .2s ease-out;\n  transition: all .2s ease-out; }\n\n.noty_close_button:hover {\n  background-color: rgba(0, 0, 0, 0.1); }\n\n.noty_modal {\n  position: fixed;\n  width: 100%;\n  height: 100%;\n  background-color: #000;\n  z-index: 10000;\n  opacity: .3;\n  left: 0;\n  top: 0; }\n\n.noty_modal.noty_modal_open {\n  opacity: 0;\n  -webkit-animation: noty_modal_in .3s ease-out;\n  animation: noty_modal_in .3s ease-out; }\n\n.noty_modal.noty_modal_close {\n  -webkit-animation: noty_modal_out .3s ease-out;\n  animation: noty_modal_out .3s ease-out;\n  -webkit-animation-fill-mode: forwards;\n  animation-fill-mode: forwards; }\n\n@-webkit-keyframes noty_modal_in {\n  100% {\n    opacity: .3; } }\n\n@keyframes noty_modal_in {\n  100% {\n    opacity: .3; } }\n\n@-webkit-keyframes noty_modal_out {\n  100% {\n    opacity: 0; } }\n\n@keyframes noty_modal_out {\n  100% {\n    opacity: 0; } }\n\n@keyframes noty_modal_out {\n  100% {\n    opacity: 0; } }\n\n@-webkit-keyframes noty_anim_in {\n  100% {\n    -webkit-transform: translate(0);\n    transform: translate(0);\n    opacity: 1; } }\n\n@keyframes noty_anim_in {\n  100% {\n    -webkit-transform: translate(0);\n    transform: translate(0);\n    opacity: 1; } }\n\n@-webkit-keyframes noty_anim_out {\n  100% {\n    -webkit-transform: translate(50%);\n    transform: translate(50%);\n    opacity: 0; } }\n\n@keyframes noty_anim_out {\n  100% {\n    -webkit-transform: translate(50%);\n    transform: translate(50%);\n    opacity: 0; } }\n\n@-webkit-keyframes noty_anim_height {\n  100% {\n    height: 0; } }\n\n@keyframes noty_anim_height {\n  100% {\n    height: 0; } }\n\n.noty_theme__relax.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative; }\n\n.noty_theme__relax.noty_bar .noty_body {\n  padding: 10px; }\n\n.noty_theme__relax.noty_bar .noty_buttons {\n  border-top: 1px solid #e7e7e7;\n  padding: 5px 10px; }\n\n.noty_theme__relax.noty_type__alert,\n.noty_theme__relax.noty_type__notification {\n  background-color: #fff;\n  border: 1px solid #dedede;\n  color: #444; }\n\n.noty_theme__relax.noty_type__warning {\n  background-color: #FFEAA8;\n  border: 1px solid #FFC237;\n  color: #826200; }\n\n.noty_theme__relax.noty_type__warning .noty_buttons {\n  border-color: #dfaa30; }\n\n.noty_theme__relax.noty_type__error {\n  background-color: #FF8181;\n  border: 1px solid #e25353;\n  color: #FFF; }\n\n.noty_theme__relax.noty_type__error .noty_buttons {\n  border-color: darkred; }\n\n.noty_theme__relax.noty_type__info,\n.noty_theme__relax.noty_type__information {\n  background-color: #78C5E7;\n  border: 1px solid #3badd6;\n  color: #FFF; }\n\n.noty_theme__relax.noty_type__info .noty_buttons,\n.noty_theme__relax.noty_type__information .noty_buttons {\n  border-color: #0B90C4; }\n\n.noty_theme__relax.noty_type__success {\n  background-color: #BCF5BC;\n  border: 1px solid #7cdd77;\n  color: darkgreen; }\n\n.noty_theme__relax.noty_type__success .noty_buttons {\n  border-color: #50C24E; }\n\n.noty_theme__metroui.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  box-shadow: rgba(0, 0, 0, 0.298039) 0 0 5px 0; }\n\n.noty_theme__metroui.noty_bar .noty_progressbar {\n  position: absolute;\n  left: 0;\n  bottom: 0;\n  height: 3px;\n  width: 100%;\n  background-color: #000;\n  opacity: 0.2;\n  filter: alpha(opacity=20); }\n\n.noty_theme__metroui.noty_bar .noty_body {\n  padding: 1.25em;\n  font-size: 14px; }\n\n.noty_theme__metroui.noty_bar .noty_buttons {\n  padding: 0 10px .5em 10px; }\n\n.noty_theme__metroui.noty_type__alert,\n.noty_theme__metroui.noty_type__notification {\n  background-color: #fff;\n  color: #1d1d1d; }\n\n.noty_theme__metroui.noty_type__warning {\n  background-color: #FA6800;\n  color: #fff; }\n\n.noty_theme__metroui.noty_type__error {\n  background-color: #CE352C;\n  color: #FFF; }\n\n.noty_theme__metroui.noty_type__info,\n.noty_theme__metroui.noty_type__information {\n  background-color: #1BA1E2;\n  color: #FFF; }\n\n.noty_theme__metroui.noty_type__success {\n  background-color: #60A917;\n  color: #fff; }\n\n.noty_theme__mint.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative; }\n\n.noty_theme__mint.noty_bar .noty_body {\n  padding: 10px;\n  font-size: 14px; }\n\n.noty_theme__mint.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__mint.noty_type__alert,\n.noty_theme__mint.noty_type__notification {\n  background-color: #fff;\n  border-bottom: 1px solid #D1D1D1;\n  color: #2F2F2F; }\n\n.noty_theme__mint.noty_type__warning {\n  background-color: #FFAE42;\n  border-bottom: 1px solid #E89F3C;\n  color: #fff; }\n\n.noty_theme__mint.noty_type__error {\n  background-color: #DE636F;\n  border-bottom: 1px solid #CA5A65;\n  color: #fff; }\n\n.noty_theme__mint.noty_type__info,\n.noty_theme__mint.noty_type__information {\n  background-color: #7F7EFF;\n  border-bottom: 1px solid #7473E8;\n  color: #fff; }\n\n.noty_theme__mint.noty_type__success {\n  background-color: #AFC765;\n  border-bottom: 1px solid #A0B55C;\n  color: #fff; }\n\n.noty_theme__sunset.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative; }\n\n.noty_theme__sunset.noty_bar .noty_body {\n  padding: 10px;\n  font-size: 14px;\n  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1); }\n\n.noty_theme__sunset.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__sunset.noty_type__alert,\n.noty_theme__sunset.noty_type__notification {\n  background-color: #073B4C;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__alert .noty_progressbar,\n.noty_theme__sunset.noty_type__notification .noty_progressbar {\n  background-color: #fff; }\n\n.noty_theme__sunset.noty_type__warning {\n  background-color: #FFD166;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__error {\n  background-color: #EF476F;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__error .noty_progressbar {\n  opacity: .4; }\n\n.noty_theme__sunset.noty_type__info,\n.noty_theme__sunset.noty_type__information {\n  background-color: #118AB2;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__info .noty_progressbar,\n.noty_theme__sunset.noty_type__information .noty_progressbar {\n  opacity: .6; }\n\n.noty_theme__sunset.noty_type__success {\n  background-color: #06D6A0;\n  color: #fff; }\n\n.noty_theme__bootstrap-v3.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  border: 1px solid transparent;\n  border-radius: 4px; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_body {\n  padding: 15px; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_close_button {\n  font-size: 21px;\n  font-weight: 700;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .2;\n  background: transparent; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_close_button:hover {\n  background: transparent;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .5; }\n\n.noty_theme__bootstrap-v3.noty_type__alert,\n.noty_theme__bootstrap-v3.noty_type__notification {\n  background-color: #fff;\n  color: inherit; }\n\n.noty_theme__bootstrap-v3.noty_type__warning {\n  background-color: #fcf8e3;\n  color: #8a6d3b;\n  border-color: #faebcc; }\n\n.noty_theme__bootstrap-v3.noty_type__error {\n  background-color: #f2dede;\n  color: #a94442;\n  border-color: #ebccd1; }\n\n.noty_theme__bootstrap-v3.noty_type__info,\n.noty_theme__bootstrap-v3.noty_type__information {\n  background-color: #d9edf7;\n  color: #31708f;\n  border-color: #bce8f1; }\n\n.noty_theme__bootstrap-v3.noty_type__success {\n  background-color: #dff0d8;\n  color: #3c763d;\n  border-color: #d6e9c6; }\n\n.noty_theme__bootstrap-v4.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  border: 1px solid transparent;\n  border-radius: .25rem; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_body {\n  padding: .75rem 1.25rem; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_close_button {\n  font-size: 1.5rem;\n  font-weight: 700;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .5;\n  background: transparent; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_close_button:hover {\n  background: transparent;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .75; }\n\n.noty_theme__bootstrap-v4.noty_type__alert,\n.noty_theme__bootstrap-v4.noty_type__notification {\n  background-color: #fff;\n  color: inherit; }\n\n.noty_theme__bootstrap-v4.noty_type__warning {\n  background-color: #fcf8e3;\n  color: #8a6d3b;\n  border-color: #faebcc; }\n\n.noty_theme__bootstrap-v4.noty_type__error {\n  background-color: #f2dede;\n  color: #a94442;\n  border-color: #ebccd1; }\n\n.noty_theme__bootstrap-v4.noty_type__info,\n.noty_theme__bootstrap-v4.noty_type__information {\n  background-color: #d9edf7;\n  color: #31708f;\n  border-color: #bce8f1; }\n\n.noty_theme__bootstrap-v4.noty_type__success {\n  background-color: #dff0d8;\n  color: #3c763d;\n  border-color: #d6e9c6; }\n\n.noty_theme__semanticui.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  border: 1px solid transparent;\n  font-size: 1em;\n  border-radius: .28571429rem;\n  box-shadow: 0 0 0 1px rgba(34, 36, 38, 0.22) inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_bar .noty_body {\n  padding: 1em 1.5em;\n  line-height: 1.4285em; }\n\n.noty_theme__semanticui.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__semanticui.noty_type__alert,\n.noty_theme__semanticui.noty_type__notification {\n  background-color: #f8f8f9;\n  color: rgba(0, 0, 0, 0.87); }\n\n.noty_theme__semanticui.noty_type__warning {\n  background-color: #fffaf3;\n  color: #573a08;\n  box-shadow: 0 0 0 1px #c9ba9b inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_type__error {\n  background-color: #fff6f6;\n  color: #9f3a38;\n  box-shadow: 0 0 0 1px #e0b4b4 inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_type__info,\n.noty_theme__semanticui.noty_type__information {\n  background-color: #f8ffff;\n  color: #276f86;\n  box-shadow: 0 0 0 1px #a9d5de inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_type__success {\n  background-color: #fcfff5;\n  color: #2c662d;\n  box-shadow: 0 0 0 1px #a3c293 inset, 0 0 0 0 transparent; }\n\n.noty_theme__nest.noty_bar {\n  margin: 0 0 15px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative;\n  box-shadow: rgba(0, 0, 0, 0.098039) 5px 4px 10px 0; }\n\n.noty_theme__nest.noty_bar .noty_body {\n  padding: 10px;\n  font-size: 14px;\n  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1); }\n\n.noty_theme__nest.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_layout .noty_theme__nest.noty_bar {\n  z-index: 5; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(2) {\n  position: absolute;\n  top: 0;\n  margin-top: 4px;\n  margin-right: -4px;\n  margin-left: 4px;\n  z-index: 4;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(3) {\n  position: absolute;\n  top: 0;\n  margin-top: 8px;\n  margin-right: -8px;\n  margin-left: 8px;\n  z-index: 3;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(4) {\n  position: absolute;\n  top: 0;\n  margin-top: 12px;\n  margin-right: -12px;\n  margin-left: 12px;\n  z-index: 2;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(5) {\n  position: absolute;\n  top: 0;\n  margin-top: 16px;\n  margin-right: -16px;\n  margin-left: 16px;\n  z-index: 1;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(n+6) {\n  position: absolute;\n  top: 0;\n  margin-top: 20px;\n  margin-right: -20px;\n  margin-left: 20px;\n  z-index: -1;\n  width: 100%; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(2),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(2) {\n  margin-top: 4px;\n  margin-left: -4px;\n  margin-right: 4px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(3),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(3) {\n  margin-top: 8px;\n  margin-left: -8px;\n  margin-right: 8px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(4),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(4) {\n  margin-top: 12px;\n  margin-left: -12px;\n  margin-right: 12px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(5),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(5) {\n  margin-top: 16px;\n  margin-left: -16px;\n  margin-right: 16px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(n+6),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(n+6) {\n  margin-top: 20px;\n  margin-left: -20px;\n  margin-right: 20px; }\n\n.noty_theme__nest.noty_type__alert,\n.noty_theme__nest.noty_type__notification {\n  background-color: #073B4C;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__alert .noty_progressbar,\n.noty_theme__nest.noty_type__notification .noty_progressbar {\n  background-color: #fff; }\n\n.noty_theme__nest.noty_type__warning {\n  background-color: #FFD166;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__error {\n  background-color: #EF476F;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__error .noty_progressbar {\n  opacity: .4; }\n\n.noty_theme__nest.noty_type__info,\n.noty_theme__nest.noty_type__information {\n  background-color: #118AB2;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__info .noty_progressbar,\n.noty_theme__nest.noty_type__information .noty_progressbar {\n  opacity: .6; }\n\n.noty_theme__nest.noty_type__success {\n  background-color: #06D6A0;\n  color: #fff; }\n", ""]);
+exports.byteLength = byteLength
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
 
-// exports
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
 
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i]
+  revLookup[code.charCodeAt(i)] = i
+}
 
-/***/ }),
-/* 25 */
-/***/ (function(module, exports, __webpack_require__) {
+revLookup['-'.charCodeAt(0)] = 62
+revLookup['_'.charCodeAt(0)] = 63
 
-exports = module.exports = __webpack_require__(0)(undefined);
-// imports
+function placeHoldersCount (b64) {
+  var len = b64.length
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
 
+  // the number of equal signs (place holders)
+  // if there are two placeholders, than the two characters before it
+  // represent one byte
+  // if there is only one, then the three characters before it represent 2 bytes
+  // this is just a cheap hack to not do indexOf twice
+  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+}
 
-// module
-exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursors, .ql-cursors div {\n  position: static;\n  display: block;\n  box-sizing: content-box; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute;\n  pointer-events: none; }\n", ""]);
+function byteLength (b64) {
+  // base64 is 4/3 + up to two characters of the original data
+  return (b64.length * 3 / 4) - placeHoldersCount(b64)
+}
 
-// exports
+function toByteArray (b64) {
+  var i, l, tmp, placeHolders, arr
+  var len = b64.length
+  placeHolders = placeHoldersCount(b64)
 
+  arr = new Arr((len * 3 / 4) - placeHolders)
 
-/***/ }),
-/* 26 */
-/***/ (function(module, exports, __webpack_require__) {
+  // if there are placeholders, only get up to the last complete 4 chars
+  l = placeHolders > 0 ? len - 4 : len
 
-exports = module.exports = __webpack_require__(0)(undefined);
-// imports
+  var L = 0
 
+  for (i = 0; i < l; i += 4) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+    arr[L++] = (tmp >> 16) & 0xFF
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
 
-// module
-exports.push([module.i, "@-webkit-keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@-moz-keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@-o-keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@-webkit-keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@-moz-keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@-o-keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@keyframes pulse {\n  from {\n    transform: scale3d(1, 1, 1); }\n  50% {\n    transform: scale3d(1.1, 1.1, 1.1); }\n  to {\n    transform: scale3d(1, 1, 1); } }\n", ""]);
+  if (placeHolders === 2) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[L++] = tmp & 0xFF
+  } else if (placeHolders === 1) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
 
-// exports
+  return arr
+}
 
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+}
 
-/***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
 
-exports = module.exports = __webpack_require__(0)(undefined);
-// imports
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var output = ''
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
 
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
 
-// module
-exports.push([module.i, ".tsync-badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: #49cfbb;\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n  position: relative;\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n  -webkit-box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.2);\n  -moz-box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.2);\n  box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.2); }\n\n.tsync-badge.in {\n  opacity: 1; }\n\n.tsync-badge.flashing {\n  animation: flash 0.8s ease-in-out infinite; }\n\n.tsync-badge:hover {\n  border-color: #3e3d59; }\n\n#tsync-presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n  height: 40px; }\n\n.tsync-badge-wrapper {\n  position: relative;\n  display: inline; }\n\n.tsync-badge-wrapper .tsync-tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px; }\n\n.tsync-badge-wrapper .tsync-tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0;\n  height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent; }\n\n.tsync-badge-wrapper:hover .tsync-tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999; }\n", ""]);
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    output += lookup[tmp >> 2]
+    output += lookup[(tmp << 4) & 0x3F]
+    output += '=='
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
+    output += lookup[tmp >> 10]
+    output += lookup[(tmp >> 4) & 0x3F]
+    output += lookup[(tmp << 2) & 0x3F]
+    output += '='
+  }
 
-// exports
+  parts.push(output)
 
-
-/***/ }),
-/* 28 */
-/***/ (function(module, exports) {
-
-var supportsArgumentsClass = (function(){
-  return Object.prototype.toString.call(arguments)
-})() == '[object Arguments]';
-
-exports = module.exports = supportsArgumentsClass ? supported : unsupported;
-
-exports.supported = supported;
-function supported(object) {
-  return Object.prototype.toString.call(object) == '[object Arguments]';
-};
-
-exports.unsupported = unsupported;
-function unsupported(object){
-  return object &&
-    typeof object == 'object' &&
-    typeof object.length == 'number' &&
-    Object.prototype.hasOwnProperty.call(object, 'callee') &&
-    !Object.prototype.propertyIsEnumerable.call(object, 'callee') ||
-    false;
-};
-
-
-/***/ }),
-/* 29 */
-/***/ (function(module, exports) {
-
-exports = module.exports = typeof Object.keys === 'function'
-  ? Object.keys : shim;
-
-exports.shim = shim;
-function shim (obj) {
-  var keys = [];
-  for (var key in obj) keys.push(key);
-  return keys;
+  return parts.join('')
 }
 
 
 /***/ }),
-/* 30 */
-/***/ (function(module, exports) {
-
-/**
- * This library modifies the diff-patch-match library by Neil Fraser
- * by removing the patch and match functionality and certain advanced
- * options in the diff function. The original license is as follows:
- *
- * ===
- *
- * Diff Match and Patch
- *
- * Copyright 2006 Google Inc.
- * http://code.google.com/p/google-diff-match-patch/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
-/**
- * The data structure representing a diff is an array of tuples:
- * [[DIFF_DELETE, 'Hello'], [DIFF_INSERT, 'Goodbye'], [DIFF_EQUAL, ' world.']]
- * which means: delete 'Hello', add 'Goodbye' and keep ' world.'
- */
-var DIFF_DELETE = -1;
-var DIFF_INSERT = 1;
-var DIFF_EQUAL = 0;
-
-
-/**
- * Find the differences between two texts.  Simplifies the problem by stripping
- * any common prefix or suffix off the texts before diffing.
- * @param {string} text1 Old string to be diffed.
- * @param {string} text2 New string to be diffed.
- * @param {Int} cursor_pos Expected edit position in text1 (optional)
- * @return {Array} Array of diff tuples.
- */
-function diff_main(text1, text2, cursor_pos) {
-  // Check for equality (speedup).
-  if (text1 == text2) {
-    if (text1) {
-      return [[DIFF_EQUAL, text1]];
-    }
-    return [];
-  }
-
-  // Check cursor_pos within bounds
-  if (cursor_pos < 0 || text1.length < cursor_pos) {
-    cursor_pos = null;
-  }
-
-  // Trim off common prefix (speedup).
-  var commonlength = diff_commonPrefix(text1, text2);
-  var commonprefix = text1.substring(0, commonlength);
-  text1 = text1.substring(commonlength);
-  text2 = text2.substring(commonlength);
-
-  // Trim off common suffix (speedup).
-  commonlength = diff_commonSuffix(text1, text2);
-  var commonsuffix = text1.substring(text1.length - commonlength);
-  text1 = text1.substring(0, text1.length - commonlength);
-  text2 = text2.substring(0, text2.length - commonlength);
-
-  // Compute the diff on the middle block.
-  var diffs = diff_compute_(text1, text2);
-
-  // Restore the prefix and suffix.
-  if (commonprefix) {
-    diffs.unshift([DIFF_EQUAL, commonprefix]);
-  }
-  if (commonsuffix) {
-    diffs.push([DIFF_EQUAL, commonsuffix]);
-  }
-  diff_cleanupMerge(diffs);
-  if (cursor_pos != null) {
-    diffs = fix_cursor(diffs, cursor_pos);
-  }
-  return diffs;
-};
-
-
-/**
- * Find the differences between two texts.  Assumes that the texts do not
- * have any common prefix or suffix.
- * @param {string} text1 Old string to be diffed.
- * @param {string} text2 New string to be diffed.
- * @return {Array} Array of diff tuples.
- */
-function diff_compute_(text1, text2) {
-  var diffs;
-
-  if (!text1) {
-    // Just add some text (speedup).
-    return [[DIFF_INSERT, text2]];
-  }
-
-  if (!text2) {
-    // Just delete some text (speedup).
-    return [[DIFF_DELETE, text1]];
-  }
-
-  var longtext = text1.length > text2.length ? text1 : text2;
-  var shorttext = text1.length > text2.length ? text2 : text1;
-  var i = longtext.indexOf(shorttext);
-  if (i != -1) {
-    // Shorter text is inside the longer text (speedup).
-    diffs = [[DIFF_INSERT, longtext.substring(0, i)],
-             [DIFF_EQUAL, shorttext],
-             [DIFF_INSERT, longtext.substring(i + shorttext.length)]];
-    // Swap insertions for deletions if diff is reversed.
-    if (text1.length > text2.length) {
-      diffs[0][0] = diffs[2][0] = DIFF_DELETE;
-    }
-    return diffs;
-  }
-
-  if (shorttext.length == 1) {
-    // Single character string.
-    // After the previous speedup, the character can't be an equality.
-    return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
-  }
-
-  // Check to see if the problem can be split in two.
-  var hm = diff_halfMatch_(text1, text2);
-  if (hm) {
-    // A half-match was found, sort out the return data.
-    var text1_a = hm[0];
-    var text1_b = hm[1];
-    var text2_a = hm[2];
-    var text2_b = hm[3];
-    var mid_common = hm[4];
-    // Send both pairs off for separate processing.
-    var diffs_a = diff_main(text1_a, text2_a);
-    var diffs_b = diff_main(text1_b, text2_b);
-    // Merge the results.
-    return diffs_a.concat([[DIFF_EQUAL, mid_common]], diffs_b);
-  }
-
-  return diff_bisect_(text1, text2);
-};
-
-
-/**
- * Find the 'middle snake' of a diff, split the problem in two
- * and return the recursively constructed diff.
- * See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
- * @param {string} text1 Old string to be diffed.
- * @param {string} text2 New string to be diffed.
- * @return {Array} Array of diff tuples.
- * @private
- */
-function diff_bisect_(text1, text2) {
-  // Cache the text lengths to prevent multiple calls.
-  var text1_length = text1.length;
-  var text2_length = text2.length;
-  var max_d = Math.ceil((text1_length + text2_length) / 2);
-  var v_offset = max_d;
-  var v_length = 2 * max_d;
-  var v1 = new Array(v_length);
-  var v2 = new Array(v_length);
-  // Setting all elements to -1 is faster in Chrome & Firefox than mixing
-  // integers and undefined.
-  for (var x = 0; x < v_length; x++) {
-    v1[x] = -1;
-    v2[x] = -1;
-  }
-  v1[v_offset + 1] = 0;
-  v2[v_offset + 1] = 0;
-  var delta = text1_length - text2_length;
-  // If the total number of characters is odd, then the front path will collide
-  // with the reverse path.
-  var front = (delta % 2 != 0);
-  // Offsets for start and end of k loop.
-  // Prevents mapping of space beyond the grid.
-  var k1start = 0;
-  var k1end = 0;
-  var k2start = 0;
-  var k2end = 0;
-  for (var d = 0; d < max_d; d++) {
-    // Walk the front path one step.
-    for (var k1 = -d + k1start; k1 <= d - k1end; k1 += 2) {
-      var k1_offset = v_offset + k1;
-      var x1;
-      if (k1 == -d || (k1 != d && v1[k1_offset - 1] < v1[k1_offset + 1])) {
-        x1 = v1[k1_offset + 1];
-      } else {
-        x1 = v1[k1_offset - 1] + 1;
-      }
-      var y1 = x1 - k1;
-      while (x1 < text1_length && y1 < text2_length &&
-             text1.charAt(x1) == text2.charAt(y1)) {
-        x1++;
-        y1++;
-      }
-      v1[k1_offset] = x1;
-      if (x1 > text1_length) {
-        // Ran off the right of the graph.
-        k1end += 2;
-      } else if (y1 > text2_length) {
-        // Ran off the bottom of the graph.
-        k1start += 2;
-      } else if (front) {
-        var k2_offset = v_offset + delta - k1;
-        if (k2_offset >= 0 && k2_offset < v_length && v2[k2_offset] != -1) {
-          // Mirror x2 onto top-left coordinate system.
-          var x2 = text1_length - v2[k2_offset];
-          if (x1 >= x2) {
-            // Overlap detected.
-            return diff_bisectSplit_(text1, text2, x1, y1);
-          }
-        }
-      }
-    }
-
-    // Walk the reverse path one step.
-    for (var k2 = -d + k2start; k2 <= d - k2end; k2 += 2) {
-      var k2_offset = v_offset + k2;
-      var x2;
-      if (k2 == -d || (k2 != d && v2[k2_offset - 1] < v2[k2_offset + 1])) {
-        x2 = v2[k2_offset + 1];
-      } else {
-        x2 = v2[k2_offset - 1] + 1;
-      }
-      var y2 = x2 - k2;
-      while (x2 < text1_length && y2 < text2_length &&
-             text1.charAt(text1_length - x2 - 1) ==
-             text2.charAt(text2_length - y2 - 1)) {
-        x2++;
-        y2++;
-      }
-      v2[k2_offset] = x2;
-      if (x2 > text1_length) {
-        // Ran off the left of the graph.
-        k2end += 2;
-      } else if (y2 > text2_length) {
-        // Ran off the top of the graph.
-        k2start += 2;
-      } else if (!front) {
-        var k1_offset = v_offset + delta - k2;
-        if (k1_offset >= 0 && k1_offset < v_length && v1[k1_offset] != -1) {
-          var x1 = v1[k1_offset];
-          var y1 = v_offset + x1 - k1_offset;
-          // Mirror x2 onto top-left coordinate system.
-          x2 = text1_length - x2;
-          if (x1 >= x2) {
-            // Overlap detected.
-            return diff_bisectSplit_(text1, text2, x1, y1);
-          }
-        }
-      }
-    }
-  }
-  // Diff took too long and hit the deadline or
-  // number of diffs equals number of characters, no commonality at all.
-  return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
-};
-
-
-/**
- * Given the location of the 'middle snake', split the diff in two parts
- * and recurse.
- * @param {string} text1 Old string to be diffed.
- * @param {string} text2 New string to be diffed.
- * @param {number} x Index of split point in text1.
- * @param {number} y Index of split point in text2.
- * @return {Array} Array of diff tuples.
- */
-function diff_bisectSplit_(text1, text2, x, y) {
-  var text1a = text1.substring(0, x);
-  var text2a = text2.substring(0, y);
-  var text1b = text1.substring(x);
-  var text2b = text2.substring(y);
-
-  // Compute both diffs serially.
-  var diffs = diff_main(text1a, text2a);
-  var diffsb = diff_main(text1b, text2b);
-
-  return diffs.concat(diffsb);
-};
-
-
-/**
- * Determine the common prefix of two strings.
- * @param {string} text1 First string.
- * @param {string} text2 Second string.
- * @return {number} The number of characters common to the start of each
- *     string.
- */
-function diff_commonPrefix(text1, text2) {
-  // Quick check for common null cases.
-  if (!text1 || !text2 || text1.charAt(0) != text2.charAt(0)) {
-    return 0;
-  }
-  // Binary search.
-  // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-  var pointermin = 0;
-  var pointermax = Math.min(text1.length, text2.length);
-  var pointermid = pointermax;
-  var pointerstart = 0;
-  while (pointermin < pointermid) {
-    if (text1.substring(pointerstart, pointermid) ==
-        text2.substring(pointerstart, pointermid)) {
-      pointermin = pointermid;
-      pointerstart = pointermin;
-    } else {
-      pointermax = pointermid;
-    }
-    pointermid = Math.floor((pointermax - pointermin) / 2 + pointermin);
-  }
-  return pointermid;
-};
-
-
-/**
- * Determine the common suffix of two strings.
- * @param {string} text1 First string.
- * @param {string} text2 Second string.
- * @return {number} The number of characters common to the end of each string.
- */
-function diff_commonSuffix(text1, text2) {
-  // Quick check for common null cases.
-  if (!text1 || !text2 ||
-      text1.charAt(text1.length - 1) != text2.charAt(text2.length - 1)) {
-    return 0;
-  }
-  // Binary search.
-  // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-  var pointermin = 0;
-  var pointermax = Math.min(text1.length, text2.length);
-  var pointermid = pointermax;
-  var pointerend = 0;
-  while (pointermin < pointermid) {
-    if (text1.substring(text1.length - pointermid, text1.length - pointerend) ==
-        text2.substring(text2.length - pointermid, text2.length - pointerend)) {
-      pointermin = pointermid;
-      pointerend = pointermin;
-    } else {
-      pointermax = pointermid;
-    }
-    pointermid = Math.floor((pointermax - pointermin) / 2 + pointermin);
-  }
-  return pointermid;
-};
-
-
-/**
- * Do the two texts share a substring which is at least half the length of the
- * longer text?
- * This speedup can produce non-minimal diffs.
- * @param {string} text1 First string.
- * @param {string} text2 Second string.
- * @return {Array.<string>} Five element Array, containing the prefix of
- *     text1, the suffix of text1, the prefix of text2, the suffix of
- *     text2 and the common middle.  Or null if there was no match.
- */
-function diff_halfMatch_(text1, text2) {
-  var longtext = text1.length > text2.length ? text1 : text2;
-  var shorttext = text1.length > text2.length ? text2 : text1;
-  if (longtext.length < 4 || shorttext.length * 2 < longtext.length) {
-    return null;  // Pointless.
-  }
-
-  /**
-   * Does a substring of shorttext exist within longtext such that the substring
-   * is at least half the length of longtext?
-   * Closure, but does not reference any external variables.
-   * @param {string} longtext Longer string.
-   * @param {string} shorttext Shorter string.
-   * @param {number} i Start index of quarter length substring within longtext.
-   * @return {Array.<string>} Five element Array, containing the prefix of
-   *     longtext, the suffix of longtext, the prefix of shorttext, the suffix
-   *     of shorttext and the common middle.  Or null if there was no match.
-   * @private
-   */
-  function diff_halfMatchI_(longtext, shorttext, i) {
-    // Start with a 1/4 length substring at position i as a seed.
-    var seed = longtext.substring(i, i + Math.floor(longtext.length / 4));
-    var j = -1;
-    var best_common = '';
-    var best_longtext_a, best_longtext_b, best_shorttext_a, best_shorttext_b;
-    while ((j = shorttext.indexOf(seed, j + 1)) != -1) {
-      var prefixLength = diff_commonPrefix(longtext.substring(i),
-                                           shorttext.substring(j));
-      var suffixLength = diff_commonSuffix(longtext.substring(0, i),
-                                           shorttext.substring(0, j));
-      if (best_common.length < suffixLength + prefixLength) {
-        best_common = shorttext.substring(j - suffixLength, j) +
-            shorttext.substring(j, j + prefixLength);
-        best_longtext_a = longtext.substring(0, i - suffixLength);
-        best_longtext_b = longtext.substring(i + prefixLength);
-        best_shorttext_a = shorttext.substring(0, j - suffixLength);
-        best_shorttext_b = shorttext.substring(j + prefixLength);
-      }
-    }
-    if (best_common.length * 2 >= longtext.length) {
-      return [best_longtext_a, best_longtext_b,
-              best_shorttext_a, best_shorttext_b, best_common];
-    } else {
-      return null;
-    }
-  }
-
-  // First check if the second quarter is the seed for a half-match.
-  var hm1 = diff_halfMatchI_(longtext, shorttext,
-                             Math.ceil(longtext.length / 4));
-  // Check again based on the third quarter.
-  var hm2 = diff_halfMatchI_(longtext, shorttext,
-                             Math.ceil(longtext.length / 2));
-  var hm;
-  if (!hm1 && !hm2) {
-    return null;
-  } else if (!hm2) {
-    hm = hm1;
-  } else if (!hm1) {
-    hm = hm2;
-  } else {
-    // Both matched.  Select the longest.
-    hm = hm1[4].length > hm2[4].length ? hm1 : hm2;
-  }
-
-  // A half-match was found, sort out the return data.
-  var text1_a, text1_b, text2_a, text2_b;
-  if (text1.length > text2.length) {
-    text1_a = hm[0];
-    text1_b = hm[1];
-    text2_a = hm[2];
-    text2_b = hm[3];
-  } else {
-    text2_a = hm[0];
-    text2_b = hm[1];
-    text1_a = hm[2];
-    text1_b = hm[3];
-  }
-  var mid_common = hm[4];
-  return [text1_a, text1_b, text2_a, text2_b, mid_common];
-};
-
-
-/**
- * Reorder and merge like edit sections.  Merge equalities.
- * Any edit section can move as long as it doesn't cross an equality.
- * @param {Array} diffs Array of diff tuples.
- */
-function diff_cleanupMerge(diffs) {
-  diffs.push([DIFF_EQUAL, '']);  // Add a dummy entry at the end.
-  var pointer = 0;
-  var count_delete = 0;
-  var count_insert = 0;
-  var text_delete = '';
-  var text_insert = '';
-  var commonlength;
-  while (pointer < diffs.length) {
-    switch (diffs[pointer][0]) {
-      case DIFF_INSERT:
-        count_insert++;
-        text_insert += diffs[pointer][1];
-        pointer++;
-        break;
-      case DIFF_DELETE:
-        count_delete++;
-        text_delete += diffs[pointer][1];
-        pointer++;
-        break;
-      case DIFF_EQUAL:
-        // Upon reaching an equality, check for prior redundancies.
-        if (count_delete + count_insert > 1) {
-          if (count_delete !== 0 && count_insert !== 0) {
-            // Factor out any common prefixies.
-            commonlength = diff_commonPrefix(text_insert, text_delete);
-            if (commonlength !== 0) {
-              if ((pointer - count_delete - count_insert) > 0 &&
-                  diffs[pointer - count_delete - count_insert - 1][0] ==
-                  DIFF_EQUAL) {
-                diffs[pointer - count_delete - count_insert - 1][1] +=
-                    text_insert.substring(0, commonlength);
-              } else {
-                diffs.splice(0, 0, [DIFF_EQUAL,
-                                    text_insert.substring(0, commonlength)]);
-                pointer++;
-              }
-              text_insert = text_insert.substring(commonlength);
-              text_delete = text_delete.substring(commonlength);
-            }
-            // Factor out any common suffixies.
-            commonlength = diff_commonSuffix(text_insert, text_delete);
-            if (commonlength !== 0) {
-              diffs[pointer][1] = text_insert.substring(text_insert.length -
-                  commonlength) + diffs[pointer][1];
-              text_insert = text_insert.substring(0, text_insert.length -
-                  commonlength);
-              text_delete = text_delete.substring(0, text_delete.length -
-                  commonlength);
-            }
-          }
-          // Delete the offending records and add the merged ones.
-          if (count_delete === 0) {
-            diffs.splice(pointer - count_insert,
-                count_delete + count_insert, [DIFF_INSERT, text_insert]);
-          } else if (count_insert === 0) {
-            diffs.splice(pointer - count_delete,
-                count_delete + count_insert, [DIFF_DELETE, text_delete]);
-          } else {
-            diffs.splice(pointer - count_delete - count_insert,
-                count_delete + count_insert, [DIFF_DELETE, text_delete],
-                [DIFF_INSERT, text_insert]);
-          }
-          pointer = pointer - count_delete - count_insert +
-                    (count_delete ? 1 : 0) + (count_insert ? 1 : 0) + 1;
-        } else if (pointer !== 0 && diffs[pointer - 1][0] == DIFF_EQUAL) {
-          // Merge this equality with the previous one.
-          diffs[pointer - 1][1] += diffs[pointer][1];
-          diffs.splice(pointer, 1);
-        } else {
-          pointer++;
-        }
-        count_insert = 0;
-        count_delete = 0;
-        text_delete = '';
-        text_insert = '';
-        break;
-    }
-  }
-  if (diffs[diffs.length - 1][1] === '') {
-    diffs.pop();  // Remove the dummy entry at the end.
-  }
-
-  // Second pass: look for single edits surrounded on both sides by equalities
-  // which can be shifted sideways to eliminate an equality.
-  // e.g: A<ins>BA</ins>C -> <ins>AB</ins>AC
-  var changes = false;
-  pointer = 1;
-  // Intentionally ignore the first and last element (don't need checking).
-  while (pointer < diffs.length - 1) {
-    if (diffs[pointer - 1][0] == DIFF_EQUAL &&
-        diffs[pointer + 1][0] == DIFF_EQUAL) {
-      // This is a single edit surrounded by equalities.
-      if (diffs[pointer][1].substring(diffs[pointer][1].length -
-          diffs[pointer - 1][1].length) == diffs[pointer - 1][1]) {
-        // Shift the edit over the previous equality.
-        diffs[pointer][1] = diffs[pointer - 1][1] +
-            diffs[pointer][1].substring(0, diffs[pointer][1].length -
-                                        diffs[pointer - 1][1].length);
-        diffs[pointer + 1][1] = diffs[pointer - 1][1] + diffs[pointer + 1][1];
-        diffs.splice(pointer - 1, 1);
-        changes = true;
-      } else if (diffs[pointer][1].substring(0, diffs[pointer + 1][1].length) ==
-          diffs[pointer + 1][1]) {
-        // Shift the edit over the next equality.
-        diffs[pointer - 1][1] += diffs[pointer + 1][1];
-        diffs[pointer][1] =
-            diffs[pointer][1].substring(diffs[pointer + 1][1].length) +
-            diffs[pointer + 1][1];
-        diffs.splice(pointer + 1, 1);
-        changes = true;
-      }
-    }
-    pointer++;
-  }
-  // If shifts were made, the diff needs reordering and another shift sweep.
-  if (changes) {
-    diff_cleanupMerge(diffs);
-  }
-};
-
-
-var diff = diff_main;
-diff.INSERT = DIFF_INSERT;
-diff.DELETE = DIFF_DELETE;
-diff.EQUAL = DIFF_EQUAL;
-
-module.exports = diff;
-
-/*
- * Modify a diff such that the cursor position points to the start of a change:
- * E.g.
- *   cursor_normalize_diff([[DIFF_EQUAL, 'abc']], 1)
- *     => [1, [[DIFF_EQUAL, 'a'], [DIFF_EQUAL, 'bc']]]
- *   cursor_normalize_diff([[DIFF_INSERT, 'new'], [DIFF_DELETE, 'xyz']], 2)
- *     => [2, [[DIFF_INSERT, 'new'], [DIFF_DELETE, 'xy'], [DIFF_DELETE, 'z']]]
- *
- * @param {Array} diffs Array of diff tuples
- * @param {Int} cursor_pos Suggested edit position. Must not be out of bounds!
- * @return {Array} A tuple [cursor location in the modified diff, modified diff]
- */
-function cursor_normalize_diff (diffs, cursor_pos) {
-  if (cursor_pos === 0) {
-    return [DIFF_EQUAL, diffs];
-  }
-  for (var current_pos = 0, i = 0; i < diffs.length; i++) {
-    var d = diffs[i];
-    if (d[0] === DIFF_DELETE || d[0] === DIFF_EQUAL) {
-      var next_pos = current_pos + d[1].length;
-      if (cursor_pos === next_pos) {
-        return [i + 1, diffs];
-      } else if (cursor_pos < next_pos) {
-        // copy to prevent side effects
-        diffs = diffs.slice();
-        // split d into two diff changes
-        var split_pos = cursor_pos - current_pos;
-        var d_left = [d[0], d[1].slice(0, split_pos)];
-        var d_right = [d[0], d[1].slice(split_pos)];
-        diffs.splice(i, 1, d_left, d_right);
-        return [i + 1, diffs];
-      } else {
-        current_pos = next_pos;
-      }
-    }
-  }
-  throw new Error('cursor_pos is out of bounds!')
-}
-
-/*
- * Modify a diff such that the edit position is "shifted" to the proposed edit location (cursor_position).
- *
- * Case 1)
- *   Check if a naive shift is possible:
- *     [0, X], [ 1, Y] -> [ 1, Y], [0, X]    (if X + Y === Y + X)
- *     [0, X], [-1, Y] -> [-1, Y], [0, X]    (if X + Y === Y + X) - holds same result
- * Case 2)
- *   Check if the following shifts are possible:
- *     [0, 'pre'], [ 1, 'prefix'] -> [ 1, 'pre'], [0, 'pre'], [ 1, 'fix']
- *     [0, 'pre'], [-1, 'prefix'] -> [-1, 'pre'], [0, 'pre'], [-1, 'fix']
- *         ^            ^
- *         d          d_next
- *
- * @param {Array} diffs Array of diff tuples
- * @param {Int} cursor_pos Suggested edit position. Must not be out of bounds!
- * @return {Array} Array of diff tuples
- */
-function fix_cursor (diffs, cursor_pos) {
-  var norm = cursor_normalize_diff(diffs, cursor_pos);
-  var ndiffs = norm[1];
-  var cursor_pointer = norm[0];
-  var d = ndiffs[cursor_pointer];
-  var d_next = ndiffs[cursor_pointer + 1];
-
-  if (d == null) {
-    // Text was deleted from end of original string,
-    // cursor is now out of bounds in new string
-    return diffs;
-  } else if (d[0] !== DIFF_EQUAL) {
-    // A modification happened at the cursor location.
-    // This is the expected outcome, so we can return the original diff.
-    return diffs;
-  } else {
-    if (d_next != null && d[1] + d_next[1] === d_next[1] + d[1]) {
-      // Case 1)
-      // It is possible to perform a naive shift
-      ndiffs.splice(cursor_pointer, 2, d_next, d)
-      return merge_tuples(ndiffs, cursor_pointer, 2)
-    } else if (d_next != null && d_next[1].indexOf(d[1]) === 0) {
-      // Case 2)
-      // d[1] is a prefix of d_next[1]
-      // We can assume that d_next[0] !== 0, since d[0] === 0
-      // Shift edit locations..
-      ndiffs.splice(cursor_pointer, 2, [d_next[0], d[1]], [0, d[1]]);
-      var suffix = d_next[1].slice(d[1].length);
-      if (suffix.length > 0) {
-        ndiffs.splice(cursor_pointer + 2, 0, [d_next[0], suffix]);
-      }
-      return merge_tuples(ndiffs, cursor_pointer, 3)
-    } else {
-      // Not possible to perform any modification
-      return diffs;
-    }
-  }
-
-}
-
-/*
- * Try to merge tuples with their neigbors in a given range.
- * E.g. [0, 'a'], [0, 'b'] -> [0, 'ab']
- *
- * @param {Array} diffs Array of diff tuples.
- * @param {Int} start Position of the first element to merge (diffs[start] is also merged with diffs[start - 1]).
- * @param {Int} length Number of consecutive elements to check.
- * @return {Array} Array of merged diff tuples.
- */
-function merge_tuples (diffs, start, length) {
-  // Check from (start-1) to (start+length).
-  for (var i = start + length - 1; i >= 0 && i >= start - 1; i--) {
-    if (i + 1 < diffs.length) {
-      var left_d = diffs[i];
-      var right_d = diffs[i+1];
-      if (left_d[0] === right_d[1]) {
-        diffs.splice(i, 2, [left_d[0], left_d[1] + right_d[1]]);
-      }
-    }
-  }
-  return diffs;
-}
-
-
-/***/ }),
-/* 31 */
+/* 15 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -18534,7 +15741,1824 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 32 */
+/* 16 */
+/***/ (function(module, exports) {
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(true)
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["PusherPlatform"] = factory();
+	else
+		root["PusherPlatform"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// identity function for calling harmony imports with the correct context
+/******/ 	__webpack_require__.i = function(value) { return value; };
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var subscription_1 = __webpack_require__(2);
+var resumable_subscription_1 = __webpack_require__(3);
+function responseHeadersObj(headerStr) {
+    var headers = {};
+    if (!headerStr) {
+        return headers;
+    }
+    var headerPairs = headerStr.split('\u000d\u000a');
+    for (var i = 0; i < headerPairs.length; i++) {
+        var headerPair = headerPairs[i];
+        var index = headerPair.indexOf('\u003a\u0020');
+        if (index > 0) {
+            var key = headerPair.substring(0, index);
+            var val = headerPair.substring(index + 2);
+            headers[key] = val;
+        }
+    }
+    return headers;
+}
+exports.responseHeadersObj = responseHeadersObj;
+var ErrorResponse = (function (_super) {
+    __extends(ErrorResponse, _super);
+    function ErrorResponse(statusCode, headers, info) {
+        var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
+        Object.setPrototypeOf(_this, ErrorResponse.prototype);
+        _this.statusCode = statusCode;
+        _this.headers = headers;
+        _this.info = info;
+        return _this;
+    }
+    ErrorResponse.fromXHR = function (xhr) {
+        return new ErrorResponse(xhr.status, responseHeadersObj(xhr.getAllResponseHeaders()), xhr.responseText);
+    };
+    return ErrorResponse;
+}(Error));
+exports.ErrorResponse = ErrorResponse;
+var NetworkError = (function (_super) {
+    __extends(NetworkError, _super);
+    function NetworkError(error) {
+        var _this = _super.call(this, error) || this;
+        //TODO: ugly hack to make the instanceof calls work. We might have to find a better solution.
+        Object.setPrototypeOf(_this, NetworkError.prototype);
+        _this.error = error;
+        return _this;
+    }
+    return NetworkError;
+}(Error));
+exports.NetworkError = NetworkError;
+// Follows https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
+var XhrReadyState;
+(function (XhrReadyState) {
+    XhrReadyState[XhrReadyState["UNSENT"] = 0] = "UNSENT";
+    XhrReadyState[XhrReadyState["OPENED"] = 1] = "OPENED";
+    XhrReadyState[XhrReadyState["HEADERS_RECEIVED"] = 2] = "HEADERS_RECEIVED";
+    XhrReadyState[XhrReadyState["LOADING"] = 3] = "LOADING";
+    XhrReadyState[XhrReadyState["DONE"] = 4] = "DONE";
+})(XhrReadyState = exports.XhrReadyState || (exports.XhrReadyState = {}));
+var BaseClient = (function () {
+    function BaseClient(options) {
+        this.options = options;
+        var host = options.host.replace(/\/$/, '');
+        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + host;
+        this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
+    }
+    BaseClient.prototype.request = function (options) {
+        var xhr = this.createXHR(this.baseURL, options);
+        return new Promise(function (resolve, reject) {
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        resolve(xhr.responseText);
+                    }
+                    else {
+                        reject(ErrorResponse.fromXHR(xhr));
+                    }
+                }
+            };
+            xhr.send(JSON.stringify(options.body));
+        });
+    };
+    BaseClient.prototype.newSubscription = function (subOptions) {
+        return new subscription_1.Subscription(this.createXHR(this.baseURL, {
+            method: "SUBSCRIBE",
+            path: subOptions.path,
+            headers: {},
+            body: null,
+        }), subOptions);
+    };
+    BaseClient.prototype.newResumableSubscription = function (subOptions) {
+        var _this = this;
+        return new resumable_subscription_1.ResumableSubscription(function () {
+            return _this.createXHR(_this.baseURL, {
+                method: "SUBSCRIBE",
+                path: subOptions.path,
+                headers: {},
+                body: null,
+            });
+        }, subOptions);
+    };
+    BaseClient.prototype.createXHR = function (baseURL, options) {
+        var XMLHttpRequest = this.XMLHttpRequest;
+        var xhr = new XMLHttpRequest();
+        var path = options.path.replace(/^\/+/, "");
+        var endpoint = baseURL + "/" + path;
+        xhr.open(options.method.toUpperCase(), endpoint, true);
+        if (options.body) {
+            xhr.setRequestHeader("content-type", "application/json");
+        }
+        if (options.jwt) {
+            xhr.setRequestHeader("authorization", "Bearer " + options.jwt);
+        }
+        for (var key in options.headers) {
+            xhr.setRequestHeader(key, options.headers[key]);
+        }
+        return xhr;
+    };
+    return BaseClient;
+}());
+exports.BaseClient = BaseClient;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var LogLevel;
+(function (LogLevel) {
+    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
+    LogLevel[LogLevel["INFO"] = 3] = "INFO";
+    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
+    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
+})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
+/**
+ * Default implementation of the Logger. Wraps standards console calls.
+ * Logs only calls that are at or above the threshold (verbose/debug/info/warn/error)
+ * If error is passed, it will append the message to the error object.
+ */
+var ConsoleLogger = (function () {
+    function ConsoleLogger(threshold) {
+        if (threshold === void 0) { threshold = 2; }
+        this.threshold = threshold;
+    }
+    ConsoleLogger.prototype.log = function (logFunction, level, message, error) {
+        if (level >= this.threshold) {
+            var loggerSignature = "Logger." + LogLevel[level];
+            if (error) {
+                console.group();
+                logFunction(loggerSignature + ": " + message);
+                logFunction(error);
+                console.groupEnd();
+            }
+            else {
+                logFunction(loggerSignature + ": " + message);
+            }
+        }
+    };
+    ConsoleLogger.prototype.verbose = function (message, error) {
+        this.log(console.log, LogLevel.VERBOSE, message, error);
+    };
+    ConsoleLogger.prototype.debug = function (message, error) {
+        this.log(console.log, LogLevel.DEBUG, message, error);
+    };
+    ConsoleLogger.prototype.info = function (message, error) {
+        this.log(console.info, LogLevel.INFO, message, error);
+    };
+    ConsoleLogger.prototype.warn = function (message, error) {
+        this.log(console.warn, LogLevel.WARNING, message, error);
+    };
+    ConsoleLogger.prototype.error = function (message, error) {
+        this.log(console.error, LogLevel.ERROR, message, error);
+    };
+    return ConsoleLogger;
+}());
+exports.ConsoleLogger = ConsoleLogger;
+var EmptyLogger = (function () {
+    function EmptyLogger() {
+    }
+    EmptyLogger.prototype.verbose = function (message, error) { };
+    ;
+    EmptyLogger.prototype.debug = function (message, error) { };
+    ;
+    EmptyLogger.prototype.info = function (message, error) { };
+    ;
+    EmptyLogger.prototype.warn = function (message, error) { };
+    ;
+    EmptyLogger.prototype.error = function (message, error) { };
+    ;
+    return EmptyLogger;
+}());
+exports.EmptyLogger = EmptyLogger;
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
+var SubscriptionState;
+(function (SubscriptionState) {
+    SubscriptionState[SubscriptionState["UNOPENED"] = 0] = "UNOPENED";
+    SubscriptionState[SubscriptionState["OPENING"] = 1] = "OPENING";
+    SubscriptionState[SubscriptionState["OPEN"] = 2] = "OPEN";
+    SubscriptionState[SubscriptionState["ENDING"] = 3] = "ENDING";
+    SubscriptionState[SubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
+})(SubscriptionState = exports.SubscriptionState || (exports.SubscriptionState = {}));
+// Asserts that the subscription state is one of the specified values,
+// otherwise logs the current value.
+function assertState(stateEnum, states) {
+    var _this = this;
+    if (states === void 0) { states = []; }
+    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
+    var expected = states.join(', ');
+    var actual = stateEnum[this.state];
+    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
+    if (!check) {
+        console.trace();
+    }
+}
+exports.assertState = assertState;
+;
+// Callback pattern: (onOpen onEvent* (onEnd|onError)) | onError
+// A call to `unsubscribe()` will call `options.onEnd()`;
+// a call to `unsubscribe(someError)` will call `options.onError(someError)`.
+var Subscription = (function () {
+    function Subscription(xhr, options) {
+        var _this = this;
+        this.xhr = xhr;
+        this.options = options;
+        this.state = SubscriptionState.UNOPENED;
+        this.gotEOS = false;
+        this.lastNewlineIndex = 0;
+        this.assertState = assertState.bind(this, SubscriptionState);
+        if (options.lastEventId) {
+            this.xhr.setRequestHeader("Last-Event-Id", options.lastEventId);
+        }
+        this.xhr.onreadystatechange = function () {
+            if (_this.xhr.readyState === base_client_1.XhrReadyState.UNSENT ||
+                _this.xhr.readyState === base_client_1.XhrReadyState.OPENED ||
+                _this.xhr.readyState === base_client_1.XhrReadyState.HEADERS_RECEIVED) {
+                // Too early for us to do anything.
+                _this.assertState(['OPENING']);
+            }
+            else if (_this.xhr.readyState === base_client_1.XhrReadyState.LOADING) {
+                // The headers have loaded and we have partial body text.
+                // We can get this one multiple times.
+                _this.assertState(['OPENING', 'OPEN', 'ENDING']);
+                if (_this.xhr.status === 200) {
+                    // We've received a successful response header.
+                    // The partial body text is a partial JSON message stream.
+                    if (_this.state === SubscriptionState.OPENING) {
+                        _this.state = SubscriptionState.OPEN;
+                        if (_this.options.onOpen) {
+                            _this.options.onOpen();
+                        }
+                    }
+                    _this.assertState(['OPEN', 'ENDING']);
+                    var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
+                    _this.assertState(['OPEN', 'ENDING']);
+                    if (err != null) {
+                        _this.state = SubscriptionState.ENDED;
+                        if (err.statusCode != 204) {
+                            if (_this.options.onError) {
+                                _this.options.onError(err);
+                            }
+                        }
+                        // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
+                        // and so we will not call the event handler again.
+                        // Finish with options.onError instead of the options.onEnd.
+                    }
+                    else {
+                        // We consumed some response text, and all's fine. We expect more text.
+                    }
+                }
+                else {
+                    // Error response. Wait until the response completes (state 4) before erroring.
+                    _this.assertState(['OPENING']);
+                }
+            }
+            else if (_this.xhr.readyState === base_client_1.XhrReadyState.DONE) {
+                // This is the last time onreadystatechange is called.
+                if (_this.xhr.status === 200) {
+                    if (_this.state === SubscriptionState.OPENING) {
+                        _this.state = SubscriptionState.OPEN;
+                        if (_this.options.onOpen) {
+                            _this.options.onOpen();
+                        }
+                    }
+                    _this.assertState(['OPEN', 'ENDING']);
+                    var err = _this.onChunk();
+                    if (err !== null && err !== undefined) {
+                        _this.state = SubscriptionState.ENDED;
+                        if (err.statusCode === 204) {
+                            if (_this.options.onEnd) {
+                                _this.options.onEnd();
+                            }
+                        }
+                        else {
+                            if (_this.options.onError) {
+                                _this.options.onError(err);
+                            }
+                        }
+                    }
+                    else if (_this.state <= SubscriptionState.ENDING) {
+                        if (_this.options.onError) {
+                            _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
+                        }
+                    }
+                    else {
+                        // Stream ended normally.
+                        if (_this.options.onEnd) {
+                            _this.options.onEnd();
+                        }
+                    }
+                }
+                else {
+                    // The server responded with a bad status code (finish with onError).
+                    // Finish with an error.
+                    _this.assertState(['OPENING', 'OPEN', 'ENDED']);
+                    if (_this.state === SubscriptionState.ENDED) {
+                        // We aborted the request deliberately, and called onError/onEnd elsewhere.
+                    }
+                    else if (_this.xhr.status === 0) {
+                        _this.options.onError(new base_client_1.NetworkError("Connection lost."));
+                    }
+                    else {
+                        _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
+                    }
+                }
+            }
+        };
+    }
+    Subscription.prototype.open = function (jwt) {
+        if (this.state !== SubscriptionState.UNOPENED) {
+            throw new Error("Called .open() on Subscription object in unexpected state: " + this.state);
+        }
+        this.state = SubscriptionState.OPENING;
+        if (jwt) {
+            this.xhr.setRequestHeader("authorization", "Bearer " + jwt);
+        }
+        this.xhr.send();
+    };
+    // calls options.onEvent 0+ times, then possibly returns an error.
+    // idempotent.
+    Subscription.prototype.onChunk = function () {
+        this.assertState(['OPEN']);
+        var response = this.xhr.responseText;
+        var newlineIndex = response.lastIndexOf("\n");
+        if (newlineIndex > this.lastNewlineIndex) {
+            var rawEvents = response.slice(this.lastNewlineIndex, newlineIndex).split("\n");
+            this.lastNewlineIndex = newlineIndex;
+            for (var _i = 0, rawEvents_1 = rawEvents; _i < rawEvents_1.length; _i++) {
+                var rawEvent = rawEvents_1[_i];
+                if (rawEvent.length === 0) {
+                    continue; // FIXME why? This should be a protocol error
+                }
+                var data = JSON.parse(rawEvent);
+                var err = this.onMessage(data);
+                if (err != null) {
+                    return err;
+                }
+            }
+        }
+    };
+    // calls options.onEvent 0+ times, then returns an Error or null
+    Subscription.prototype.onMessage = function (message) {
+        this.assertState(['OPEN']);
+        if (this.gotEOS) {
+            return new Error("Got another message after EOS message");
+        }
+        if (!Array.isArray(message)) {
+            return new Error("Message is not an array");
+        }
+        if (message.length < 1) {
+            return new Error("Message is empty array");
+        }
+        switch (message[0]) {
+            case 0:
+                return null;
+            case 1:
+                return this.onEventMessage(message);
+            case 255:
+                return this.onEOSMessage(message);
+            default:
+                return new Error("Unknown Message: " + JSON.stringify(message));
+        }
+    };
+    // EITHER calls options.onEvent, OR returns an error
+    Subscription.prototype.onEventMessage = function (eventMessage) {
+        this.assertState(['OPEN']);
+        if (eventMessage.length !== 4) {
+            return new Error("Event message has " + eventMessage.length + " elements (expected 4)");
+        }
+        var _ = eventMessage[0], id = eventMessage[1], headers = eventMessage[2], body = eventMessage[3];
+        if (typeof id !== "string") {
+            return new Error("Invalid event ID in message: " + JSON.stringify(eventMessage));
+        }
+        if (typeof headers !== "object" || Array.isArray(headers)) {
+            return new Error("Invalid event headers in message: " + JSON.stringify(eventMessage));
+        }
+        if (this.options.onEvent) {
+            this.options.onEvent({ eventId: id, headers: headers, body: body });
+        }
+    };
+    // calls options.onEvent 0+ times, then possibly returns an error
+    Subscription.prototype.onEOSMessage = function (eosMessage) {
+        this.assertState(['OPEN']);
+        if (eosMessage.length !== 4) {
+            return new Error("EOS message has " + eosMessage.length + " elements (expected 4)");
+        }
+        var _ = eosMessage[0], statusCode = eosMessage[1], headers = eosMessage[2], info = eosMessage[3];
+        if (typeof statusCode !== "number") {
+            return new Error("Invalid EOS Status Code");
+        }
+        if (typeof headers !== "object" || Array.isArray(headers)) {
+            return new Error("Invalid EOS Headers");
+        }
+        this.state = SubscriptionState.ENDING;
+        return new base_client_1.ErrorResponse(statusCode, headers, info);
+    };
+    Subscription.prototype.unsubscribe = function (err) {
+        this.state = SubscriptionState.ENDED;
+        this.xhr.abort();
+        if (err) {
+            if (this.options.onError) {
+                this.options.onError(err);
+            }
+        }
+        else {
+            if (this.options.onEnd) {
+                this.options.onEnd();
+            }
+        }
+    };
+    return Subscription;
+}());
+exports.Subscription = Subscription;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var subscription_1 = __webpack_require__(2);
+var retry_strategy_1 = __webpack_require__(4);
+var ResumableSubscriptionState;
+(function (ResumableSubscriptionState) {
+    ResumableSubscriptionState[ResumableSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
+    ResumableSubscriptionState[ResumableSubscriptionState["OPENING"] = 1] = "OPENING";
+    ResumableSubscriptionState[ResumableSubscriptionState["OPEN"] = 2] = "OPEN";
+    ResumableSubscriptionState[ResumableSubscriptionState["ENDING"] = 3] = "ENDING";
+    ResumableSubscriptionState[ResumableSubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
+})(ResumableSubscriptionState = exports.ResumableSubscriptionState || (exports.ResumableSubscriptionState = {}));
+// Asserts that the subscription state is one of the specified values,
+// otherwise logs the current value.
+function assertState(stateEnum, states) {
+    var _this = this;
+    if (states === void 0) { states = []; }
+    var check = states.some(function (state) { return stateEnum[state] === _this.state; });
+    var expected = states.join(', ');
+    var actual = stateEnum[this.state];
+    console.assert(check, "Expected this.state to be " + expected + " but it is " + actual);
+    if (!check) {
+        console.trace();
+    }
+}
+exports.assertState = assertState;
+;
+// pattern of callbacks: ((onOpening (onOpen onEvent*)?)? (onError|onEnd)) | onError
+var ResumableSubscription = (function () {
+    function ResumableSubscription(xhrSource, options) {
+        this.xhrSource = xhrSource;
+        this.options = options;
+        this.state = ResumableSubscriptionState.UNOPENED;
+        this.assertState = assertState.bind(this, ResumableSubscriptionState);
+        this.lastEventIdReceived = options.lastEventId;
+        this.logger = options.logger;
+        if (options.retryStrategy !== undefined) {
+            this.retryStrategy = options.retryStrategy;
+        }
+        else {
+            this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({
+                logger: this.logger
+            });
+        }
+    }
+    ResumableSubscription.prototype.tryNow = function () {
+        var _this = this;
+        this.state = ResumableSubscriptionState.OPENING;
+        var newXhr = this.xhrSource();
+        this.subscription = new subscription_1.Subscription(newXhr, {
+            path: this.options.path,
+            lastEventId: this.lastEventIdReceived,
+            onOpen: function () {
+                _this.assertState(['OPENING']);
+                _this.state = ResumableSubscriptionState.OPEN;
+                if (_this.options.onOpen) {
+                    _this.options.onOpen();
+                }
+                _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
+            },
+            onEvent: function (event) {
+                _this.assertState(['OPEN']);
+                if (_this.options.onEvent) {
+                    _this.options.onEvent(event);
+                }
+                console.assert(!_this.lastEventIdReceived ||
+                    parseInt(event.eventId) > parseInt(_this.lastEventIdReceived), 'Expected the current event id to be larger than the previous one');
+                _this.lastEventIdReceived = event.eventId;
+            },
+            onEnd: function () {
+                _this.state = ResumableSubscriptionState.ENDED;
+                if (_this.options.onEnd) {
+                    _this.options.onEnd();
+                }
+            },
+            onError: function (error) {
+                _this.state = ResumableSubscriptionState.OPENING;
+                _this.retryStrategy.attemptRetry(error)
+                    .then(function () {
+                    if (_this.options.onRetry !== undefined) {
+                        _this.options.onRetry();
+                    }
+                    else {
+                        _this.tryNow();
+                    }
+                })
+                    .catch(function (error) {
+                    _this.state = ResumableSubscriptionState.ENDED;
+                    if (_this.options.onError) {
+                        _this.options.onError(error);
+                    }
+                });
+            },
+            logger: this.logger
+        });
+        if (this.options.tokenProvider) {
+            this.options.tokenProvider.fetchToken().then(function (jwt) {
+                _this.subscription.open(jwt);
+            }).catch(function (err) {
+                if (_this.options.onError)
+                    _this.options.onError(err);
+            });
+        }
+        else {
+            this.subscription.open(null);
+        }
+    };
+    ResumableSubscription.prototype.open = function () {
+        this.tryNow();
+    };
+    ResumableSubscription.prototype.unsubscribe = function (error) {
+        this.subscription.unsubscribe(error); // We'll get onEnd and bubble this up
+    };
+    return ResumableSubscription;
+}());
+exports.ResumableSubscription = ResumableSubscription;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
+var logger_1 = __webpack_require__(1);
+var Retry = (function () {
+    function Retry(waitTimeMillis) {
+        this.waitTimeMillis = waitTimeMillis;
+    }
+    return Retry;
+}());
+exports.Retry = Retry;
+var DoNotRetry = (function () {
+    function DoNotRetry(error) {
+        this.error = error;
+    }
+    return DoNotRetry;
+}());
+exports.DoNotRetry = DoNotRetry;
+var ExponentialBackoffRetryStrategy = (function () {
+    function ExponentialBackoffRetryStrategy(options) {
+        this.limit = 6;
+        this.retryCount = 0;
+        this.maxBackoffMillis = 30000;
+        this.defaultBackoffMillis = 1000;
+        this.currentBackoffMillis = this.defaultBackoffMillis;
+        if (options.limit)
+            this.limit = options.limit;
+        if (options.initialBackoffMillis) {
+            this.currentBackoffMillis = options.initialBackoffMillis;
+            this.defaultBackoffMillis = options.defaultBackoffMillis;
+        }
+        if (options.maxBackoffMillis)
+            this.maxBackoffMillis = options.maxBackoffMillis;
+        if (options.logger !== undefined) {
+            this.logger = options.logger;
+        }
+        else {
+            this.logger = new logger_1.EmptyLogger();
+        }
+    }
+    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
+        this.logger.verbose(this.constructor.name + ":  Error received", error);
+        if (this.retryCount >= this.limit && this.limit > 0) {
+            this.logger.verbose(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
+            return new DoNotRetry(error);
+        }
+        var retryable = this.isRetryable(error);
+        if (retryable.isRetryable) {
+            if (retryable.backoffMillis) {
+                this.retryCount += 1;
+                return new Retry(retryable.backoffMillis);
+            }
+            else {
+                this.currentBackoffMillis = this.calulateMillisToRetry();
+                this.retryCount += 1;
+                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMillis);
+                return new Retry(this.currentBackoffMillis);
+            }
+        }
+        else {
+            this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
+            return new DoNotRetry(error);
+        }
+    };
+    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var shouldRetry = _this.shouldRetry(error);
+            if (shouldRetry instanceof DoNotRetry) {
+                reject(error);
+            }
+            else if (shouldRetry instanceof Retry) {
+                window.setTimeout(resolve, shouldRetry.waitTimeMillis);
+            }
+        });
+    };
+    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
+        var retryable = {
+            isRetryable: false
+        };
+        //We allow network errors
+        if (error instanceof base_client_1.NetworkError)
+            retryable.isRetryable = true;
+        else if (error instanceof base_client_1.ErrorResponse) {
+            //Only retry after is allowed
+            if (error.headers["Retry-After"]) {
+                retryable.isRetryable = true;
+                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
+            }
+        }
+        return retryable;
+    };
+    ExponentialBackoffRetryStrategy.prototype.reset = function () {
+        this.retryCount = 0;
+        this.currentBackoffMillis = this.defaultBackoffMillis;
+    };
+    ExponentialBackoffRetryStrategy.prototype.calulateMillisToRetry = function () {
+        if (this.currentBackoffMillis >= this.maxBackoffMillis || this.currentBackoffMillis * 2 >= this.maxBackoffMillis) {
+            return this.maxBackoffMillis;
+        }
+        if (this.retryCount > 0) {
+            return this.currentBackoffMillis * 2;
+        }
+        return this.currentBackoffMillis;
+    };
+    return ExponentialBackoffRetryStrategy;
+}());
+exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var base_client_1 = __webpack_require__(0);
+var logger_1 = __webpack_require__(1);
+var HOST_BASE = "pusherplatform.io";
+var Instance = (function () {
+    function Instance(options) {
+        if (!options.instance)
+            throw new Error('Expected `instance` property in Instance options!');
+        if (options.instance.split(":").length !== 3)
+            throw new Error('The instance property is in the wrong format!');
+        if (!options.serviceName)
+            throw new Error('Expected `serviceName` property in Instance options!');
+        if (!options.serviceVersion)
+            throw new Error('Expected `serviceVersion` property in Instance otpions!');
+        var splitInstance = options.instance.split(":");
+        this.platformVersion = splitInstance[0];
+        this.cluster = splitInstance[1];
+        this.instanceId = splitInstance[2];
+        this.serviceName = options.serviceName;
+        this.serviceVersion = options.serviceVersion;
+        this.tokenProvider = options.tokenProvider;
+        if (options.host) {
+            this.host = options.host;
+        }
+        else {
+            this.host = this.cluster + "." + HOST_BASE;
+        }
+        this.client = options.client || new base_client_1.BaseClient({
+            encrypted: options.encrypted,
+            host: this.host
+        });
+        if (options.logger !== undefined) {
+            this.logger = options.logger;
+        }
+        else {
+            this.logger = new logger_1.ConsoleLogger();
+        }
+    }
+    Instance.prototype.request = function (options) {
+        var _this = this;
+        options.path = this.absPath(options.path);
+        var tokenProvider = options.tokenProvider || this.tokenProvider;
+        if (!options.jwt && tokenProvider) {
+            return tokenProvider.fetchToken().then(function (jwt) {
+                return _this.client.request(__assign({ jwt: jwt }, options));
+            });
+        }
+        else {
+            return this.client.request(options);
+        }
+    };
+    Instance.prototype.subscribe = function (options) {
+        options.path = this.absPath(options.path);
+        options.logger = this.logger;
+        var subscription = this.client.newSubscription(options);
+        var tokenProvider = options.tokenProvider || this.tokenProvider;
+        if (options.jwt) {
+            subscription.open(options.jwt);
+        }
+        else if (tokenProvider) {
+            tokenProvider.fetchToken().then(function (jwt) {
+                subscription.open(jwt);
+            }).catch(function (err) {
+                subscription.unsubscribe(err);
+            });
+        }
+        else {
+            subscription.open(null);
+        }
+        return subscription;
+    };
+    Instance.prototype.resumableSubscribe = function (options) {
+        if (!options.logger)
+            options.logger = this.logger;
+        options.logger = this.logger;
+        options.path = this.absPath(options.path);
+        var tokenProvider = options.tokenProvider || this.tokenProvider;
+        var resumableSubscription = this.client.newResumableSubscription(__assign({ tokenProvider: tokenProvider }, options));
+        resumableSubscription.open();
+        return resumableSubscription;
+    };
+    Instance.prototype.absPath = function (relativePath) {
+        return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.instanceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
+    };
+    return Instance;
+}());
+exports.default = Instance;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var instance_1 = __webpack_require__(5);
+exports.Instance = instance_1.default;
+var base_client_1 = __webpack_require__(0);
+exports.BaseClient = base_client_1.BaseClient;
+var logger_1 = __webpack_require__(1);
+exports.ConsoleLogger = logger_1.ConsoleLogger;
+exports.EmptyLogger = logger_1.EmptyLogger;
+var resumable_subscription_1 = __webpack_require__(3);
+exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
+var retry_strategy_1 = __webpack_require__(4);
+exports.ExponentialBackoffRetryStrategy = retry_strategy_1.ExponentialBackoffRetryStrategy;
+var subscription_1 = __webpack_require__(2);
+exports.Subscription = subscription_1.Subscription;
+exports.default = {
+    Instance: instance_1.default,
+    BaseClient: base_client_1.BaseClient,
+    ResumableSubscription: resumable_subscription_1.ResumableSubscription, Subscription: subscription_1.Subscription,
+    ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
+    ConsoleLogger: logger_1.ConsoleLogger, EmptyLogger: logger_1.EmptyLogger
+};
+
+
+/***/ })
+/******/ ]);
+});
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * This module specialises the generic Logoot model to be one which indexes
+ * the text in a document.
+ *
+ * Each Logoot "Atom" represents a range of text
+ * from the document, stored as the length of the range. The index within
+ * the document for a particular atom can be found by summing the values
+ * of all previous atoms.
+ *
+ * The document is manipulated via insert and delete methods, whose
+ * parameters are expressed in the text document domain. In addition to
+ * mutating the Logoot representation as requested, these methods return
+ * lists of Operations expressed in the Logoot domain, which, if passed
+ * to the applyOps method of another instance, will recreate the same
+ * changes which were made here.
+ *
+ * Similarly, apply methods return a list of operations in the text document
+ * domain which can be applied to a rendered view of the document when
+ * applying operations from remotely.
+ *
+ * In summary:
+ * - Changes to the text which this LogootDoc represents (i.e. interactively
+ *   in an editor) are applied using insert/delete methods.
+ * - insert/delete methods return Operations which can be transmitted to
+ *   remote instances.
+ * - Apply methods return a set of changes to the text which arose from the
+ *   remote Operations.
+ */
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var logoot_1 = __webpack_require__(3);
+var logoot_2 = __webpack_require__(3);
+var logootFormat = __webpack_require__(5);
+var editorFormat = __webpack_require__(6);
+var LogootDoc = (function (_super) {
+    __extends(LogootDoc, _super);
+    function LogootDoc(siteId) {
+        return _super.call(this, siteId) || this;
+    }
+    /**
+     * Alter the model to accommodate inserted content
+     * @param {number} index - the insertion index
+     * @param {string} content - the new content being inserted
+     *
+     * @return {logootFormat.DocOp[]} - a description of the required operations
+     *   suitable for transmitting to a remote replica of the doc,
+     *   such that they might apply the same insertion.
+     */
+    LogootDoc.prototype.insertText = function (index, content, attributes) {
+        var atoms = this._insertText(index, content);
+        var ops = atoms.map(function (atom) {
+            return {
+                opType: logootFormat.OpType.Insert,
+                ident: atom.ident.toWire(),
+                content: { text: atom.rune, attributes: attributes }
+            };
+        });
+        return ops;
+    };
+    /**
+     * Alter the model to accommodate deleted content
+     * @param {number} index - the start index of the removed content
+     * @param {string} length - the length of the content removed
+     *
+     * @return {logootFormat.DocOp[]} - a description of the required operations
+     *   suitable for transmitting to a remote replica of the doc,
+     *   such that they might apply the same removal.
+     */
+    LogootDoc.prototype.deleteText = function (index, length) {
+        var ops = [];
+        var atoms = this.getAtomsToDelete(index, length);
+        for (var i = 0; i < length; i++) {
+            var deleteOp = {
+                opType: logootFormat.OpType.Delete,
+                ident: atoms[i].ident.toWire()
+            };
+            this.applyDeletes([deleteOp]);
+            ops.push(deleteOp);
+        }
+        return ops;
+    };
+    /**
+     * Convert an AtomIdent to a character index
+     * @param {AtomIdent} atomIdent - an atomIdent
+     *
+     * @return {number} - a character index
+     */
+    LogootDoc.prototype.atomIdentToIndex = function (atomIdent) {
+        for (var i = 0; i < this.seq.length; i++) {
+            var currentAtom = this.seq[i];
+            var isNextIdent = currentAtom.ident.compare(atomIdent) != -1;
+            if (isNextIdent) {
+                return i - 1;
+            }
+        }
+        throw new Error("Out of range: " + JSON.stringify(atomIdent));
+    };
+    /**
+     * Convert an array of WireIdents to a character index
+     * @param {WireIdent[]} wireIdents - array of wire idents
+     * @param {number} siteId - the site id from which the wireIdents originate
+     *
+     * @return {number} - a character index
+     */
+    LogootDoc.prototype.wireIdentsToIndex = function (wireIdents, siteId) {
+        // WireIdent[] --> Position
+        var position = logoot_2.Position.fromWire(wireIdents);
+        // Position --> AtomIdent
+        var atomIdent = new logoot_2.AtomIdent(position, 0);
+        // AtomIdent --> number
+        var index = this.atomIdentToIndex(atomIdent);
+        return index;
+    };
+    /**
+     * Generate a new position at a given character index
+     * @param {number} charIndex - the index at which to generate the new
+     *    position
+     *
+     * @return {WireIdent[]} - A unique position in the document
+     */
+    LogootDoc.prototype.newPositionAtIndex = function (charIndex) {
+        if (charIndex > this.docLength - 1) {
+            throw new Error("Index out of range: " + charIndex);
+        }
+        var _a = this.getSurroundingAtoms(charIndex), atomBefore = _a[0], atomAfter = _a[1];
+        var atomIdent = logoot_2.AtomIdent.between(atomBefore.ident, atomAfter.ident, 0, 0);
+        return atomIdent.toWire().position;
+    };
+    /**
+     * Applies a set of insert operations to the document model
+     * @param {logootFormat.DocOp[]} ops - The operations to apply
+     *
+     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
+     *   the changes described in the insert operations.
+     */
+    LogootDoc.prototype.applyInserts = function (ops) {
+        var atomsToInsert = ops.map(function (op) { return logoot_2.Atom.fromWire(op.ident, op.content); });
+        var indices = this.insertAtoms(atomsToInsert);
+        var editorOps = [];
+        for (var i = 0; i < indices.length; i++) {
+            var op = ops[i];
+            var runeIndex = indices[i];
+            var editorOp = {
+                opType: editorFormat.OpType.Insert,
+                index: runeIndex,
+                text: op.content.text
+            };
+            if (op.content.attributes) {
+                editorOp['attributes'] = op.content.attributes;
+            }
+            editorOps.push(editorOp);
+        }
+        editorOps.sort(function (a, b) { return a.index - b.index; });
+        return editorOps;
+    };
+    /**
+     * Applies a set of delete operations to the document model
+     * @param {logootFormat.DocOp[]} ops - The operations to apply
+     *
+     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
+     *   the changes described in the delete operations.
+     */
+    LogootDoc.prototype.applyDeletes = function (ops) {
+        var identsToDelete = ops.map(function (op) { return logoot_2.AtomIdent.fromWire(op.ident); });
+        var indices = this.deleteAtoms(identsToDelete);
+        var editorOps = [];
+        for (var i = 0; i < indices.length; i++) {
+            var op = ops[i];
+            var runeIndex = indices[i];
+            var editorOp = {
+                opType: editorFormat.OpType.Delete,
+                index: runeIndex
+            };
+            editorOps.push(editorOp);
+        }
+        editorOps.sort(function (a, b) { return a.index - b.index; });
+        return editorOps;
+    };
+    /**
+     * Applies operations to the document model
+     * @param {logootFormat.DocOp[]} ops - The operations to apply
+     *
+     * @return {editorFormat.DocOp[]} - An array of editor operations that will apply
+     *   the changes described.
+     */
+    LogootDoc.prototype.updateDoc = function (ops) {
+        var editorOps = [];
+        // Batch the operations for performance reasons.
+        var insertOps = ops.filter(function (op) { return op.opType === logootFormat.OpType.Insert; });
+        editorOps = editorOps.concat(this.applyInserts(insertOps));
+        var deleteOps = ops.filter(function (op) { return op.opType === logootFormat.OpType.Delete; });
+        editorOps = editorOps.concat(this.applyDeletes(deleteOps));
+        return editorOps;
+    };
+    LogootDoc.prototype.toEditorCursorOps = function (ops, offset) {
+        var _this = this;
+        if (offset === void 0) { offset = 0; }
+        var editorOps = [];
+        return ops.map(function (cursorOp) {
+            var startIndex = null;
+            var length = 0;
+            if (cursorOp.position !== null) {
+                startIndex =
+                    _this.wireIdentsToIndex(cursorOp.position.start, 0) + offset;
+                var endIndex = cursorOp.position.end
+                    ? _this.wireIdentsToIndex(cursorOp.position.end, 0)
+                    : startIndex;
+                length = endIndex - startIndex;
+            }
+            return {
+                id: cursorOp.siteId,
+                range: {
+                    index: startIndex,
+                    length: length
+                },
+                name: null,
+                color: null
+            };
+        });
+    };
+    return LogootDoc;
+}(logoot_1.default));
+exports.default = LogootDoc;
+
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Editor = (function () {
+    function Editor(quill) {
+        this.quill = quill;
+    }
+    Editor.prototype.getText = function (index, length) {
+        return this.quill.getText(index, length);
+    };
+    Editor.prototype.getContents = function (index, length) {
+        var delta = this.quill.getContents(index, length);
+        var contents = delta.ops.map(function (op) {
+            var c = { text: op.insert };
+            if (op.attributes) {
+                c['attributes'] = op.attributes;
+            }
+            return c;
+        });
+        return contents;
+    };
+    return Editor;
+}());
+exports.default = Editor;
+
+
+/***/ }),
+/* 20 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * Uses the textsync service to synchronise LogootDoc instances
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+var wireFormat = __webpack_require__(21);
+var model_1 = __webpack_require__(22);
+var controller_1 = __webpack_require__(24);
+var notifications = __webpack_require__(2);
+var name_generator_1 = __webpack_require__(30);
+var MIN_BROADCAST_PERIOD_MS = 1;
+var MAX_BROADCAST_PERIOD_MS = 10000;
+var BROADCAST_BACKOFF = 1.2;
+var TextSync = (function () {
+    function TextSync(logoot, pusher, docId, siteId, options, presenceElement, notifier, logger) {
+        this.logoot = logoot;
+        this.pusher = pusher;
+        this.docId = docId;
+        this.siteId = siteId;
+        this.options = options;
+        this.presenceElement = presenceElement;
+        this.outstandingOps = [];
+        this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
+        this.running = true;
+        this.defaultText = options.defaultText;
+        this.logger = logger;
+        this.notifier = notifier;
+        this.broadcastOps();
+        // Remove when we have JWT
+        this.name = this.options.name || name_generator_1.createAnonName();
+        this.email = this.options.email;
+    }
+    TextSync.prototype.insertText = function (index, content, attributes) {
+        this.sendOps(this.logoot.insertText(index, content, attributes));
+    };
+    TextSync.prototype.deleteText = function (index, length) {
+        this.sendOps(this.logoot.deleteText(index, length));
+    };
+    TextSync.prototype.updateCursor = function (start, end) {
+        if (end === void 0) { end = null; }
+        var position = null;
+        if (start !== null) {
+            position = {
+                start: this.logoot.newPositionAtIndex(start)
+            };
+            if (end !== null) {
+                position.end = this.logoot.newPositionAtIndex(end);
+            }
+        }
+        this.sendOps([
+            {
+                siteId: this.siteId,
+                position: position
+            }
+        ]);
+    };
+    TextSync.prototype.initPresence = function (presenceConfig, presenceElement) {
+        var presenceController = new controller_1.default(this.siteId, presenceConfig, presenceElement, this.logger);
+        this.presenceModel = new model_1.default(this.siteId, this.adaptor, this.logoot, presenceController, presenceConfig, this.logger);
+    };
+    TextSync.prototype.start = function (adaptor) {
+        var _this = this;
+        this.adaptor = adaptor;
+        var presenceConfig = {
+            showBadges: this.options.collaboratorBadges,
+            showCursors: this.options.cursors,
+            onJoined: this.options.onCollaboratorsJoined,
+            onLeft: this.options.onCollaboratorsLeft
+        };
+        this.initPresence(presenceConfig, this.presenceElement);
+        this.initDocument().then(function () {
+            _this.subscribe(_this.name, _this.email);
+        });
+    };
+    TextSync.prototype.initDocument = function () {
+        var _this = this;
+        var promise;
+        if (this.defaultText) {
+            var body = { text: this.defaultText };
+            promise = this.pusher.request({
+                method: 'POST',
+                path: "/docs/" + this.docId + "/initialise-document",
+                body: body
+            });
+        }
+        else {
+            promise = new Promise(function (resolve, reject) { return resolve(); });
+        }
+        return promise.catch(function (err) {
+            _this.logger.error('Unable to initialise default content', err);
+        });
+    };
+    TextSync.prototype.subscribe = function (name, email) {
+        var _this = this;
+        this.logger.info('Connecting to server...');
+        var path = "/docs/" + this.docId + "?siteId=" + this.siteId;
+        // Remove when we have JWT
+        var encodedName = encodeURIComponent(name);
+        path += "&name=" + encodedName;
+        if (email) {
+            var encodedEmail = encodeURIComponent(email);
+            path += "&email=" + encodedEmail;
+        }
+        this.pusher.resumableSubscribe({
+            path: path,
+            onEvent: function (event) {
+                _this.logger.info('event received from server:', JSON.stringify(event.body));
+                if (event.body.siteId !== _this.siteId) {
+                    if (event.body.presOps && event.body.presOps.length > 0) {
+                        // go straight to presence
+                        var presOpsCopy = JSON.parse(JSON.stringify(event.body.presOps));
+                        _this.presenceModel.receivePresOps(presOpsCopy);
+                    }
+                    if (event.body.docOps && event.body.docOps.length > 0) {
+                        var message = {
+                            docOps: event.body.docOps,
+                            siteId: event.body.siteId
+                        };
+                        _this.receiveDocOps(message);
+                        _this.presenceModel.receiveDocOps(message);
+                    }
+                    else if (event.body.cursorOps && event.body.cursorOps.length > 0) {
+                        // when someone clicks to a new position
+                        _this.logger.debug(event.body.siteId + " has clicked.");
+                        _this.receiveCursorOps({
+                            cursorOps: event.body.cursorOps,
+                            siteId: event.body.siteId
+                        });
+                    }
+                }
+            },
+            onOpen: function () {
+                _this.logger.info('subscription opened successfully');
+            },
+            onEnd: function () {
+                _this.logger.error('subscription terminated by server');
+            },
+            onError: function (error) {
+                if (error.statusCode === 403) {
+                    _this.logger.error('Authentication error: Invalid TextSync instance ID. ' +
+                        'Double check your instance ID or ask a Pusherino for a new one.');
+                    _this.adaptor.disable();
+                    return;
+                }
+                _this.logger.error('subscription closed due to error', error);
+                _this.notifier.notify('Whoops! Something went wrong. Please refresh the page to reconnect.', notifications.NotificationType.Error, true);
+                _this.adaptor.disable();
+            }
+        });
+    };
+    TextSync.prototype.initialContent = function (content) {
+        this.logoot.initialContent(content);
+    };
+    TextSync.prototype.sendOps = function (ops) {
+        this.outstandingOps = this.outstandingOps.concat(ops);
+    };
+    TextSync.prototype.broadcastOps = function () {
+        var _this = this;
+        if (!this.running) {
+            return;
+        }
+        if (this.outstandingOps.length > 0) {
+            var opsToBroadcast_1 = this.outstandingOps;
+            this.outstandingOps = [];
+            var body = wireFormat.messageFromOps(opsToBroadcast_1, this.siteId);
+            this.logger.debug('Broadcasting operations to server:', JSON.stringify(body));
+            this.pusher
+                .request({
+                method: 'POST',
+                path: "/docs/" + this.docId,
+                body: body
+            })
+                .then(function () {
+                _this.broadcastPeriod = MIN_BROADCAST_PERIOD_MS;
+            })
+                .catch(function (error) {
+                var statusCode = error.statusCode;
+                var isClientError = statusCode && 400 <= statusCode && statusCode < 500;
+                if (isClientError) {
+                    _this.running = false;
+                }
+                _this.logger.error(error);
+                _this.outstandingOps = _this.outstandingOps.concat(opsToBroadcast_1);
+                var newBroadcastPeriod = _this.broadcastPeriod * BROADCAST_BACKOFF;
+                if (newBroadcastPeriod < MAX_BROADCAST_PERIOD_MS) {
+                    _this.broadcastPeriod = newBroadcastPeriod;
+                }
+            });
+        }
+        setTimeout(function () {
+            _this.broadcastOps();
+        }, this.broadcastPeriod);
+    };
+    TextSync.prototype.receiveDocOps = function (wireMessage) {
+        if (wireMessage.siteId === this.siteId) {
+            return;
+        }
+        var editorDocOps = this.logoot.updateDoc(wireMessage.docOps);
+        this.adaptor.applyOperations(editorDocOps);
+    };
+    TextSync.prototype.receiveCursorOps = function (wireMessage) {
+        if (wireMessage.siteId === this.siteId) {
+            return;
+        }
+        var editorCursorOps = this.logoot.toEditorCursorOps(wireMessage.cursorOps);
+        this.presenceModel.receiveCursorOps(editorCursorOps);
+    };
+    return TextSync;
+}());
+exports.TextSync = TextSync;
+
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var logootFormat = __webpack_require__(5);
+function messageFromOps(ops, siteId) {
+    var docOps = [];
+    var cursorOps = [];
+    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
+        var op = ops_1[_i];
+        if (logootFormat.isDocOp(op)) {
+            docOps.push(op);
+        }
+        else if (logootFormat.isCursorOp(op)) {
+            cursorOps.push(op);
+        }
+    }
+    return {
+        docOps: docOps,
+        cursorOps: cursorOps,
+        siteId: siteId
+    };
+}
+exports.messageFromOps = messageFromOps;
+
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var tinycolor = __webpack_require__(7);
+var format_1 = __webpack_require__(23);
+var SERVER_SITE_ID = 0;
+var PresenceModel = (function () {
+    function PresenceModel(siteId, adaptor, logootDoc, controller, presenceConfig, logger) {
+        this.siteId = siteId;
+        this.adaptor = adaptor;
+        this.logootDoc = logootDoc;
+        this.controller = controller;
+        this.presenceConfig = presenceConfig;
+        this._collaboratorIds = {};
+        this.logger = logger;
+    }
+    /**
+     * Processes document operations (DocOps)
+     * @param {Message} wireMessage - wire message containing DocOps[]
+     * @returns {void}
+     */
+    PresenceModel.prototype.receiveDocOps = function (wireMessage) {
+        if (wireMessage.siteId !== SERVER_SITE_ID) {
+            if (this.presenceConfig.showBadges) {
+                this.controller.triggerStartTypingEvent(wireMessage.siteId);
+            }
+            if (this.presenceConfig.showCursors) {
+                this.logger.debug(wireMessage.siteId + " has typed.");
+                var lastDocOp = wireMessage.docOps[wireMessage.docOps.length - 1];
+                var cursorOps = [
+                    {
+                        siteId: wireMessage.siteId,
+                        position: {
+                            start: lastDocOp.ident.position
+                        }
+                    }
+                ];
+                // insert op: index_of_last_char + 1
+                // delete op: index_of_last_char - 1
+                var offset = lastDocOp.opType === 1 ? 1 : 0;
+                var editorCursorOps = this.logootDoc.toEditorCursorOps(cursorOps, offset);
+                this.receiveCursorOps(editorCursorOps);
+            }
+        }
+    };
+    /**
+     * Processes presence operations (PresOps)
+     * @param {Message} wireMessage - wire message containing PresOp[]
+     * @returns {void}
+     */
+    PresenceModel.prototype.receivePresOps = function (presOps) {
+        var _this = this;
+        if (!this.presenceConfig.onJoined || !this.presenceConfig.onLeft) {
+            if (!this.presenceConfig.showBadges) {
+                return;
+            }
+        }
+        var joiningCollaborators = format_1.filterByType(presOps, format_1.isAddOp);
+        var leavingCollaborators = format_1.filterByType(presOps, format_1.isRemoveOp);
+        if (this.presenceConfig.onJoined) {
+            this.presenceConfig.onJoined(joiningCollaborators);
+        }
+        if (this.presenceConfig.onLeft) {
+            this.presenceConfig.onLeft(leavingCollaborators);
+        }
+        if (this.presenceConfig.showBadges) {
+            if (joiningCollaborators.length > 0) {
+                this.add(joiningCollaborators);
+            }
+            if (leavingCollaborators.length > 0) {
+                this.remove(leavingCollaborators);
+            }
+        }
+        if (this.presenceConfig.showCursors) {
+            leavingCollaborators.forEach(function (el) {
+                _this.adaptor.removeCursor(el.siteId);
+            });
+        }
+    };
+    /**
+     * Processes cursor operations (CursorOps)
+     * @param {Message} wireMessage - wire message containing CursorOp[]
+     * @returns {void}
+     */
+    PresenceModel.prototype.receiveCursorOps = function (cursorOps) {
+        var _this = this;
+        if (this.presenceConfig.showCursors) {
+            cursorOps.forEach(function (cursorOp) {
+                if (_this._collaboratorIds.hasOwnProperty(String(cursorOp.id))) {
+                    if (cursorOp.range.index === null) {
+                        _this.adaptor.removeCursor(cursorOp.id);
+                    }
+                    else {
+                        var cursorData = __assign({}, cursorOp, { color: _this._collaboratorIds[cursorOp.id].color, name: _this._collaboratorIds[cursorOp.id].name });
+                        _this.adaptor.setCursor(cursorData);
+                    }
+                }
+            });
+        }
+    };
+    /**
+     * Adds new collaborators
+     * @param {AddOp[]} joining - array of 'add collaborator' operations
+     * @returns {void}
+     */
+    PresenceModel.prototype.add = function (joining) {
+        var _this = this;
+        if (joining.length === 0) {
+            return;
+        }
+        var alreadyJoined = joining.filter(function (op) {
+            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
+        });
+        if (alreadyJoined.length > 0) {
+            this.logger.error('The following Site IDs were added to the presence model ' +
+                'but they already exist:', alreadyJoined);
+        }
+        var justJoined = joining.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
+        // add to data store
+        justJoined.forEach(function (op) {
+            var value = { position: null, color: null, name: op.name };
+            if (_this.presenceConfig.showCursors) {
+                value.color = tinycolor.random();
+            }
+            _this._collaboratorIds[op.siteId] = value;
+        });
+        this.controller.receiveJoining(justJoined);
+    };
+    /**
+     * Removes existing collaborators
+     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
+     * @returns {void}
+     */
+    PresenceModel.prototype.remove = function (leaving) {
+        var _this = this;
+        if (leaving.length === 0) {
+            return;
+        }
+        var alreadyLeft = leaving.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
+        if (alreadyLeft.length > 0) {
+            this.logger.error('Tried to remove the following Site IDs from the presence model ' +
+                'but they were missing:', alreadyLeft);
+        }
+        var justLeft = leaving.filter(function (op) {
+            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
+        });
+        // remove from data store
+        justLeft.forEach(function (op) {
+            delete _this._collaboratorIds[op.siteId];
+        });
+        this.controller.receiveLeaving(justLeft.map(function (op) { return op.siteId; }));
+    };
+    return PresenceModel;
+}());
+exports.default = PresenceModel;
+
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var OpType;
+(function (OpType) {
+    OpType[OpType["Joining"] = 1] = "Joining";
+    OpType[OpType["Leaving"] = 2] = "Leaving";
+})(OpType = exports.OpType || (exports.OpType = {}));
+function filterByType(input, pred) {
+    return input.reduce(function (output, el) {
+        if (pred(el)) {
+            output.push(el);
+        }
+        return output;
+    }, new Array());
+}
+exports.filterByType = filterByType;
+function isAddOp(object) {
+    return object.opType === OpType.Joining;
+}
+exports.isAddOp = isAddOp;
+function isRemoveOp(object) {
+    return object.opType === OpType.Leaving;
+}
+exports.isRemoveOp = isRemoveOp;
+
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var badges_1 = __webpack_require__(25);
+var ANIMATION_LENGTH = 1000;
+var PresenceController = (function () {
+    function PresenceController(siteId, config, element, logger) {
+        this.siteId = siteId;
+        this.config = config;
+        this.logger = logger;
+        this.flashingBadges = {};
+        this.badges = new badges_1.default(this.siteId, element, logger);
+    }
+    PresenceController.prototype.resetTimeout = function (siteId) {
+        clearTimeout(this.flashingBadges[siteId]);
+        this.startTimeout(siteId);
+    };
+    PresenceController.prototype.startTimeout = function (siteId) {
+        var _this = this;
+        this.flashingBadges[siteId] = setTimeout(function (siteId) {
+            _this.badges.stopBadgeFlash(siteId);
+            clearTimeout(_this.flashingBadges[siteId]);
+            delete _this.flashingBadges[siteId];
+        }, ANIMATION_LENGTH, siteId);
+    };
+    PresenceController.prototype.receiveJoining = function (joining) {
+        joining.sort(function (a, b) {
+            if (a.timestamp > b.timestamp) {
+                return 1;
+            }
+            else if (a.timestamp < b.timestamp) {
+                return -1;
+            }
+            else {
+                return 0;
+            }
+        });
+        if (this.config.showBadges) {
+            this.badges.addBadges(joining);
+        }
+    };
+    PresenceController.prototype.receiveLeaving = function (leavingSiteIds) {
+        var _this = this;
+        if (this.config.showBadges) {
+            leavingSiteIds.forEach(function (siteId, i) {
+                _this.badges.removeBadge(siteId);
+            });
+        }
+    };
+    /**
+     * Triggers the start typing event for a collaborator
+     * @param {number} siteId - site id for collaborator
+     * @returns {void}
+     */
+    PresenceController.prototype.triggerStartTypingEvent = function (siteId) {
+        if (this.flashingBadges[siteId]) {
+            this.resetTimeout(siteId);
+        }
+        else {
+            this.badges.startBadgeFlash(siteId);
+            this.startTimeout(siteId);
+        }
+    };
+    return PresenceController;
+}());
+exports.default = PresenceController;
+
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Badges = (function () {
+    function Badges(siteId, targetElement, logger) {
+        this.siteId = siteId;
+        this.logger = logger;
+        this.targetElement = targetElement;
+        this.addBadges = this.addBadges.bind(this);
+        this.addToDOM = this.addToDOM.bind(this);
+        this.removeBadge = this.removeBadge.bind(this);
+        this.removeFromDOM = this.removeFromDOM.bind(this);
+        this.findBadgeInDOM = this.findBadgeInDOM.bind(this);
+    }
+    Badges.prototype.startBadgeFlash = function (siteId) {
+        var targetBadge = document.querySelector("span[data-site-id=\"" + siteId + "\"] .tsync-badge");
+        if (targetBadge) {
+            if (Array.from(targetBadge.classList).indexOf('flashing') === -1) {
+                targetBadge.classList.add('flashing');
+            }
+        }
+        else {
+            this.logger.error("Badge for siteId " + siteId + " is missing from DOM");
+        }
+    };
+    Badges.prototype.stopBadgeFlash = function (siteId) {
+        var targetBadge = document.querySelector("span[data-site-id=\"" + siteId + "\"] .tsync-badge");
+        if (targetBadge) {
+            targetBadge.classList.remove('flashing');
+        }
+        else {
+            this.logger.error("Badge for siteId " + siteId + " is missing from DOM");
+        }
+    };
+    Badges.prototype.addBadges = function (data) {
+        for (var i = 0; i < data.length; i++) {
+            this.addToDOM(data[i], i);
+        }
+    };
+    Badges.prototype.addToDOM = function (data, index) {
+        this.logger.info('someone joined');
+        var badgeWrapper = this.createBadge(data);
+        // if people use custom templates, catch for carriage returns...
+        this.targetElement.appendChild(badgeWrapper);
+        // transition
+        setTimeout(function () {
+            var badge = badgeWrapper.children[0];
+            badge.classList.add('in');
+        }, 100 + 100 * index);
+    };
+    Badges.prototype.removeBadge = function (leavingSiteId) {
+        var index = this.findBadgeInDOM(leavingSiteId);
+        if (index > -1) {
+            this.removeFromDOM(index);
+        }
+        else {
+            this.logger.error(new RangeError("Badge for siteId " + leavingSiteId + " not found in DOM."));
+        }
+    };
+    Badges.prototype.removeFromDOM = function (index) {
+        this.logger.info('someone left');
+        var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
+        var toRemove = badges[index];
+        this.targetElement.removeChild(toRemove);
+    };
+    Badges.prototype.findBadgeInDOM = function (leavingSiteId) {
+        var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
+        for (var i = 0; i < badges.length; i++) {
+            if (badges[i].dataset.siteId === leavingSiteId.toString()) {
+                return i;
+            }
+        }
+        return -1;
+    };
+    Badges.prototype.createBadge = function (data) {
+        var badgeWrapper = document.createElement('span');
+        badgeWrapper.className = 'tsync-badge-wrapper';
+        badgeWrapper.dataset.siteId = data.siteId.toString();
+        var badge = document.createElement('div');
+        badge.style.backgroundImage = "url(\"" + data.avatar + "\")";
+        badge.className = 'tsync-badge';
+        var tooltip = document.createElement('span');
+        tooltip.className = 'tsync-tooltip';
+        tooltip.innerText = data.name;
+        if (this.siteId === data.siteId) {
+            tooltip.innerText += ' (you)';
+        }
+        badgeWrapper.appendChild(badge);
+        badgeWrapper.appendChild(tooltip);
+        return badgeWrapper;
+    };
+    return Badges;
+}());
+exports.default = Badges;
+
+
+/***/ }),
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* 
@@ -21612,13 +20636,542 @@ module.exports = g;
 //# sourceMappingURL=noty.js.map
 
 /***/ }),
+/* 27 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(28);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {"insertAt":"top"}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(1)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../css-loader/index.js!../../sass-loader/lib/loader.js!./noty.css", function() {
+			var newContent = require("!!../../css-loader/index.js!../../sass-loader/lib/loader.js!./noty.css");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 28 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, ".noty_layout_mixin, #noty_layout__top, #noty_layout__topLeft, #noty_layout__topCenter, #noty_layout__topRight, #noty_layout__bottom, #noty_layout__bottomLeft, #noty_layout__bottomCenter, #noty_layout__bottomRight, #noty_layout__center, #noty_layout__centerLeft, #noty_layout__centerRight {\n  position: fixed;\n  margin: 0;\n  padding: 0;\n  z-index: 9999999;\n  -webkit-transform: translateZ(0) scale(1, 1);\n  transform: translateZ(0) scale(1, 1);\n  -webkit-backface-visibility: hidden;\n  backface-visibility: hidden;\n  -webkit-font-smoothing: subpixel-antialiased;\n  filter: blur(0);\n  -webkit-filter: blur(0);\n  max-width: 90%; }\n\n#noty_layout__top {\n  top: 0;\n  left: 5%;\n  width: 90%; }\n\n#noty_layout__topLeft {\n  top: 20px;\n  left: 20px;\n  width: 325px; }\n\n#noty_layout__topCenter {\n  top: 5%;\n  left: 50%;\n  width: 325px;\n  -webkit-transform: translate(-webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__topRight {\n  top: 20px;\n  right: 20px;\n  width: 325px; }\n\n#noty_layout__bottom {\n  bottom: 0;\n  left: 5%;\n  width: 90%; }\n\n#noty_layout__bottomLeft {\n  bottom: 20px;\n  left: 20px;\n  width: 325px; }\n\n#noty_layout__bottomCenter {\n  bottom: 5%;\n  left: 50%;\n  width: 325px;\n  -webkit-transform: translate(-webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__bottomRight {\n  bottom: 20px;\n  right: 20px;\n  width: 325px; }\n\n#noty_layout__center {\n  top: 50%;\n  left: 50%;\n  width: 325px;\n  -webkit-transform: translate(-webkit-calc(-50% - .5px), -webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(calc(-50% - .5px), calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__centerLeft {\n  top: 50%;\n  left: 20px;\n  width: 325px;\n  -webkit-transform: translate(0, -webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(0, calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n#noty_layout__centerRight {\n  top: 50%;\n  right: 20px;\n  width: 325px;\n  -webkit-transform: translate(0, -webkit-calc(-50% - .5px)) translateZ(0) scale(1, 1);\n  transform: translate(0, calc(-50% - .5px)) translateZ(0) scale(1, 1); }\n\n.noty_progressbar {\n  display: none; }\n\n.noty_has_timeout.noty_has_progressbar .noty_progressbar {\n  display: block;\n  position: absolute;\n  left: 0;\n  bottom: 0;\n  height: 3px;\n  width: 100%;\n  background-color: #646464;\n  opacity: 0.2;\n  filter: alpha(opacity=10); }\n\n.noty_bar {\n  -webkit-backface-visibility: hidden;\n  -webkit-transform: translate(0, 0) translateZ(0) scale(1, 1);\n  -ms-transform: translate(0, 0) scale(1, 1);\n  transform: translate(0, 0) scale(1, 1);\n  -webkit-font-smoothing: subpixel-antialiased;\n  overflow: hidden; }\n\n.noty_effects_open {\n  opacity: 0;\n  -webkit-transform: translate(50%);\n  -ms-transform: translate(50%);\n  transform: translate(50%);\n  -webkit-animation: noty_anim_in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  animation: noty_anim_in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  -webkit-animation-fill-mode: forwards;\n  animation-fill-mode: forwards; }\n\n.noty_effects_close {\n  -webkit-animation: noty_anim_out 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  animation: noty_anim_out 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);\n  -webkit-animation-fill-mode: forwards;\n  animation-fill-mode: forwards; }\n\n.noty_fix_effects_height {\n  -webkit-animation: noty_anim_height 75ms ease-out;\n  animation: noty_anim_height 75ms ease-out; }\n\n.noty_close_with_click {\n  cursor: pointer; }\n\n.noty_close_button {\n  position: absolute;\n  top: 2px;\n  right: 2px;\n  font-weight: bold;\n  width: 20px;\n  height: 20px;\n  text-align: center;\n  line-height: 20px;\n  background-color: rgba(0, 0, 0, 0.05);\n  border-radius: 2px;\n  cursor: pointer;\n  -webkit-transition: all .2s ease-out;\n  transition: all .2s ease-out; }\n\n.noty_close_button:hover {\n  background-color: rgba(0, 0, 0, 0.1); }\n\n.noty_modal {\n  position: fixed;\n  width: 100%;\n  height: 100%;\n  background-color: #000;\n  z-index: 10000;\n  opacity: .3;\n  left: 0;\n  top: 0; }\n\n.noty_modal.noty_modal_open {\n  opacity: 0;\n  -webkit-animation: noty_modal_in .3s ease-out;\n  animation: noty_modal_in .3s ease-out; }\n\n.noty_modal.noty_modal_close {\n  -webkit-animation: noty_modal_out .3s ease-out;\n  animation: noty_modal_out .3s ease-out;\n  -webkit-animation-fill-mode: forwards;\n  animation-fill-mode: forwards; }\n\n@-webkit-keyframes noty_modal_in {\n  100% {\n    opacity: .3; } }\n\n@keyframes noty_modal_in {\n  100% {\n    opacity: .3; } }\n\n@-webkit-keyframes noty_modal_out {\n  100% {\n    opacity: 0; } }\n\n@keyframes noty_modal_out {\n  100% {\n    opacity: 0; } }\n\n@keyframes noty_modal_out {\n  100% {\n    opacity: 0; } }\n\n@-webkit-keyframes noty_anim_in {\n  100% {\n    -webkit-transform: translate(0);\n    transform: translate(0);\n    opacity: 1; } }\n\n@keyframes noty_anim_in {\n  100% {\n    -webkit-transform: translate(0);\n    transform: translate(0);\n    opacity: 1; } }\n\n@-webkit-keyframes noty_anim_out {\n  100% {\n    -webkit-transform: translate(50%);\n    transform: translate(50%);\n    opacity: 0; } }\n\n@keyframes noty_anim_out {\n  100% {\n    -webkit-transform: translate(50%);\n    transform: translate(50%);\n    opacity: 0; } }\n\n@-webkit-keyframes noty_anim_height {\n  100% {\n    height: 0; } }\n\n@keyframes noty_anim_height {\n  100% {\n    height: 0; } }\n\n.noty_theme__relax.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative; }\n\n.noty_theme__relax.noty_bar .noty_body {\n  padding: 10px; }\n\n.noty_theme__relax.noty_bar .noty_buttons {\n  border-top: 1px solid #e7e7e7;\n  padding: 5px 10px; }\n\n.noty_theme__relax.noty_type__alert,\n.noty_theme__relax.noty_type__notification {\n  background-color: #fff;\n  border: 1px solid #dedede;\n  color: #444; }\n\n.noty_theme__relax.noty_type__warning {\n  background-color: #FFEAA8;\n  border: 1px solid #FFC237;\n  color: #826200; }\n\n.noty_theme__relax.noty_type__warning .noty_buttons {\n  border-color: #dfaa30; }\n\n.noty_theme__relax.noty_type__error {\n  background-color: #FF8181;\n  border: 1px solid #e25353;\n  color: #FFF; }\n\n.noty_theme__relax.noty_type__error .noty_buttons {\n  border-color: darkred; }\n\n.noty_theme__relax.noty_type__info,\n.noty_theme__relax.noty_type__information {\n  background-color: #78C5E7;\n  border: 1px solid #3badd6;\n  color: #FFF; }\n\n.noty_theme__relax.noty_type__info .noty_buttons,\n.noty_theme__relax.noty_type__information .noty_buttons {\n  border-color: #0B90C4; }\n\n.noty_theme__relax.noty_type__success {\n  background-color: #BCF5BC;\n  border: 1px solid #7cdd77;\n  color: darkgreen; }\n\n.noty_theme__relax.noty_type__success .noty_buttons {\n  border-color: #50C24E; }\n\n.noty_theme__metroui.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  box-shadow: rgba(0, 0, 0, 0.298039) 0 0 5px 0; }\n\n.noty_theme__metroui.noty_bar .noty_progressbar {\n  position: absolute;\n  left: 0;\n  bottom: 0;\n  height: 3px;\n  width: 100%;\n  background-color: #000;\n  opacity: 0.2;\n  filter: alpha(opacity=20); }\n\n.noty_theme__metroui.noty_bar .noty_body {\n  padding: 1.25em;\n  font-size: 14px; }\n\n.noty_theme__metroui.noty_bar .noty_buttons {\n  padding: 0 10px .5em 10px; }\n\n.noty_theme__metroui.noty_type__alert,\n.noty_theme__metroui.noty_type__notification {\n  background-color: #fff;\n  color: #1d1d1d; }\n\n.noty_theme__metroui.noty_type__warning {\n  background-color: #FA6800;\n  color: #fff; }\n\n.noty_theme__metroui.noty_type__error {\n  background-color: #CE352C;\n  color: #FFF; }\n\n.noty_theme__metroui.noty_type__info,\n.noty_theme__metroui.noty_type__information {\n  background-color: #1BA1E2;\n  color: #FFF; }\n\n.noty_theme__metroui.noty_type__success {\n  background-color: #60A917;\n  color: #fff; }\n\n.noty_theme__mint.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative; }\n\n.noty_theme__mint.noty_bar .noty_body {\n  padding: 10px;\n  font-size: 14px; }\n\n.noty_theme__mint.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__mint.noty_type__alert,\n.noty_theme__mint.noty_type__notification {\n  background-color: #fff;\n  border-bottom: 1px solid #D1D1D1;\n  color: #2F2F2F; }\n\n.noty_theme__mint.noty_type__warning {\n  background-color: #FFAE42;\n  border-bottom: 1px solid #E89F3C;\n  color: #fff; }\n\n.noty_theme__mint.noty_type__error {\n  background-color: #DE636F;\n  border-bottom: 1px solid #CA5A65;\n  color: #fff; }\n\n.noty_theme__mint.noty_type__info,\n.noty_theme__mint.noty_type__information {\n  background-color: #7F7EFF;\n  border-bottom: 1px solid #7473E8;\n  color: #fff; }\n\n.noty_theme__mint.noty_type__success {\n  background-color: #AFC765;\n  border-bottom: 1px solid #A0B55C;\n  color: #fff; }\n\n.noty_theme__sunset.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative; }\n\n.noty_theme__sunset.noty_bar .noty_body {\n  padding: 10px;\n  font-size: 14px;\n  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1); }\n\n.noty_theme__sunset.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__sunset.noty_type__alert,\n.noty_theme__sunset.noty_type__notification {\n  background-color: #073B4C;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__alert .noty_progressbar,\n.noty_theme__sunset.noty_type__notification .noty_progressbar {\n  background-color: #fff; }\n\n.noty_theme__sunset.noty_type__warning {\n  background-color: #FFD166;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__error {\n  background-color: #EF476F;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__error .noty_progressbar {\n  opacity: .4; }\n\n.noty_theme__sunset.noty_type__info,\n.noty_theme__sunset.noty_type__information {\n  background-color: #118AB2;\n  color: #fff; }\n\n.noty_theme__sunset.noty_type__info .noty_progressbar,\n.noty_theme__sunset.noty_type__information .noty_progressbar {\n  opacity: .6; }\n\n.noty_theme__sunset.noty_type__success {\n  background-color: #06D6A0;\n  color: #fff; }\n\n.noty_theme__bootstrap-v3.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  border: 1px solid transparent;\n  border-radius: 4px; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_body {\n  padding: 15px; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_close_button {\n  font-size: 21px;\n  font-weight: 700;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .2;\n  background: transparent; }\n\n.noty_theme__bootstrap-v3.noty_bar .noty_close_button:hover {\n  background: transparent;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .5; }\n\n.noty_theme__bootstrap-v3.noty_type__alert,\n.noty_theme__bootstrap-v3.noty_type__notification {\n  background-color: #fff;\n  color: inherit; }\n\n.noty_theme__bootstrap-v3.noty_type__warning {\n  background-color: #fcf8e3;\n  color: #8a6d3b;\n  border-color: #faebcc; }\n\n.noty_theme__bootstrap-v3.noty_type__error {\n  background-color: #f2dede;\n  color: #a94442;\n  border-color: #ebccd1; }\n\n.noty_theme__bootstrap-v3.noty_type__info,\n.noty_theme__bootstrap-v3.noty_type__information {\n  background-color: #d9edf7;\n  color: #31708f;\n  border-color: #bce8f1; }\n\n.noty_theme__bootstrap-v3.noty_type__success {\n  background-color: #dff0d8;\n  color: #3c763d;\n  border-color: #d6e9c6; }\n\n.noty_theme__bootstrap-v4.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  border: 1px solid transparent;\n  border-radius: .25rem; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_body {\n  padding: .75rem 1.25rem; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_close_button {\n  font-size: 1.5rem;\n  font-weight: 700;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .5;\n  background: transparent; }\n\n.noty_theme__bootstrap-v4.noty_bar .noty_close_button:hover {\n  background: transparent;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .75; }\n\n.noty_theme__bootstrap-v4.noty_type__alert,\n.noty_theme__bootstrap-v4.noty_type__notification {\n  background-color: #fff;\n  color: inherit; }\n\n.noty_theme__bootstrap-v4.noty_type__warning {\n  background-color: #fcf8e3;\n  color: #8a6d3b;\n  border-color: #faebcc; }\n\n.noty_theme__bootstrap-v4.noty_type__error {\n  background-color: #f2dede;\n  color: #a94442;\n  border-color: #ebccd1; }\n\n.noty_theme__bootstrap-v4.noty_type__info,\n.noty_theme__bootstrap-v4.noty_type__information {\n  background-color: #d9edf7;\n  color: #31708f;\n  border-color: #bce8f1; }\n\n.noty_theme__bootstrap-v4.noty_type__success {\n  background-color: #dff0d8;\n  color: #3c763d;\n  border-color: #d6e9c6; }\n\n.noty_theme__semanticui.noty_bar {\n  margin: 4px 0;\n  overflow: hidden;\n  position: relative;\n  border: 1px solid transparent;\n  font-size: 1em;\n  border-radius: .28571429rem;\n  box-shadow: 0 0 0 1px rgba(34, 36, 38, 0.22) inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_bar .noty_body {\n  padding: 1em 1.5em;\n  line-height: 1.4285em; }\n\n.noty_theme__semanticui.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_theme__semanticui.noty_type__alert,\n.noty_theme__semanticui.noty_type__notification {\n  background-color: #f8f8f9;\n  color: rgba(0, 0, 0, 0.87); }\n\n.noty_theme__semanticui.noty_type__warning {\n  background-color: #fffaf3;\n  color: #573a08;\n  box-shadow: 0 0 0 1px #c9ba9b inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_type__error {\n  background-color: #fff6f6;\n  color: #9f3a38;\n  box-shadow: 0 0 0 1px #e0b4b4 inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_type__info,\n.noty_theme__semanticui.noty_type__information {\n  background-color: #f8ffff;\n  color: #276f86;\n  box-shadow: 0 0 0 1px #a9d5de inset, 0 0 0 0 transparent; }\n\n.noty_theme__semanticui.noty_type__success {\n  background-color: #fcfff5;\n  color: #2c662d;\n  box-shadow: 0 0 0 1px #a3c293 inset, 0 0 0 0 transparent; }\n\n.noty_theme__nest.noty_bar {\n  margin: 0 0 15px 0;\n  overflow: hidden;\n  border-radius: 2px;\n  position: relative;\n  box-shadow: rgba(0, 0, 0, 0.098039) 5px 4px 10px 0; }\n\n.noty_theme__nest.noty_bar .noty_body {\n  padding: 10px;\n  font-size: 14px;\n  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1); }\n\n.noty_theme__nest.noty_bar .noty_buttons {\n  padding: 10px; }\n\n.noty_layout .noty_theme__nest.noty_bar {\n  z-index: 5; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(2) {\n  position: absolute;\n  top: 0;\n  margin-top: 4px;\n  margin-right: -4px;\n  margin-left: 4px;\n  z-index: 4;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(3) {\n  position: absolute;\n  top: 0;\n  margin-top: 8px;\n  margin-right: -8px;\n  margin-left: 8px;\n  z-index: 3;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(4) {\n  position: absolute;\n  top: 0;\n  margin-top: 12px;\n  margin-right: -12px;\n  margin-left: 12px;\n  z-index: 2;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(5) {\n  position: absolute;\n  top: 0;\n  margin-top: 16px;\n  margin-right: -16px;\n  margin-left: 16px;\n  z-index: 1;\n  width: 100%; }\n\n.noty_layout .noty_theme__nest.noty_bar:nth-child(n+6) {\n  position: absolute;\n  top: 0;\n  margin-top: 20px;\n  margin-right: -20px;\n  margin-left: 20px;\n  z-index: -1;\n  width: 100%; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(2),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(2) {\n  margin-top: 4px;\n  margin-left: -4px;\n  margin-right: 4px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(3),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(3) {\n  margin-top: 8px;\n  margin-left: -8px;\n  margin-right: 8px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(4),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(4) {\n  margin-top: 12px;\n  margin-left: -12px;\n  margin-right: 12px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(5),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(5) {\n  margin-top: 16px;\n  margin-left: -16px;\n  margin-right: 16px; }\n\n#noty_layout__bottomLeft .noty_theme__nest.noty_bar:nth-child(n+6),\n#noty_layout__topLeft .noty_theme__nest.noty_bar:nth-child(n+6) {\n  margin-top: 20px;\n  margin-left: -20px;\n  margin-right: 20px; }\n\n.noty_theme__nest.noty_type__alert,\n.noty_theme__nest.noty_type__notification {\n  background-color: #073B4C;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__alert .noty_progressbar,\n.noty_theme__nest.noty_type__notification .noty_progressbar {\n  background-color: #fff; }\n\n.noty_theme__nest.noty_type__warning {\n  background-color: #FFD166;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__error {\n  background-color: #EF476F;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__error .noty_progressbar {\n  opacity: .4; }\n\n.noty_theme__nest.noty_type__info,\n.noty_theme__nest.noty_type__information {\n  background-color: #118AB2;\n  color: #fff; }\n\n.noty_theme__nest.noty_type__info .noty_progressbar,\n.noty_theme__nest.noty_type__information .noty_progressbar {\n  opacity: .6; }\n\n.noty_theme__nest.noty_type__success {\n  background-color: #06D6A0;\n  color: #fff; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 29 */
+/***/ (function(module, exports) {
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+  // get current location
+  var location = typeof window !== "undefined" && window.location;
+
+  if (!location) {
+    throw new Error("fixUrls requires window.location");
+  }
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+	  return css;
+  }
+
+  var baseUrl = location.protocol + "//" + location.host;
+  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+	This regular expression is just a way to recursively match brackets within
+	a string.
+
+	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+	   (  = Start a capturing group
+	     (?:  = Start a non-capturing group
+	         [^)(]  = Match anything that isn't a parentheses
+	         |  = OR
+	         \(  = Match a start parentheses
+	             (?:  = Start another non-capturing groups
+	                 [^)(]+  = Match anything that isn't a parentheses
+	                 |  = OR
+	                 \(  = Match a start parentheses
+	                     [^)(]*  = Match anything that isn't a parentheses
+	                 \)  = Match a end parentheses
+	             )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+	 \)  = Match a close parens
+
+	 /gi  = Get all matches, not the first.  Be case insensitive.
+	 */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl
+			.trim()
+			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
+			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
+		  return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+		  	//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	});
+
+	// send back the fixed css
+	return fixedCss;
+};
+
+
+/***/ }),
+/* 30 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function createAnonName() {
+    var adjective = randomChoice(ADJECTIVES);
+    var noun = randomChoice(NOUNS);
+    return capitalize(adjective + ' ' + noun);
+}
+exports.createAnonName = createAnonName;
+function randomChoice(list) {
+    var randomIndex = Math.round(Math.random() * (list.length - 1));
+    return list[randomIndex];
+}
+function capitalize(text) {
+    var words = text.split(' ');
+    return words.map(function (word) { return word[0].toUpperCase() + word.slice(1); }).join(' ');
+}
+var ADJECTIVES = [
+    'massive',
+    'impressive',
+    'bearded',
+    'angry',
+    'shaky',
+    'sticky',
+    'fluffy',
+    'frozen',
+    'bonkers',
+    'harsh',
+    'greedy',
+    'magical',
+    'confused',
+    'high-end',
+    'slippery',
+    'vengeful',
+    'stunned',
+    'flickering',
+    'hyperactive'
+];
+var NOUNS = [
+    'guava jelly',
+    'mango chutney',
+    'ginger jam',
+    'sugar snap peas',
+    'moon cakes',
+    'soda crackers',
+    'banana split',
+    'nougat',
+    'gherkins',
+    'gouda',
+    'flan',
+    'trifle',
+    'dumpling',
+    'ladyfinger',
+    'marmalade',
+    'sushi',
+    'wasabi pea',
+    'falafel',
+    'goulash',
+    'crab cake'
+];
+
+
+/***/ }),
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * Binding between the textsync document model and that of Quilljs
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+var editorFormat = __webpack_require__(6);
+var notifications = __webpack_require__(2);
+__webpack_require__(32);
+var Delta = __webpack_require__(34);
+var runes = __webpack_require__(4);
+var QuillAdaptor = (function () {
+    function QuillAdaptor(quill, textsync, docId, notifier, logger) {
+        this.siteId = Math.floor(Math.random() * Math.pow(2, 32));
+        this.docId = docId;
+        this.logger = logger;
+        this.quill = quill;
+        this.textsync = textsync;
+        this.cursorModule = quill.getModule('cursors');
+        this.notifier = notifier;
+        // The "empty" Quill document is a single newline. It can't be removed, so we need
+        // to initialise the textsync document with it.
+        this.textsync.initialContent('\n');
+        this.quill.setText('');
+        this.quill.on('text-change', this.editorChange.bind(this));
+        this.quill.on('selection-change', this.selectionChange.bind(this));
+    }
+    QuillAdaptor.prototype.applyOperations = function (operations) {
+        var deltas = makeDeltas(operations);
+        for (var _i = 0, deltas_1 = deltas; _i < deltas_1.length; _i++) {
+            var delta = deltas_1[_i];
+            this.quill.updateContents(delta, 'silent');
+        }
+    };
+    QuillAdaptor.prototype.setCursor = function (cursorOp) {
+        this.cursorModule.setCursor(cursorOp);
+    };
+    QuillAdaptor.prototype.removeCursor = function (siteId) {
+        this.cursorModule.removeCursor(siteId);
+    };
+    QuillAdaptor.prototype.disable = function () {
+        this.quill.disable();
+    };
+    QuillAdaptor.prototype.displayError = function (error) {
+        this.logger.error(error);
+    };
+    QuillAdaptor.prototype.selectionChange = function (range, oldRange, source) {
+        this.logger.debug('selection change');
+        if (range) {
+            this.logger.debug('range == ', range, source);
+            var start = range.index;
+            var end = range.length > 0 ? start + range.length : null;
+            this.textsync.updateCursor(start, end);
+        }
+        else {
+            this.logger.debug(this.siteId + " has defocussed");
+            this.textsync.updateCursor(null);
+        }
+    };
+    QuillAdaptor.prototype.editorChange = function (delta, oldDelta, source) {
+        // This is a temporary ban of emoji until we have full support.
+        // If you are reading this after 01/11/17 strike up a conversation
+        // about why we haven't fixed emoji yet! - Jonathan Lloyd
+        var shouldRejectChange = false;
+        for (var _i = 0, _a = delta.ops; _i < _a.length; _i++) {
+            var deltaOp = _a[_i];
+            if (deltaOp.insert) {
+                var containsBadRune = runes(deltaOp.insert).reduce(function (acc, val) {
+                    var seenBadRune = acc;
+                    var isBadRune = val.length > 1;
+                    return seenBadRune || isBadRune;
+                }, false);
+                if (containsBadRune) {
+                    shouldRejectChange = true;
+                    break;
+                }
+            }
+        }
+        if (shouldRejectChange) {
+            this.quill.setContents(oldDelta, 'silent');
+            this.notifier.notify("Sadly we can't handle emoji at the moment. We're working on it!", notifications.NotificationType.Warning);
+            return;
+        }
+        this.logger.debug('text change', delta, oldDelta);
+        // The character index which the delta operation we are currently processing
+        var changeIndex = 0;
+        // The difference we need to apply when indexing in to the oldDelta by character, because
+        // we have deleted characters from the document which still exist in the oldDelta.
+        var oldDeltaChangeOffset = 0;
+        this.logger.debug('received event from editor:', JSON.stringify(delta));
+        for (var _b = 0, _c = delta.ops; _b < _c.length; _b++) {
+            var deltaOp = _c[_b];
+            if (deltaOp.hasOwnProperty('retain')) {
+                // "retain" ops may carry an "attributes" field to indicate that the text has not
+                // changed, but the attributes have.
+                if (deltaOp.hasOwnProperty('attributes')) {
+                    // If the attributes have changed for a portion of text, we may have to handle
+                    // this as multiple changes, because the previous attributes of the text might
+                    // not be consistent for the whole span we are trying to merge a new attribute
+                    // in to.
+                    // We look at the previous delta (which represents the entire document before
+                    // this changeset) in order to merge the new attribute set in to each
+                    // different combination of attributes that previous applied.
+                    var oldDeltaIndex = changeIndex + oldDeltaChangeOffset;
+                    var affectedDelta = oldDelta.slice(oldDeltaIndex, oldDeltaIndex + deltaOp.retain);
+                    for (var _d = 0, _e = affectedDelta.ops; _d < _e.length; _d++) {
+                        var affectedOp = _e[_d];
+                        var mergedAttrs = Object.assign({}, affectedOp.attributes, deltaOp.attributes);
+                        var wireAttrs = QuillAttributes.toWireAttributes(mergedAttrs);
+                        if (changeIndex == this.quill.getLength() - 1) {
+                            this.quill.formatText(changeIndex, 1, { header: false, list: false }, 'silent'); // fishy. formatting could be any block level, not just header
+                            this.quill.insertText(changeIndex, '\n', mergedAttrs, 'silent');
+                            this.textsync.insertText(changeIndex, affectedOp.insert, wireAttrs);
+                        }
+                        else {
+                            this.textsync.deleteText(changeIndex, affectedOp.insert.length);
+                            this.textsync.insertText(changeIndex, affectedOp.insert, wireAttrs);
+                        }
+                        changeIndex += affectedOp.insert.length;
+                    }
+                }
+                else {
+                    changeIndex += deltaOp.retain;
+                }
+            }
+            else if (deltaOp.hasOwnProperty('insert')) {
+                this.textsync.insertText(changeIndex, deltaOp.insert, QuillAttributes.toWireAttributes(deltaOp.attributes));
+                changeIndex += deltaOp.insert.length;
+            }
+            else if (deltaOp.hasOwnProperty('delete')) {
+                this.textsync.deleteText(changeIndex, deltaOp.delete);
+                oldDeltaChangeOffset += deltaOp.delete;
+            }
+        }
+    };
+    return QuillAdaptor;
+}());
+exports.default = QuillAdaptor;
+var QuillAttributes = (function () {
+    function QuillAttributes() {
+        this.bold = false;
+        this.italic = false;
+        this.underline = false;
+        this.strike = false;
+        this.header = false;
+        this.link = undefined;
+        this.size = undefined;
+        this.color = undefined;
+        this.background = undefined;
+        this.list = undefined;
+    }
+    QuillAttributes.fromWireAttributes = function (wireAttrs) {
+        var quillAttrs = new QuillAttributes();
+        quillAttrs.bold = wireAttrs.bold || false;
+        quillAttrs.italic = wireAttrs.italic || false;
+        quillAttrs.underline = wireAttrs.underline || false;
+        quillAttrs.strike = wireAttrs.strikethrough || false;
+        quillAttrs.link = wireAttrs.hyperlink || '';
+        quillAttrs.header = wireAttrs.header || false;
+        quillAttrs.size = wireAttrs.size || '';
+        quillAttrs.color = wireAttrs.color || '';
+        quillAttrs.background = wireAttrs.background || '';
+        quillAttrs.list = QuillAttributes.listFromWireAttributes(wireAttrs.list);
+        return quillAttrs;
+    };
+    QuillAttributes.fromDeltaAttributes = function (attrs) {
+        var quillAttrs = new QuillAttributes();
+        if (attrs) {
+            quillAttrs.bold = attrs.bold || false;
+            quillAttrs.italic = attrs.italic || false;
+            quillAttrs.underline = attrs.underline || false;
+            quillAttrs.strike = attrs.strike || false;
+            quillAttrs.link = attrs.link || '';
+            quillAttrs.header = attrs.link || false;
+            quillAttrs.size = attrs.size || '';
+            quillAttrs.color = attrs.color || '';
+            quillAttrs.background = attrs.background || '';
+            quillAttrs.list = attrs.list || '';
+        }
+        return quillAttrs;
+    };
+    QuillAttributes.toWireAttributes = function (quillAttrs) {
+        var attrs = {};
+        if (quillAttrs) {
+            if (quillAttrs.bold)
+                attrs.bold = true;
+            if (quillAttrs.italic)
+                attrs.italic = true;
+            if (quillAttrs.underline)
+                attrs.underline = true;
+            if (quillAttrs.strike)
+                attrs.strikethrough = true;
+            if (quillAttrs.link)
+                attrs.hyperlink = quillAttrs.link;
+            if (quillAttrs.header)
+                attrs.header = quillAttrs.header;
+            if (quillAttrs.size)
+                attrs.size = quillAttrs.size;
+            if (quillAttrs.color)
+                attrs.color = quillAttrs.color;
+            if (quillAttrs.background)
+                attrs.background = quillAttrs.background;
+            if (quillAttrs.list)
+                attrs.list = QuillAttributes.listFromDeltaType(quillAttrs.list);
+        }
+        return attrs;
+    };
+    QuillAttributes.listFromDeltaType = function (deltaList) {
+        if (deltaList == 'bullet') {
+            return 1;
+        }
+        else if (deltaList == 'ordered') {
+            return 2;
+        }
+        else {
+            return undefined;
+        }
+    };
+    QuillAttributes.listFromWireAttributes = function (e) {
+        if (e == 1) {
+            return 'bullet';
+        }
+        else if (e == 2) {
+            return 'ordered';
+        }
+        else {
+            return undefined;
+        }
+    };
+    return QuillAttributes;
+}());
+exports.QuillAttributes = QuillAttributes;
+function makeDeltas(docOps) {
+    var deltas = [];
+    var insertBuffer = '';
+    for (var i = 0; i < docOps.length; i++) {
+        var delta = new Delta();
+        var docOp = docOps[i];
+        var nextDocOp = docOps[i + 1] || null;
+        var runesToRetain = void 0;
+        switch (docOp.opType) {
+            case editorFormat.OpType.Insert:
+                var canSquashIntoNextOp = nextDocOp !== null &&
+                    nextDocOp.opType === editorFormat.OpType.Insert &&
+                    JSON.stringify(nextDocOp.attributes) ===
+                        JSON.stringify(docOp.attributes) &&
+                    nextDocOp.index === docOp.index + 1;
+                if (canSquashIntoNextOp) {
+                    insertBuffer += docOp.text;
+                }
+                else {
+                    // Retain
+                    runesToRetain = docOp.index - insertBuffer.length;
+                    delta.retain(runesToRetain);
+                    // Insert
+                    var attrs = docOp.attributes || {};
+                    delta.insert(insertBuffer + docOp.text, QuillAttributes.fromWireAttributes(attrs));
+                    insertBuffer = '';
+                    deltas.push(delta);
+                }
+                break;
+            case editorFormat.OpType.Delete:
+                runesToRetain = docOp.index;
+                delta.retain(runesToRetain);
+                delta.delete(1);
+                deltas.push(delta);
+                break;
+        }
+    }
+    return deltas;
+}
+exports.makeDeltas = makeDeltas;
+
+
+/***/ }),
+/* 32 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(33);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {"insertAt":"top"}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(1)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./cursors.scss", function() {
+			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./cursors.scss");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
 /* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var diff = __webpack_require__(30);
-var equal = __webpack_require__(3);
-var extend = __webpack_require__(4);
-var op = __webpack_require__(34);
+exports = module.exports = __webpack_require__(0)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, "/********\n * VARS *\n ********/\n/**********\n * MIXINS *\n **********/\n/***********\n * CURSORS *\n ***********/\n.ql-container {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column; }\n\n.ql-editor {\n  position: relative;\n  flex: 1;\n  outline: none;\n  tab-size: 4;\n  white-space: pre-wrap; }\n\n.ql-cursors, .ql-cursors div {\n  position: static;\n  display: block;\n  box-sizing: content-box; }\n\n.ql-cursor.hidden {\n  display: none; }\n\n.ql-cursor .ql-cursor-caret-container,\n.ql-cursor .ql-cursor-flag {\n  position: absolute; }\n\n.ql-cursor .ql-cursor-flag {\n  z-index: 1;\n  transform: translate3d(-1px, -100%, 0);\n  opacity: 0;\n  color: white;\n  padding-bottom: 2px; }\n  @media screen {\n    .ql-cursor .ql-cursor-flag {\n      transition: opacity 0ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 0ms; } }\n  .ql-cursor .ql-cursor-flag .ql-cursor-name {\n    margin-left: 5px;\n    margin-right: 2.5px;\n    display: inline-block;\n    margin-top: -2px; }\n  .ql-cursor .ql-cursor-flag .ql-cursor-flag-flap {\n    display: inline-block;\n    z-index: -1;\n    width: 5px;\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    right: -2.5px;\n    border-radius: 0px;\n    background-color: inherit; }\n\n.ql-cursor .ql-cursor-flag-always-on {\n  opacity: 1; }\n\n.ql-cursor .ql-cursor-caret-container:hover + .ql-cursor-flag {\n  opacity: 1;\n  transition: none; }\n\n.ql-cursor .ql-cursor-caret-container {\n  margin-left: -9px;\n  padding: 0 9px;\n  z-index: 1; }\n  .ql-cursor .ql-cursor-caret-container .ql-cursor-caret {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    width: 2px;\n    margin-left: -1px;\n    background-color: attr(data-color); }\n\n.ql-cursor .ql-cursor-selection-block {\n  position: absolute;\n  pointer-events: none; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 34 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var diff = __webpack_require__(35);
+var equal = __webpack_require__(8);
+var extend = __webpack_require__(9);
+var op = __webpack_require__(38);
 
 
 var NULL_CHARACTER = String.fromCharCode(0);  // Placeholder char for embed in diff()
@@ -21932,11 +21485,756 @@ module.exports = Delta;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
+/***/ (function(module, exports) {
+
+/**
+ * This library modifies the diff-patch-match library by Neil Fraser
+ * by removing the patch and match functionality and certain advanced
+ * options in the diff function. The original license is as follows:
+ *
+ * ===
+ *
+ * Diff Match and Patch
+ *
+ * Copyright 2006 Google Inc.
+ * http://code.google.com/p/google-diff-match-patch/
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+/**
+ * The data structure representing a diff is an array of tuples:
+ * [[DIFF_DELETE, 'Hello'], [DIFF_INSERT, 'Goodbye'], [DIFF_EQUAL, ' world.']]
+ * which means: delete 'Hello', add 'Goodbye' and keep ' world.'
+ */
+var DIFF_DELETE = -1;
+var DIFF_INSERT = 1;
+var DIFF_EQUAL = 0;
+
+
+/**
+ * Find the differences between two texts.  Simplifies the problem by stripping
+ * any common prefix or suffix off the texts before diffing.
+ * @param {string} text1 Old string to be diffed.
+ * @param {string} text2 New string to be diffed.
+ * @param {Int} cursor_pos Expected edit position in text1 (optional)
+ * @return {Array} Array of diff tuples.
+ */
+function diff_main(text1, text2, cursor_pos) {
+  // Check for equality (speedup).
+  if (text1 == text2) {
+    if (text1) {
+      return [[DIFF_EQUAL, text1]];
+    }
+    return [];
+  }
+
+  // Check cursor_pos within bounds
+  if (cursor_pos < 0 || text1.length < cursor_pos) {
+    cursor_pos = null;
+  }
+
+  // Trim off common prefix (speedup).
+  var commonlength = diff_commonPrefix(text1, text2);
+  var commonprefix = text1.substring(0, commonlength);
+  text1 = text1.substring(commonlength);
+  text2 = text2.substring(commonlength);
+
+  // Trim off common suffix (speedup).
+  commonlength = diff_commonSuffix(text1, text2);
+  var commonsuffix = text1.substring(text1.length - commonlength);
+  text1 = text1.substring(0, text1.length - commonlength);
+  text2 = text2.substring(0, text2.length - commonlength);
+
+  // Compute the diff on the middle block.
+  var diffs = diff_compute_(text1, text2);
+
+  // Restore the prefix and suffix.
+  if (commonprefix) {
+    diffs.unshift([DIFF_EQUAL, commonprefix]);
+  }
+  if (commonsuffix) {
+    diffs.push([DIFF_EQUAL, commonsuffix]);
+  }
+  diff_cleanupMerge(diffs);
+  if (cursor_pos != null) {
+    diffs = fix_cursor(diffs, cursor_pos);
+  }
+  return diffs;
+};
+
+
+/**
+ * Find the differences between two texts.  Assumes that the texts do not
+ * have any common prefix or suffix.
+ * @param {string} text1 Old string to be diffed.
+ * @param {string} text2 New string to be diffed.
+ * @return {Array} Array of diff tuples.
+ */
+function diff_compute_(text1, text2) {
+  var diffs;
+
+  if (!text1) {
+    // Just add some text (speedup).
+    return [[DIFF_INSERT, text2]];
+  }
+
+  if (!text2) {
+    // Just delete some text (speedup).
+    return [[DIFF_DELETE, text1]];
+  }
+
+  var longtext = text1.length > text2.length ? text1 : text2;
+  var shorttext = text1.length > text2.length ? text2 : text1;
+  var i = longtext.indexOf(shorttext);
+  if (i != -1) {
+    // Shorter text is inside the longer text (speedup).
+    diffs = [[DIFF_INSERT, longtext.substring(0, i)],
+             [DIFF_EQUAL, shorttext],
+             [DIFF_INSERT, longtext.substring(i + shorttext.length)]];
+    // Swap insertions for deletions if diff is reversed.
+    if (text1.length > text2.length) {
+      diffs[0][0] = diffs[2][0] = DIFF_DELETE;
+    }
+    return diffs;
+  }
+
+  if (shorttext.length == 1) {
+    // Single character string.
+    // After the previous speedup, the character can't be an equality.
+    return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
+  }
+
+  // Check to see if the problem can be split in two.
+  var hm = diff_halfMatch_(text1, text2);
+  if (hm) {
+    // A half-match was found, sort out the return data.
+    var text1_a = hm[0];
+    var text1_b = hm[1];
+    var text2_a = hm[2];
+    var text2_b = hm[3];
+    var mid_common = hm[4];
+    // Send both pairs off for separate processing.
+    var diffs_a = diff_main(text1_a, text2_a);
+    var diffs_b = diff_main(text1_b, text2_b);
+    // Merge the results.
+    return diffs_a.concat([[DIFF_EQUAL, mid_common]], diffs_b);
+  }
+
+  return diff_bisect_(text1, text2);
+};
+
+
+/**
+ * Find the 'middle snake' of a diff, split the problem in two
+ * and return the recursively constructed diff.
+ * See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
+ * @param {string} text1 Old string to be diffed.
+ * @param {string} text2 New string to be diffed.
+ * @return {Array} Array of diff tuples.
+ * @private
+ */
+function diff_bisect_(text1, text2) {
+  // Cache the text lengths to prevent multiple calls.
+  var text1_length = text1.length;
+  var text2_length = text2.length;
+  var max_d = Math.ceil((text1_length + text2_length) / 2);
+  var v_offset = max_d;
+  var v_length = 2 * max_d;
+  var v1 = new Array(v_length);
+  var v2 = new Array(v_length);
+  // Setting all elements to -1 is faster in Chrome & Firefox than mixing
+  // integers and undefined.
+  for (var x = 0; x < v_length; x++) {
+    v1[x] = -1;
+    v2[x] = -1;
+  }
+  v1[v_offset + 1] = 0;
+  v2[v_offset + 1] = 0;
+  var delta = text1_length - text2_length;
+  // If the total number of characters is odd, then the front path will collide
+  // with the reverse path.
+  var front = (delta % 2 != 0);
+  // Offsets for start and end of k loop.
+  // Prevents mapping of space beyond the grid.
+  var k1start = 0;
+  var k1end = 0;
+  var k2start = 0;
+  var k2end = 0;
+  for (var d = 0; d < max_d; d++) {
+    // Walk the front path one step.
+    for (var k1 = -d + k1start; k1 <= d - k1end; k1 += 2) {
+      var k1_offset = v_offset + k1;
+      var x1;
+      if (k1 == -d || (k1 != d && v1[k1_offset - 1] < v1[k1_offset + 1])) {
+        x1 = v1[k1_offset + 1];
+      } else {
+        x1 = v1[k1_offset - 1] + 1;
+      }
+      var y1 = x1 - k1;
+      while (x1 < text1_length && y1 < text2_length &&
+             text1.charAt(x1) == text2.charAt(y1)) {
+        x1++;
+        y1++;
+      }
+      v1[k1_offset] = x1;
+      if (x1 > text1_length) {
+        // Ran off the right of the graph.
+        k1end += 2;
+      } else if (y1 > text2_length) {
+        // Ran off the bottom of the graph.
+        k1start += 2;
+      } else if (front) {
+        var k2_offset = v_offset + delta - k1;
+        if (k2_offset >= 0 && k2_offset < v_length && v2[k2_offset] != -1) {
+          // Mirror x2 onto top-left coordinate system.
+          var x2 = text1_length - v2[k2_offset];
+          if (x1 >= x2) {
+            // Overlap detected.
+            return diff_bisectSplit_(text1, text2, x1, y1);
+          }
+        }
+      }
+    }
+
+    // Walk the reverse path one step.
+    for (var k2 = -d + k2start; k2 <= d - k2end; k2 += 2) {
+      var k2_offset = v_offset + k2;
+      var x2;
+      if (k2 == -d || (k2 != d && v2[k2_offset - 1] < v2[k2_offset + 1])) {
+        x2 = v2[k2_offset + 1];
+      } else {
+        x2 = v2[k2_offset - 1] + 1;
+      }
+      var y2 = x2 - k2;
+      while (x2 < text1_length && y2 < text2_length &&
+             text1.charAt(text1_length - x2 - 1) ==
+             text2.charAt(text2_length - y2 - 1)) {
+        x2++;
+        y2++;
+      }
+      v2[k2_offset] = x2;
+      if (x2 > text1_length) {
+        // Ran off the left of the graph.
+        k2end += 2;
+      } else if (y2 > text2_length) {
+        // Ran off the top of the graph.
+        k2start += 2;
+      } else if (!front) {
+        var k1_offset = v_offset + delta - k2;
+        if (k1_offset >= 0 && k1_offset < v_length && v1[k1_offset] != -1) {
+          var x1 = v1[k1_offset];
+          var y1 = v_offset + x1 - k1_offset;
+          // Mirror x2 onto top-left coordinate system.
+          x2 = text1_length - x2;
+          if (x1 >= x2) {
+            // Overlap detected.
+            return diff_bisectSplit_(text1, text2, x1, y1);
+          }
+        }
+      }
+    }
+  }
+  // Diff took too long and hit the deadline or
+  // number of diffs equals number of characters, no commonality at all.
+  return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
+};
+
+
+/**
+ * Given the location of the 'middle snake', split the diff in two parts
+ * and recurse.
+ * @param {string} text1 Old string to be diffed.
+ * @param {string} text2 New string to be diffed.
+ * @param {number} x Index of split point in text1.
+ * @param {number} y Index of split point in text2.
+ * @return {Array} Array of diff tuples.
+ */
+function diff_bisectSplit_(text1, text2, x, y) {
+  var text1a = text1.substring(0, x);
+  var text2a = text2.substring(0, y);
+  var text1b = text1.substring(x);
+  var text2b = text2.substring(y);
+
+  // Compute both diffs serially.
+  var diffs = diff_main(text1a, text2a);
+  var diffsb = diff_main(text1b, text2b);
+
+  return diffs.concat(diffsb);
+};
+
+
+/**
+ * Determine the common prefix of two strings.
+ * @param {string} text1 First string.
+ * @param {string} text2 Second string.
+ * @return {number} The number of characters common to the start of each
+ *     string.
+ */
+function diff_commonPrefix(text1, text2) {
+  // Quick check for common null cases.
+  if (!text1 || !text2 || text1.charAt(0) != text2.charAt(0)) {
+    return 0;
+  }
+  // Binary search.
+  // Performance analysis: http://neil.fraser.name/news/2007/10/09/
+  var pointermin = 0;
+  var pointermax = Math.min(text1.length, text2.length);
+  var pointermid = pointermax;
+  var pointerstart = 0;
+  while (pointermin < pointermid) {
+    if (text1.substring(pointerstart, pointermid) ==
+        text2.substring(pointerstart, pointermid)) {
+      pointermin = pointermid;
+      pointerstart = pointermin;
+    } else {
+      pointermax = pointermid;
+    }
+    pointermid = Math.floor((pointermax - pointermin) / 2 + pointermin);
+  }
+  return pointermid;
+};
+
+
+/**
+ * Determine the common suffix of two strings.
+ * @param {string} text1 First string.
+ * @param {string} text2 Second string.
+ * @return {number} The number of characters common to the end of each string.
+ */
+function diff_commonSuffix(text1, text2) {
+  // Quick check for common null cases.
+  if (!text1 || !text2 ||
+      text1.charAt(text1.length - 1) != text2.charAt(text2.length - 1)) {
+    return 0;
+  }
+  // Binary search.
+  // Performance analysis: http://neil.fraser.name/news/2007/10/09/
+  var pointermin = 0;
+  var pointermax = Math.min(text1.length, text2.length);
+  var pointermid = pointermax;
+  var pointerend = 0;
+  while (pointermin < pointermid) {
+    if (text1.substring(text1.length - pointermid, text1.length - pointerend) ==
+        text2.substring(text2.length - pointermid, text2.length - pointerend)) {
+      pointermin = pointermid;
+      pointerend = pointermin;
+    } else {
+      pointermax = pointermid;
+    }
+    pointermid = Math.floor((pointermax - pointermin) / 2 + pointermin);
+  }
+  return pointermid;
+};
+
+
+/**
+ * Do the two texts share a substring which is at least half the length of the
+ * longer text?
+ * This speedup can produce non-minimal diffs.
+ * @param {string} text1 First string.
+ * @param {string} text2 Second string.
+ * @return {Array.<string>} Five element Array, containing the prefix of
+ *     text1, the suffix of text1, the prefix of text2, the suffix of
+ *     text2 and the common middle.  Or null if there was no match.
+ */
+function diff_halfMatch_(text1, text2) {
+  var longtext = text1.length > text2.length ? text1 : text2;
+  var shorttext = text1.length > text2.length ? text2 : text1;
+  if (longtext.length < 4 || shorttext.length * 2 < longtext.length) {
+    return null;  // Pointless.
+  }
+
+  /**
+   * Does a substring of shorttext exist within longtext such that the substring
+   * is at least half the length of longtext?
+   * Closure, but does not reference any external variables.
+   * @param {string} longtext Longer string.
+   * @param {string} shorttext Shorter string.
+   * @param {number} i Start index of quarter length substring within longtext.
+   * @return {Array.<string>} Five element Array, containing the prefix of
+   *     longtext, the suffix of longtext, the prefix of shorttext, the suffix
+   *     of shorttext and the common middle.  Or null if there was no match.
+   * @private
+   */
+  function diff_halfMatchI_(longtext, shorttext, i) {
+    // Start with a 1/4 length substring at position i as a seed.
+    var seed = longtext.substring(i, i + Math.floor(longtext.length / 4));
+    var j = -1;
+    var best_common = '';
+    var best_longtext_a, best_longtext_b, best_shorttext_a, best_shorttext_b;
+    while ((j = shorttext.indexOf(seed, j + 1)) != -1) {
+      var prefixLength = diff_commonPrefix(longtext.substring(i),
+                                           shorttext.substring(j));
+      var suffixLength = diff_commonSuffix(longtext.substring(0, i),
+                                           shorttext.substring(0, j));
+      if (best_common.length < suffixLength + prefixLength) {
+        best_common = shorttext.substring(j - suffixLength, j) +
+            shorttext.substring(j, j + prefixLength);
+        best_longtext_a = longtext.substring(0, i - suffixLength);
+        best_longtext_b = longtext.substring(i + prefixLength);
+        best_shorttext_a = shorttext.substring(0, j - suffixLength);
+        best_shorttext_b = shorttext.substring(j + prefixLength);
+      }
+    }
+    if (best_common.length * 2 >= longtext.length) {
+      return [best_longtext_a, best_longtext_b,
+              best_shorttext_a, best_shorttext_b, best_common];
+    } else {
+      return null;
+    }
+  }
+
+  // First check if the second quarter is the seed for a half-match.
+  var hm1 = diff_halfMatchI_(longtext, shorttext,
+                             Math.ceil(longtext.length / 4));
+  // Check again based on the third quarter.
+  var hm2 = diff_halfMatchI_(longtext, shorttext,
+                             Math.ceil(longtext.length / 2));
+  var hm;
+  if (!hm1 && !hm2) {
+    return null;
+  } else if (!hm2) {
+    hm = hm1;
+  } else if (!hm1) {
+    hm = hm2;
+  } else {
+    // Both matched.  Select the longest.
+    hm = hm1[4].length > hm2[4].length ? hm1 : hm2;
+  }
+
+  // A half-match was found, sort out the return data.
+  var text1_a, text1_b, text2_a, text2_b;
+  if (text1.length > text2.length) {
+    text1_a = hm[0];
+    text1_b = hm[1];
+    text2_a = hm[2];
+    text2_b = hm[3];
+  } else {
+    text2_a = hm[0];
+    text2_b = hm[1];
+    text1_a = hm[2];
+    text1_b = hm[3];
+  }
+  var mid_common = hm[4];
+  return [text1_a, text1_b, text2_a, text2_b, mid_common];
+};
+
+
+/**
+ * Reorder and merge like edit sections.  Merge equalities.
+ * Any edit section can move as long as it doesn't cross an equality.
+ * @param {Array} diffs Array of diff tuples.
+ */
+function diff_cleanupMerge(diffs) {
+  diffs.push([DIFF_EQUAL, '']);  // Add a dummy entry at the end.
+  var pointer = 0;
+  var count_delete = 0;
+  var count_insert = 0;
+  var text_delete = '';
+  var text_insert = '';
+  var commonlength;
+  while (pointer < diffs.length) {
+    switch (diffs[pointer][0]) {
+      case DIFF_INSERT:
+        count_insert++;
+        text_insert += diffs[pointer][1];
+        pointer++;
+        break;
+      case DIFF_DELETE:
+        count_delete++;
+        text_delete += diffs[pointer][1];
+        pointer++;
+        break;
+      case DIFF_EQUAL:
+        // Upon reaching an equality, check for prior redundancies.
+        if (count_delete + count_insert > 1) {
+          if (count_delete !== 0 && count_insert !== 0) {
+            // Factor out any common prefixies.
+            commonlength = diff_commonPrefix(text_insert, text_delete);
+            if (commonlength !== 0) {
+              if ((pointer - count_delete - count_insert) > 0 &&
+                  diffs[pointer - count_delete - count_insert - 1][0] ==
+                  DIFF_EQUAL) {
+                diffs[pointer - count_delete - count_insert - 1][1] +=
+                    text_insert.substring(0, commonlength);
+              } else {
+                diffs.splice(0, 0, [DIFF_EQUAL,
+                                    text_insert.substring(0, commonlength)]);
+                pointer++;
+              }
+              text_insert = text_insert.substring(commonlength);
+              text_delete = text_delete.substring(commonlength);
+            }
+            // Factor out any common suffixies.
+            commonlength = diff_commonSuffix(text_insert, text_delete);
+            if (commonlength !== 0) {
+              diffs[pointer][1] = text_insert.substring(text_insert.length -
+                  commonlength) + diffs[pointer][1];
+              text_insert = text_insert.substring(0, text_insert.length -
+                  commonlength);
+              text_delete = text_delete.substring(0, text_delete.length -
+                  commonlength);
+            }
+          }
+          // Delete the offending records and add the merged ones.
+          if (count_delete === 0) {
+            diffs.splice(pointer - count_insert,
+                count_delete + count_insert, [DIFF_INSERT, text_insert]);
+          } else if (count_insert === 0) {
+            diffs.splice(pointer - count_delete,
+                count_delete + count_insert, [DIFF_DELETE, text_delete]);
+          } else {
+            diffs.splice(pointer - count_delete - count_insert,
+                count_delete + count_insert, [DIFF_DELETE, text_delete],
+                [DIFF_INSERT, text_insert]);
+          }
+          pointer = pointer - count_delete - count_insert +
+                    (count_delete ? 1 : 0) + (count_insert ? 1 : 0) + 1;
+        } else if (pointer !== 0 && diffs[pointer - 1][0] == DIFF_EQUAL) {
+          // Merge this equality with the previous one.
+          diffs[pointer - 1][1] += diffs[pointer][1];
+          diffs.splice(pointer, 1);
+        } else {
+          pointer++;
+        }
+        count_insert = 0;
+        count_delete = 0;
+        text_delete = '';
+        text_insert = '';
+        break;
+    }
+  }
+  if (diffs[diffs.length - 1][1] === '') {
+    diffs.pop();  // Remove the dummy entry at the end.
+  }
+
+  // Second pass: look for single edits surrounded on both sides by equalities
+  // which can be shifted sideways to eliminate an equality.
+  // e.g: A<ins>BA</ins>C -> <ins>AB</ins>AC
+  var changes = false;
+  pointer = 1;
+  // Intentionally ignore the first and last element (don't need checking).
+  while (pointer < diffs.length - 1) {
+    if (diffs[pointer - 1][0] == DIFF_EQUAL &&
+        diffs[pointer + 1][0] == DIFF_EQUAL) {
+      // This is a single edit surrounded by equalities.
+      if (diffs[pointer][1].substring(diffs[pointer][1].length -
+          diffs[pointer - 1][1].length) == diffs[pointer - 1][1]) {
+        // Shift the edit over the previous equality.
+        diffs[pointer][1] = diffs[pointer - 1][1] +
+            diffs[pointer][1].substring(0, diffs[pointer][1].length -
+                                        diffs[pointer - 1][1].length);
+        diffs[pointer + 1][1] = diffs[pointer - 1][1] + diffs[pointer + 1][1];
+        diffs.splice(pointer - 1, 1);
+        changes = true;
+      } else if (diffs[pointer][1].substring(0, diffs[pointer + 1][1].length) ==
+          diffs[pointer + 1][1]) {
+        // Shift the edit over the next equality.
+        diffs[pointer - 1][1] += diffs[pointer + 1][1];
+        diffs[pointer][1] =
+            diffs[pointer][1].substring(diffs[pointer + 1][1].length) +
+            diffs[pointer + 1][1];
+        diffs.splice(pointer + 1, 1);
+        changes = true;
+      }
+    }
+    pointer++;
+  }
+  // If shifts were made, the diff needs reordering and another shift sweep.
+  if (changes) {
+    diff_cleanupMerge(diffs);
+  }
+};
+
+
+var diff = diff_main;
+diff.INSERT = DIFF_INSERT;
+diff.DELETE = DIFF_DELETE;
+diff.EQUAL = DIFF_EQUAL;
+
+module.exports = diff;
+
+/*
+ * Modify a diff such that the cursor position points to the start of a change:
+ * E.g.
+ *   cursor_normalize_diff([[DIFF_EQUAL, 'abc']], 1)
+ *     => [1, [[DIFF_EQUAL, 'a'], [DIFF_EQUAL, 'bc']]]
+ *   cursor_normalize_diff([[DIFF_INSERT, 'new'], [DIFF_DELETE, 'xyz']], 2)
+ *     => [2, [[DIFF_INSERT, 'new'], [DIFF_DELETE, 'xy'], [DIFF_DELETE, 'z']]]
+ *
+ * @param {Array} diffs Array of diff tuples
+ * @param {Int} cursor_pos Suggested edit position. Must not be out of bounds!
+ * @return {Array} A tuple [cursor location in the modified diff, modified diff]
+ */
+function cursor_normalize_diff (diffs, cursor_pos) {
+  if (cursor_pos === 0) {
+    return [DIFF_EQUAL, diffs];
+  }
+  for (var current_pos = 0, i = 0; i < diffs.length; i++) {
+    var d = diffs[i];
+    if (d[0] === DIFF_DELETE || d[0] === DIFF_EQUAL) {
+      var next_pos = current_pos + d[1].length;
+      if (cursor_pos === next_pos) {
+        return [i + 1, diffs];
+      } else if (cursor_pos < next_pos) {
+        // copy to prevent side effects
+        diffs = diffs.slice();
+        // split d into two diff changes
+        var split_pos = cursor_pos - current_pos;
+        var d_left = [d[0], d[1].slice(0, split_pos)];
+        var d_right = [d[0], d[1].slice(split_pos)];
+        diffs.splice(i, 1, d_left, d_right);
+        return [i + 1, diffs];
+      } else {
+        current_pos = next_pos;
+      }
+    }
+  }
+  throw new Error('cursor_pos is out of bounds!')
+}
+
+/*
+ * Modify a diff such that the edit position is "shifted" to the proposed edit location (cursor_position).
+ *
+ * Case 1)
+ *   Check if a naive shift is possible:
+ *     [0, X], [ 1, Y] -> [ 1, Y], [0, X]    (if X + Y === Y + X)
+ *     [0, X], [-1, Y] -> [-1, Y], [0, X]    (if X + Y === Y + X) - holds same result
+ * Case 2)
+ *   Check if the following shifts are possible:
+ *     [0, 'pre'], [ 1, 'prefix'] -> [ 1, 'pre'], [0, 'pre'], [ 1, 'fix']
+ *     [0, 'pre'], [-1, 'prefix'] -> [-1, 'pre'], [0, 'pre'], [-1, 'fix']
+ *         ^            ^
+ *         d          d_next
+ *
+ * @param {Array} diffs Array of diff tuples
+ * @param {Int} cursor_pos Suggested edit position. Must not be out of bounds!
+ * @return {Array} Array of diff tuples
+ */
+function fix_cursor (diffs, cursor_pos) {
+  var norm = cursor_normalize_diff(diffs, cursor_pos);
+  var ndiffs = norm[1];
+  var cursor_pointer = norm[0];
+  var d = ndiffs[cursor_pointer];
+  var d_next = ndiffs[cursor_pointer + 1];
+
+  if (d == null) {
+    // Text was deleted from end of original string,
+    // cursor is now out of bounds in new string
+    return diffs;
+  } else if (d[0] !== DIFF_EQUAL) {
+    // A modification happened at the cursor location.
+    // This is the expected outcome, so we can return the original diff.
+    return diffs;
+  } else {
+    if (d_next != null && d[1] + d_next[1] === d_next[1] + d[1]) {
+      // Case 1)
+      // It is possible to perform a naive shift
+      ndiffs.splice(cursor_pointer, 2, d_next, d)
+      return merge_tuples(ndiffs, cursor_pointer, 2)
+    } else if (d_next != null && d_next[1].indexOf(d[1]) === 0) {
+      // Case 2)
+      // d[1] is a prefix of d_next[1]
+      // We can assume that d_next[0] !== 0, since d[0] === 0
+      // Shift edit locations..
+      ndiffs.splice(cursor_pointer, 2, [d_next[0], d[1]], [0, d[1]]);
+      var suffix = d_next[1].slice(d[1].length);
+      if (suffix.length > 0) {
+        ndiffs.splice(cursor_pointer + 2, 0, [d_next[0], suffix]);
+      }
+      return merge_tuples(ndiffs, cursor_pointer, 3)
+    } else {
+      // Not possible to perform any modification
+      return diffs;
+    }
+  }
+
+}
+
+/*
+ * Try to merge tuples with their neigbors in a given range.
+ * E.g. [0, 'a'], [0, 'b'] -> [0, 'ab']
+ *
+ * @param {Array} diffs Array of diff tuples.
+ * @param {Int} start Position of the first element to merge (diffs[start] is also merged with diffs[start - 1]).
+ * @param {Int} length Number of consecutive elements to check.
+ * @return {Array} Array of merged diff tuples.
+ */
+function merge_tuples (diffs, start, length) {
+  // Check from (start-1) to (start+length).
+  for (var i = start + length - 1; i >= 0 && i >= start - 1; i--) {
+    if (i + 1 < diffs.length) {
+      var left_d = diffs[i];
+      var right_d = diffs[i+1];
+      if (left_d[0] === right_d[1]) {
+        diffs.splice(i, 2, [left_d[0], left_d[1] + right_d[1]]);
+      }
+    }
+  }
+  return diffs;
+}
+
+
+/***/ }),
+/* 36 */
+/***/ (function(module, exports) {
+
+exports = module.exports = typeof Object.keys === 'function'
+  ? Object.keys : shim;
+
+exports.shim = shim;
+function shim (obj) {
+  var keys = [];
+  for (var key in obj) keys.push(key);
+  return keys;
+}
+
+
+/***/ }),
+/* 37 */
+/***/ (function(module, exports) {
+
+var supportsArgumentsClass = (function(){
+  return Object.prototype.toString.call(arguments)
+})() == '[object Arguments]';
+
+exports = module.exports = supportsArgumentsClass ? supported : unsupported;
+
+exports.supported = supported;
+function supported(object) {
+  return Object.prototype.toString.call(object) == '[object Arguments]';
+};
+
+exports.unsupported = unsupported;
+function unsupported(object){
+  return object &&
+    typeof object == 'object' &&
+    typeof object.length == 'number' &&
+    Object.prototype.hasOwnProperty.call(object, 'callee') &&
+    !Object.prototype.propertyIsEnumerable.call(object, 'callee') ||
+    false;
+};
+
+
+/***/ }),
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var equal = __webpack_require__(3);
-var extend = __webpack_require__(4);
+var equal = __webpack_require__(8);
+var extend = __webpack_require__(9);
 
 
 var lib = {
@@ -22077,7 +22375,316 @@ module.exports = lib;
 
 
 /***/ }),
-/* 35 */
+/* 39 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (immutable) */ __webpack_exports__["CursorsModule"] = CursorsModule;
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__ = __webpack_require__(40);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_tinycolor2___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_tinycolor2__);
+
+
+
+var DEFAULTS = {
+  template: [
+    '<span class="ql-cursor-selections"></span>',
+    '<span class="ql-cursor-caret-container">',
+    '  <span class="ql-cursor-caret"></span>',
+    '</span>',
+    '<div class="ql-cursor-flag">',
+    '  <small class="ql-cursor-name"></small>',
+    '  <span class="ql-cursor-flag-flap"></span>',
+    '</div>'
+  ].join(''),
+  autoRegisterListener: true,
+  hideDelay: 3000,
+  hideSpeed: 400
+};
+
+function CursorsModule(quill, options) {
+  this.quill = quill;
+  this._initOptions(options);
+  this.cursors = {};
+  this.container = this.quill.addContainer('ql-cursors');
+
+  if (this.options.autoRegisterListener) {
+    this.registerTextChangeListener();
+  }
+  window.addEventListener('resize', this.update.bind(this));
+}
+
+CursorsModule.prototype.registerTextChangeListener = function() {
+  this.quill.on(
+    this.quill.constructor.events.TEXT_CHANGE,
+    this._applyDelta.bind(this)
+  );
+};
+
+CursorsModule.prototype.clearCursors = function() {
+  Object.keys(this.cursors).forEach(this.removeCursor.bind(this));
+};
+
+CursorsModule.prototype.moveCursor = function(userId, range) {
+  var cursor = this.cursors[userId];
+  if (cursor) {
+    cursor.range = range;
+    cursor.el.classList.remove('hidden');
+    this._updateCursor(cursor);
+    // TODO Implement cursor hiding timeout like 0.20/benbro?
+  }
+};
+
+CursorsModule.prototype.removeCursor = function(userId) {
+  var cursor = this.cursors[userId];
+  if (cursor) cursor.el.parentNode.removeChild(cursor.el);
+  delete this.cursors[userId];
+};
+
+CursorsModule.prototype.setCursor = function({ id, range, name, color }) {
+  const userId = id;
+  // Init cursor if it doesn't exist
+  if (!this.cursors[userId]) {
+    this.cursors[userId] = {
+      userId: userId,
+      color: color,
+      range: range,
+      el: null,
+      selectionEl: null,
+      caretEl: null,
+      flagEl: null
+    };
+
+    // Build and init the remaining cursor elements
+    this._buildCursor(userId, name);
+  }
+
+  // Move and update cursor
+  window.setTimeout(
+    function() {
+      this.moveCursor(userId, range);
+    }.bind(this)
+  );
+
+  return this.cursors[userId];
+};
+
+CursorsModule.prototype.shiftCursors = function(index, length) {
+  var cursor;
+
+  Object.keys(this.cursors).forEach(function(userId) {
+    if ((cursor = this.cursors[userId]) && cursor.range) {
+      // If characters we're added or there is no selection
+      // advance start/end if it's greater or equal than index
+      if (length > 0 || cursor.range.length == 0) {
+        this._shiftCursor(userId, index - 1, length);
+      } else {
+        // Else if characters were removed
+        // move start/end back if it's only greater than index
+        this._shiftCursor(userId, index, length);
+      }
+    }
+  }, this);
+};
+
+CursorsModule.prototype.update = function() {
+  Object.keys(this.cursors).map(
+    function(key) {
+      this._updateCursor(this.cursors[key]);
+    }.bind(this)
+  );
+};
+
+CursorsModule.prototype._initOptions = function(options) {
+  this.options = DEFAULTS;
+  this.options.template = options.template || this.options.template;
+  this.options.autoRegisterListener =
+    options.autoRegisterListener == false
+      ? options.autoRegisterListener
+      : this.options.autoRegisterListener;
+  this.options.hideDelay =
+    options.hideDelay == undefined ? this.options.hideDelay : options.hideDelay;
+  this.options.hideSpeed =
+    options.hideSpeed == undefined ? this.options.hideSpeed : options.hideSpeed;
+  this.options.cursorFlagsAlwaysOn = options.cursorFlagsAlwaysOn || false;
+};
+
+CursorsModule.prototype._applyDelta = function(delta) {
+  var index = 0;
+
+  delta.ops.forEach(function(op) {
+    var length = 0;
+
+    if (op.insert) {
+      length = op.insert.length || 1;
+      this.shiftCursors(index, length);
+    } else if (op.delete) {
+      this.shiftCursors(index, -1 * op.delete);
+    } else if (op.retain) {
+      // Is this really needed?
+      //this.shiftCursors(index, 0);
+      length = op.retain;
+    }
+
+    index += length;
+  }, this);
+
+  this.update();
+};
+
+CursorsModule.prototype._buildCursor = function(userId, name) {
+  var cursor = this.cursors[userId];
+  var el = document.createElement('span');
+  var selectionEl;
+  var caretEl;
+  var flagEl;
+
+  el.classList.add('ql-cursor');
+  el.innerHTML = this.options.template;
+  selectionEl = el.querySelector('.ql-cursor-selections');
+  caretEl = el.querySelector('.ql-cursor-caret-container');
+  flagEl = el.querySelector('.ql-cursor-flag');
+  if (this.options.cursorFlagsAlwaysOn) {
+    flagEl.classList.add('ql-cursor-flag-always-on');
+  }
+
+  // Set color
+  flagEl.style.backgroundColor = cursor.color;
+  caretEl.querySelector('.ql-cursor-caret').style.backgroundColor =
+    cursor.color;
+
+  el.querySelector('.ql-cursor-name').innerText = name;
+
+  // Set flag delay, speed
+  flagEl.style.transitionDelay = this.options.hideDelay + 'ms';
+  flagEl.style.transitionDuration = this.options.hideSpeed + 'ms';
+
+  this.container.appendChild(el);
+
+  // Set cursor elements
+  cursor.el = el;
+  cursor.selectionEl = selectionEl;
+  cursor.caretEl = caretEl;
+  cursor.flagEl = flagEl;
+};
+
+CursorsModule.prototype._shiftCursor = function(userId, index, length) {
+  var cursor = this.cursors[userId];
+  if (cursor.range.index > index) cursor.range.index += length;
+};
+
+CursorsModule.prototype._hideCursor = function(userId) {
+  var cursor = this.cursors[userId];
+  if (cursor) cursor.el.classList.add('hidden');
+};
+
+CursorsModule.prototype._updateCursor = function(cursor) {
+  if (!cursor || !cursor.range) return;
+
+  var containerRect = this.quill.container.getBoundingClientRect();
+  var startLeaf = this.quill.getLeaf(cursor.range.index);
+  var endLeaf = this.quill.getLeaf(cursor.range.index + cursor.range.length);
+  var range = document.createRange();
+  var rects;
+
+  // Sanity check
+  if (
+    !startLeaf ||
+    !endLeaf ||
+    !startLeaf[0] ||
+    !endLeaf[0] ||
+    startLeaf[1] < 0 ||
+    endLeaf[1] < 0 ||
+    !startLeaf[0].domNode ||
+    !endLeaf[0].domNode
+  ) {
+    return this._hideCursor(cursor.userId);
+  }
+
+  range.setStart(startLeaf[0].domNode, startLeaf[1]);
+  range.setEnd(endLeaf[0].domNode, endLeaf[1]);
+  rects = __WEBPACK_IMPORTED_MODULE_0_rangefix_rangefix___default.a.getClientRects(range);
+
+  this._updateCaret(cursor, endLeaf);
+  this._updateSelection(cursor, rects, containerRect);
+};
+
+CursorsModule.prototype._updateCaret = function(cursor, leaf) {
+  var rect,
+    index = cursor.range.index + cursor.range.length;
+
+  // The only time a valid offset of 0 can occur is when the cursor is positioned
+  // before the first character in a line, and it will be the case that the start
+  // and end points of the range will be exactly the same... if they are not then
+  // a block selection is taking place and we need to offset the character position
+  // by -1;
+  if (
+    index > 0 &&
+    leaf[1] === 0 &&
+    cursor.range.index !== cursor.range.index + cursor.range.length
+  ) {
+    index--;
+  }
+
+  rect = this.quill.getBounds(index);
+
+  cursor.caretEl.style.top = rect.top + 'px';
+  cursor.caretEl.style.left = rect.left + 'px';
+  cursor.caretEl.style.height = rect.height + 'px';
+
+  cursor.flagEl.style.top = rect.top + 'px';
+  cursor.flagEl.style.left = rect.left + 'px';
+};
+
+CursorsModule.prototype._updateSelection = function(
+  cursor,
+  rects,
+  containerRect
+) {
+  function createSelectionBlock(rect) {
+    var selectionBlockEl = document.createElement('span');
+
+    selectionBlockEl.classList.add('ql-cursor-selection-block');
+    selectionBlockEl.style.top = rect.top - containerRect.top + 'px';
+    selectionBlockEl.style.left = rect.left - containerRect.left + 'px';
+    selectionBlockEl.style.width = rect.width + 'px';
+    selectionBlockEl.style.height = rect.height + 'px';
+    selectionBlockEl.style.backgroundColor = __WEBPACK_IMPORTED_MODULE_1_tinycolor2___default()(cursor.color)
+      .setAlpha(0.3)
+      .toString();
+
+    return selectionBlockEl;
+  }
+
+  // Wipe the slate clean
+  cursor.selectionEl.innerHTML = null;
+
+  var index = [];
+  var rectIndex;
+
+  [].forEach.call(
+    rects,
+    function(rect) {
+      rectIndex = '' + rect.top + rect.left + rect.width + rect.height;
+
+      // Note: Safari throws a rect with length 1 when caret with no selection.
+      // A check was addedfor to avoid drawing those carets - they show up on blinking.
+      if (!~index.indexOf(rectIndex) && rect.width > 1) {
+        index.push(rectIndex);
+        cursor.selectionEl.appendChild(createSelectionBlock(rect));
+      }
+    },
+    this
+  );
+};
+
+// Quill.register('modules/cursors', CursorsModule);
+
+
+/***/ }),
+/* 40 */
 /***/ (function(module, exports) {
 
 /*!
@@ -22349,512 +22956,77 @@ module.exports = lib;
 
 
 /***/ }),
-/* 36 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(24);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {"insertAt":"top"}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(1)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../css-loader/index.js!../../sass-loader/lib/loader.js!./noty.css", function() {
-			var newContent = require("!!../../css-loader/index.js!../../sass-loader/lib/loader.js!./noty.css");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(25);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {"insertAt":"top"}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(1)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./cursors.scss", function() {
-			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./cursors.scss");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 38 */
-/***/ (function(module, exports) {
-
-
-/**
- * When source maps are enabled, `style-loader` uses a link element with a data-uri to
- * embed the css on the page. This breaks all relative urls because now they are relative to a
- * bundle instead of the current page.
- *
- * One solution is to only use full urls, but that may be impossible.
- *
- * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
- *
- * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
- *
- */
-
-module.exports = function (css) {
-  // get current location
-  var location = typeof window !== "undefined" && window.location;
-
-  if (!location) {
-    throw new Error("fixUrls requires window.location");
-  }
-
-	// blank or null?
-	if (!css || typeof css !== "string") {
-	  return css;
-  }
-
-  var baseUrl = location.protocol + "//" + location.host;
-  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
-
-	// convert each url(...)
-	/*
-	This regular expression is just a way to recursively match brackets within
-	a string.
-
-	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
-	   (  = Start a capturing group
-	     (?:  = Start a non-capturing group
-	         [^)(]  = Match anything that isn't a parentheses
-	         |  = OR
-	         \(  = Match a start parentheses
-	             (?:  = Start another non-capturing groups
-	                 [^)(]+  = Match anything that isn't a parentheses
-	                 |  = OR
-	                 \(  = Match a start parentheses
-	                     [^)(]*  = Match anything that isn't a parentheses
-	                 \)  = Match a end parentheses
-	             )  = End Group
-              *\) = Match anything and then a close parens
-          )  = Close non-capturing group
-          *  = Match anything
-       )  = Close capturing group
-	 \)  = Match a close parens
-
-	 /gi  = Get all matches, not the first.  Be case insensitive.
-	 */
-	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
-		// strip quotes (if they exist)
-		var unquotedOrigUrl = origUrl
-			.trim()
-			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
-			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
-
-		// already a full url? no change
-		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
-		  return fullMatch;
-		}
-
-		// convert the url to a full url
-		var newUrl;
-
-		if (unquotedOrigUrl.indexOf("//") === 0) {
-		  	//TODO: should we add protocol?
-			newUrl = unquotedOrigUrl;
-		} else if (unquotedOrigUrl.indexOf("/") === 0) {
-			// path should be relative to the base url
-			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
-		} else {
-			// path should be relative to current directory
-			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
-		}
-
-		// send back the fixed url(...)
-		return "url(" + JSON.stringify(newUrl) + ")";
-	});
-
-	// send back the fixed css
-	return fixedCss;
-};
-
-
-/***/ }),
-/* 39 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * Outward facing facade for TextSync of a Quilljs document.
- * It is intended to replace an existing
- */
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var Quill = __webpack_require__(11);
-var PusherPlatform = __webpack_require__(10);
-var logoot_doc_1 = __webpack_require__(16);
-var editor_1 = __webpack_require__(14);
-var textsync_1 = __webpack_require__(18);
-var quill_adaptor_1 = __webpack_require__(17);
-var quill_cursors_1 = __webpack_require__(20);
-var notifications = __webpack_require__(2);
-var validate_options_1 = __webpack_require__(19);
-var logger_1 = __webpack_require__(15);
-var DEFAULT_QUILL_CONFIG = {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
-            ['link', { header: [1, 2, 3, 4, 5, false] }],
-            [{ color: [] }, { background: [] }],
-            [{ size: ['small', false, 'large', 'huge'] }]
-        ],
-        history: {
-            delay: 2000,
-            maxStack: 500,
-            userOnly: true
-        }
-    },
-    formats: [
-        'background',
-        'bold',
-        'color',
-        'italic',
-        'link',
-        'size',
-        'strike',
-        'underline',
-        'header',
-        'list'
-    ]
-};
-var TextSync = (function () {
-    function TextSync(config, host) {
-        if (!config) {
-            throw new Error('Config must be present to initialise TextSync.');
-        }
-        else if (!config.instanceLocator) {
-            throw new Error('`instanceLocator` must be present in config when initialising TextSync.');
-        }
-        this.logger = this.initLogger(config);
-        this.instanceLocator = config.instanceLocator;
-        this.host = host || null;
-        this.app = new PusherPlatform.Instance({
-            serviceName: 'textsync',
-            serviceVersion: 'v1',
-            instance: this.instanceLocator,
-            host: this.host,
-            logger: new PusherPlatform.ConsoleLogger(1)
-        });
-    }
-    TextSync.prototype.createEditor = function (options) {
-        var _this = this;
-        var validatedOptions = {};
-        var validator = validate_options_1.default(validatedOptions, options);
-        // required
-        validator('docId', undefined, true);
-        validator('element', undefined, true);
-        // optional
-        validator('collaboratorBadges', true);
-        validator('cursors', true);
-        validator('cursorLabelsAlwaysOn', false);
-        validator('onCollaboratorsJoined', null);
-        validator('onCollaboratorsLeft', null);
-        validator('onCollaboratorsLeft', null);
-        validator('errorNotifications', true);
-        validator('richText', true);
-        validator('name', null);
-        validator('email', null);
-        validatedOptions.defaultText = options.defaultText || '';
-        var notifier = new notifications.Notifier(validatedOptions.errorNotifications, validatedOptions.onError);
-        var containerElement = validatedOptions.element;
-        var docId = validatedOptions.docId;
-        var presenceElement = initPresenceContainer(containerElement, validatedOptions);
-        var siteId = Math.floor(Math.random() * Math.pow(2, 32));
-        var logootDoc = new logoot_doc_1.default(siteId);
-        var textSyncInstance = new textsync_1.TextSync(logootDoc, this.app, docId, siteId, validatedOptions, presenceElement, notifier, this.logger);
-        // Hide the editor element until the CSS has loaded
-        var cachedDisplayStyle = containerElement.style.display;
-        containerElement.style.display = 'none';
-        var quillConfig = buildQuillConfig(validatedOptions);
-        var quill;
-        injectQuillCss(quillConfig)
-            .then(function () {
-            containerElement.style.display = cachedDisplayStyle;
-            return initEditor(containerElement, validatedOptions, quillConfig);
-        })
-            .then(function (quill) {
-            var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId, notifier, _this.logger);
-            // initialise TextSync
-            textSyncInstance.start(quillAdaptor);
-        })
-            .catch(function () {
-            notifier.notify('Failed to load editor styles', undefined, true);
-            throw new Error('Failed to load editor styles');
-        });
-        var editor = new editor_1.default(quill);
-        return editor;
-    };
-    TextSync.prototype.initLogger = function (config) {
-        var logLevel;
-        if (config.debug) {
-            logLevel = logger_1.LogLevel.DEBUG;
-        }
-        else {
-            logLevel =
-                 true ? logger_1.LogLevel.ERROR : logger_1.LogLevel.INFO;
-        }
-        return new logger_1.Logger(logLevel);
-    };
-    return TextSync;
-}());
-function initPresenceContainer(element, validatedOptions) {
-    if (!validatedOptions.collaboratorBadges) {
-        return null;
-    }
-    __webpack_require__(12);
-    __webpack_require__(13);
-    var presenceContainer = document.createElement('div');
-    presenceContainer.id = 'tsync-presence-container';
-    element.appendChild(presenceContainer);
-    return presenceContainer;
-}
-function initEditor(element, validatedOptions, quillConfig) {
-    var editor = document.createElement('div');
-    editor.id = 'tsync-editor';
-    element.appendChild(editor);
-    return new Quill(editor, quillConfig);
-}
-function buildQuillConfig(validatedOptions) {
-    var qlConfig = __assign({}, DEFAULT_QUILL_CONFIG);
-    // Enable cursors
-    if (validatedOptions.cursors) {
-        Quill.register('modules/cursors', quill_cursors_1.CursorsModule);
-        qlConfig.modules.cursors = {
-            cursorFlagsAlwaysOn: validatedOptions.cursorLabelsAlwaysOn
-        };
-    }
-    return qlConfig;
-}
-function injectQuillCss(quillConfig) {
-    quillConfig.theme = 'snow';
-    var link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.type = 'text/css';
-    link.href = 'https://cdn.quilljs.com/1.2.4/quill.snow.css';
-    document.getElementsByTagName('head')[0].appendChild(link);
-    return new Promise(function (resolve, reject) {
-        link.onload = resolve;
-        link.onerror = reject;
-    });
-}
-module.exports = TextSync;
-
-
-/***/ }),
-/* 40 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var Badges = (function () {
-    function Badges(siteId, targetElement, logger) {
-        this.siteId = siteId;
-        this.logger = logger;
-        this.targetElement = targetElement;
-        this.addBadges = this.addBadges.bind(this);
-        this.addToDOM = this.addToDOM.bind(this);
-        this.removeBadge = this.removeBadge.bind(this);
-        this.removeFromDOM = this.removeFromDOM.bind(this);
-        this.findBadgeInDOM = this.findBadgeInDOM.bind(this);
-    }
-    Badges.prototype.startBadgeFlash = function (siteId) {
-        var targetBadge = document.querySelector("span[data-site-id=\"" + siteId + "\"] .tsync-badge");
-        if (targetBadge) {
-            if (Array.from(targetBadge.classList).indexOf('flashing') === -1) {
-                targetBadge.classList.add('flashing');
-            }
-        }
-        else {
-            this.logger.error("Badge for siteId " + siteId + " is missing from DOM");
-        }
-    };
-    Badges.prototype.stopBadgeFlash = function (siteId) {
-        var targetBadge = document.querySelector("span[data-site-id=\"" + siteId + "\"] .tsync-badge");
-        if (targetBadge) {
-            targetBadge.classList.remove('flashing');
-        }
-        else {
-            this.logger.error("Badge for siteId " + siteId + " is missing from DOM");
-        }
-    };
-    Badges.prototype.addBadges = function (data) {
-        for (var i = 0; i < data.length; i++) {
-            this.addToDOM(data[i], i);
-        }
-    };
-    Badges.prototype.addToDOM = function (data, index) {
-        this.logger.info('someone joined');
-        var badgeWrapper = this.createBadge(data);
-        // if people use custom templates, catch for carriage returns...
-        this.targetElement.appendChild(badgeWrapper);
-        // transition
-        setTimeout(function () {
-            var badge = badgeWrapper.children[0];
-            badge.classList.add('in');
-        }, 100 + 100 * index);
-    };
-    Badges.prototype.removeBadge = function (leavingSiteId) {
-        var index = this.findBadgeInDOM(leavingSiteId);
-        if (index > -1) {
-            this.removeFromDOM(index);
-        }
-        else {
-            this.logger.error(new RangeError("Badge for siteId " + leavingSiteId + " not found in DOM."));
-        }
-    };
-    Badges.prototype.removeFromDOM = function (index) {
-        this.logger.info('someone left');
-        var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
-        var toRemove = badges[index];
-        this.targetElement.removeChild(toRemove);
-    };
-    Badges.prototype.findBadgeInDOM = function (leavingSiteId) {
-        var badges = Array.from(document.querySelectorAll('.tsync-badge-wrapper'));
-        for (var i = 0; i < badges.length; i++) {
-            if (badges[i].dataset.siteId === leavingSiteId.toString()) {
-                return i;
-            }
-        }
-        return -1;
-    };
-    Badges.prototype.createBadge = function (data) {
-        var badgeWrapper = document.createElement('span');
-        badgeWrapper.className = 'tsync-badge-wrapper';
-        badgeWrapper.dataset.siteId = data.siteId.toString();
-        var badge = document.createElement('div');
-        badge.style.backgroundImage = "url(\"" + data.avatar + "\")";
-        badge.className = 'tsync-badge';
-        var tooltip = document.createElement('span');
-        tooltip.className = 'tsync-tooltip';
-        tooltip.innerText = data.name;
-        if (this.siteId === data.siteId) {
-            tooltip.innerText += ' (you)';
-        }
-        badgeWrapper.appendChild(badge);
-        badgeWrapper.appendChild(tooltip);
-        return badgeWrapper;
-    };
-    return Badges;
-}());
-exports.default = Badges;
-
-
-/***/ }),
 /* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var badges_1 = __webpack_require__(40);
-var ANIMATION_LENGTH = 1000;
-var PresenceController = (function () {
-    function PresenceController(siteId, config, element, logger) {
-        this.siteId = siteId;
-        this.config = config;
-        this.logger = logger;
-        this.flashingBadges = {};
-        this.badges = new badges_1.default(this.siteId, element, logger);
-    }
-    PresenceController.prototype.resetTimeout = function (siteId) {
-        clearTimeout(this.flashingBadges[siteId]);
-        this.startTimeout(siteId);
-    };
-    PresenceController.prototype.startTimeout = function (siteId) {
-        var _this = this;
-        this.flashingBadges[siteId] = setTimeout(function (siteId) {
-            _this.badges.stopBadgeFlash(siteId);
-            clearTimeout(_this.flashingBadges[siteId]);
-            delete _this.flashingBadges[siteId];
-        }, ANIMATION_LENGTH, siteId);
-    };
-    PresenceController.prototype.receiveJoining = function (joining) {
-        joining.sort(function (a, b) {
-            if (a.timestamp > b.timestamp) {
-                return 1;
+function prepareValidator(validatedOptions, userOptions) {
+    return function (option, defaultValue, isRequired) {
+        if (isRequired) {
+            if (!userOptions.hasOwnProperty(option) ||
+                userOptions[option] === undefined ||
+                userOptions[option] === null) {
+                throw new Error("Property `" + option + "` must be present when initialising TextSync");
             }
-            else if (a.timestamp < b.timestamp) {
-                return -1;
+        }
+        if (option === 'docId') {
+            var docId = userOptions[option];
+            var validDocId = new RegExp(/^[A-Za-z0-9-]{1,32}$/);
+            if (!validDocId.test(docId)) {
+                throw new Error("Invalid `docId`: a valid `docId` must be no longer than 32 characters, and only contain A-Z, a-z, 0-9 and '-' (hyphen).");
+            }
+            validatedOptions[option] = userOptions[option];
+            return;
+        }
+        if (option === 'element') {
+            var element = userOptions[option];
+            var containerElement = void 0;
+            if (element instanceof HTMLElement) {
+                containerElement = element;
+            }
+            else if (document.querySelector(element)) {
+                containerElement = document.querySelector(element);
             }
             else {
-                return 0;
+                throw new Error("Could not find element " + element + " in DOM.\nValue of `element` should be a valid CSS selector or HTML element.");
             }
-        });
-        if (this.config.showBadges) {
-            this.badges.addBadges(joining);
+            // add HTMLElement and not string
+            validatedOptions[option] = containerElement;
+            return;
         }
-    };
-    PresenceController.prototype.receiveLeaving = function (leavingSiteIds) {
-        var _this = this;
-        if (this.config.showBadges) {
-            leavingSiteIds.forEach(function (siteId, i) {
-                _this.badges.removeBadge(siteId);
-            });
+        if (option === 'onCollaboratorsJoined' ||
+            option === 'onCollaboratorsLeft' ||
+            option === 'onError') {
+            if (userOptions.hasOwnProperty(option)) {
+                if (typeof userOptions[option] !== 'function') {
+                    throw new Error("`" + option + "` must be a function.");
+                }
+            }
         }
-    };
-    /**
-     * Triggers the start typing event for a collaborator
-     * @param {number} siteId - site id for collaborator
-     * @returns {void}
-     */
-    PresenceController.prototype.triggerStartTypingEvent = function (siteId) {
-        if (this.flashingBadges[siteId]) {
-            this.resetTimeout(siteId);
+        if (option === 'name') {
+            validatedOptions.name =
+                userOptions[option] ||
+                    userOptions.userName ||
+                    userOptions.username ||
+                    null;
+            return;
+        }
+        if (option === 'email') {
+            validatedOptions.email =
+                userOptions[option] || userOptions.userEmail || null;
+            return;
+        }
+        if (!isRequired && userOptions.hasOwnProperty(option)) {
+            validatedOptions[option] = userOptions[option];
         }
         else {
-            this.badges.startBadgeFlash(siteId);
-            this.startTimeout(siteId);
+            validatedOptions[option] = defaultValue;
         }
     };
-    return PresenceController;
-}());
-exports.default = PresenceController;
+}
+exports.default = prepareValidator;
 
 
 /***/ }),
@@ -22864,319 +23036,148 @@ exports.default = PresenceController;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var OpType;
-(function (OpType) {
-    OpType[OpType["Joining"] = 1] = "Joining";
-    OpType[OpType["Leaving"] = 2] = "Leaving";
-})(OpType = exports.OpType || (exports.OpType = {}));
-function filterByType(input, pred) {
-    return input.reduce(function (output, el) {
-        if (pred(el)) {
-            output.push(el);
+// mirroring the log levels in pusher-platform-js for simplicity, though not all
+// options are meaningful
+var LogLevel;
+(function (LogLevel) {
+    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
+    LogLevel[LogLevel["INFO"] = 3] = "INFO";
+    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
+    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
+})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
+var Logger = (function () {
+    function Logger(logLevel) {
+        if (logLevel === void 0) { logLevel = 1; }
+        this.logLevel = logLevel;
+    }
+    Logger.prototype.log = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
-        return output;
-    }, new Array());
-}
-exports.filterByType = filterByType;
-function isAddOp(object) {
-    return object.opType === OpType.Joining;
-}
-exports.isAddOp = isAddOp;
-function isRemoveOp(object) {
-    return object.opType === OpType.Leaving;
-}
-exports.isRemoveOp = isRemoveOp;
+        console.log.apply(console, args);
+    };
+    Logger.prototype.error = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        if (this.logLevel <= LogLevel.ERROR) {
+            console.error.apply(console, args);
+        }
+    };
+    Logger.prototype.info = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        if (this.logLevel <= LogLevel.INFO) {
+            console.info.apply(console, args);
+        }
+    };
+    Logger.prototype.debug = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        if (this.logLevel <= LogLevel.DEBUG) {
+            console.debug.apply(console, args);
+        }
+    };
+    return Logger;
+}());
+exports.Logger = Logger;
 
 
 /***/ }),
 /* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+// style-loader: Adds some css to the DOM by adding a <style> tag
 
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var tinycolor = __webpack_require__(6);
-var format_1 = __webpack_require__(42);
-var SERVER_SITE_ID = 0;
-var PresenceModel = (function () {
-    function PresenceModel(siteId, adaptor, logootDoc, controller, presenceConfig, logger) {
-        this.siteId = siteId;
-        this.adaptor = adaptor;
-        this.logootDoc = logootDoc;
-        this.controller = controller;
-        this.presenceConfig = presenceConfig;
-        this._collaboratorIds = {};
-        this.logger = logger;
-    }
-    /**
-     * Processes document operations (DocOps)
-     * @param {Message} wireMessage - wire message containing DocOps[]
-     * @returns {void}
-     */
-    PresenceModel.prototype.receiveDocOps = function (wireMessage) {
-        if (wireMessage.siteId !== SERVER_SITE_ID) {
-            if (this.presenceConfig.showBadges) {
-                this.controller.triggerStartTypingEvent(wireMessage.siteId);
-            }
-            if (this.presenceConfig.showCursors) {
-                this.logger.debug(wireMessage.siteId + " has typed.");
-                var lastDocOp = wireMessage.docOps[wireMessage.docOps.length - 1];
-                var cursorOps = [
-                    {
-                        siteId: wireMessage.siteId,
-                        position: {
-                            start: lastDocOp.ident.position
-                        }
-                    }
-                ];
-                // insert op: index_of_last_char + 1
-                // delete op: index_of_last_char - 1
-                var offset = lastDocOp.opType === 1 ? 1 : 0;
-                var editorCursorOps = this.logootDoc.toEditorCursorOps(cursorOps, offset);
-                this.receiveCursorOps(editorCursorOps);
-            }
-        }
-    };
-    /**
-     * Processes presence operations (PresOps)
-     * @param {Message} wireMessage - wire message containing PresOp[]
-     * @returns {void}
-     */
-    PresenceModel.prototype.receivePresOps = function (presOps) {
-        var _this = this;
-        if (!this.presenceConfig.onJoined || !this.presenceConfig.onLeft) {
-            if (!this.presenceConfig.showBadges) {
-                return;
-            }
-        }
-        var joiningCollaborators = format_1.filterByType(presOps, format_1.isAddOp);
-        var leavingCollaborators = format_1.filterByType(presOps, format_1.isRemoveOp);
-        if (this.presenceConfig.onJoined) {
-            this.presenceConfig.onJoined(joiningCollaborators);
-        }
-        if (this.presenceConfig.onLeft) {
-            this.presenceConfig.onLeft(leavingCollaborators);
-        }
-        if (this.presenceConfig.showBadges) {
-            if (joiningCollaborators.length > 0) {
-                this.add(joiningCollaborators);
-            }
-            if (leavingCollaborators.length > 0) {
-                this.remove(leavingCollaborators);
-            }
-        }
-        if (this.presenceConfig.showCursors) {
-            leavingCollaborators.forEach(function (el) {
-                _this.adaptor.removeCursor(el.siteId);
-            });
-        }
-    };
-    /**
-     * Processes cursor operations (CursorOps)
-     * @param {Message} wireMessage - wire message containing CursorOp[]
-     * @returns {void}
-     */
-    PresenceModel.prototype.receiveCursorOps = function (cursorOps) {
-        var _this = this;
-        if (this.presenceConfig.showCursors) {
-            cursorOps.forEach(function (cursorOp) {
-                if (_this._collaboratorIds.hasOwnProperty(String(cursorOp.id))) {
-                    if (cursorOp.range.index === null) {
-                        _this.adaptor.removeCursor(cursorOp.id);
-                    }
-                    else {
-                        var cursorData = __assign({}, cursorOp, { color: _this._collaboratorIds[cursorOp.id].color, name: _this._collaboratorIds[cursorOp.id].name });
-                        _this.adaptor.setCursor(cursorData);
-                    }
-                }
-            });
-        }
-    };
-    /**
-     * Adds new collaborators
-     * @param {AddOp[]} joining - array of 'add collaborator' operations
-     * @returns {void}
-     */
-    PresenceModel.prototype.add = function (joining) {
-        var _this = this;
-        if (joining.length === 0) {
-            return;
-        }
-        var alreadyJoined = joining.filter(function (op) {
-            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
-        });
-        if (alreadyJoined.length > 0) {
-            this.logger.error('The following Site IDs were added to the presence model ' +
-                'but they already exist:', alreadyJoined);
-        }
-        var justJoined = joining.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
-        // add to data store
-        justJoined.forEach(function (op) {
-            var value = { position: null, color: null, name: op.name };
-            if (_this.presenceConfig.showCursors) {
-                value.color = tinycolor.random();
-            }
-            _this._collaboratorIds[op.siteId] = value;
-        });
-        this.controller.receiveJoining(justJoined);
-    };
-    /**
-     * Removes existing collaborators
-     * @param {RemoveOp[]} leaving - array of 'remove collaborator' operations
-     * @returns {void}
-     */
-    PresenceModel.prototype.remove = function (leaving) {
-        var _this = this;
-        if (leaving.length === 0) {
-            return;
-        }
-        var alreadyLeft = leaving.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
-        if (alreadyLeft.length > 0) {
-            this.logger.error('Tried to remove the following Site IDs from the presence model ' +
-                'but they were missing:', alreadyLeft);
-        }
-        var justLeft = leaving.filter(function (op) {
-            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
-        });
-        // remove from data store
-        justLeft.forEach(function (op) {
-            delete _this._collaboratorIds[op.siteId];
-        });
-        this.controller.receiveLeaving(justLeft.map(function (op) { return op.siteId; }));
-    };
-    return PresenceModel;
-}());
-exports.default = PresenceModel;
+// load the styles
+var content = __webpack_require__(44);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
 
+var options = {"insertAt":"top"}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(1)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./animations.css", function() {
+			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./animations.css");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
 
 /***/ }),
 /* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+exports = module.exports = __webpack_require__(0)(undefined);
+// imports
 
-Object.defineProperty(exports, "__esModule", { value: true });
-function createAnonName() {
-    var adjective = randomChoice(ADJECTIVES);
-    var noun = randomChoice(NOUNS);
-    return capitalize(adjective + ' ' + noun);
-}
-exports.createAnonName = createAnonName;
-function randomChoice(list) {
-    var randomIndex = Math.round(Math.random() * (list.length - 1));
-    return list[randomIndex];
-}
-function capitalize(text) {
-    var words = text.split(' ');
-    return words.map(function (word) { return word[0].toUpperCase() + word.slice(1); }).join(' ');
-}
-var ADJECTIVES = [
-    'massive',
-    'impressive',
-    'bearded',
-    'angry',
-    'shaky',
-    'sticky',
-    'fluffy',
-    'frozen',
-    'bonkers',
-    'harsh',
-    'greedy',
-    'magical',
-    'confused',
-    'high-end',
-    'slippery',
-    'vengeful',
-    'stunned',
-    'flickering',
-    'hyperactive'
-];
-var NOUNS = [
-    'guava jelly',
-    'mango chutney',
-    'ginger jam',
-    'sugar snap peas',
-    'moon cakes',
-    'soda crackers',
-    'banana split',
-    'nougat',
-    'gherkins',
-    'gouda',
-    'flan',
-    'trifle',
-    'dumpling',
-    'ladyfinger',
-    'marmalade',
-    'sushi',
-    'wasabi pea',
-    'falafel',
-    'goulash',
-    'crab cake'
-];
+
+// module
+exports.push([module.i, "@-webkit-keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@-moz-keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@-o-keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@keyframes flash {\n  0% {\n    opacity: 0; }\n  50% {\n    opacity: 1; }\n  100% {\n    opacity: 0; } }\n\n@-webkit-keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@-moz-keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@-o-keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@keyframes levitate {\n  0% {\n    top: 0; }\n  50% {\n    top: -8px; }\n  100% {\n    top: 0; } }\n\n@keyframes pulse {\n  from {\n    transform: scale3d(1, 1, 1); }\n  50% {\n    transform: scale3d(1.1, 1.1, 1.1); }\n  to {\n    transform: scale3d(1, 1, 1); } }\n", ""]);
+
+// exports
 
 
 /***/ }),
 /* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+// style-loader: Adds some css to the DOM by adding a <style> tag
 
-Object.defineProperty(exports, "__esModule", { value: true });
-var logootFormat = __webpack_require__(8);
-function messageFromOps(ops, siteId) {
-    var docOps = [];
-    var cursorOps = [];
-    for (var _i = 0, ops_1 = ops; _i < ops_1.length; _i++) {
-        var op = ops_1[_i];
-        if (logootFormat.isDocOp(op)) {
-            docOps.push(op);
-        }
-        else if (logootFormat.isCursorOp(op)) {
-            cursorOps.push(op);
-        }
-    }
-    return {
-        docOps: docOps,
-        cursorOps: cursorOps,
-        siteId: siteId
-    };
+// load the styles
+var content = __webpack_require__(46);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {"insertAt":"top"}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(1)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./badge-styles.css", function() {
+			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./badge-styles.css");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
 }
-exports.messageFromOps = messageFromOps;
-
 
 /***/ }),
 /* 46 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-var g;
+exports = module.exports = __webpack_require__(0)(undefined);
+// imports
 
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
 
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
+// module
+exports.push([module.i, ".tsync-badge {\n  opacity: 0;\n  transition: opacity 1.25s ease-out;\n  display: inline-block;\n  margin: -5px;\n  width: 40px;\n  height: 40px;\n  background-color: #49cfbb;\n  color: white;\n  border-radius: 50%;\n  text-align: center;\n  line-height: 50px;\n  border: 2px solid white;\n  position: relative;\n  transition: opacity .25s ease-in-out;\n  -moz-transition: opacity .25s ease-in-out;\n  -webkit-transition: opacity .25s ease-in-out;\n  -webkit-box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.2);\n  -moz-box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.2);\n  box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.2); }\n\n.tsync-badge.in {\n  opacity: 1; }\n\n.tsync-badge.flashing {\n  animation: flash 0.8s ease-in-out infinite; }\n\n.tsync-badge:hover {\n  border-color: #3e3d59; }\n\n#tsync-presence-container {\n  margin: 10px 30px;\n  text-align: right;\n  display: flex;\n  flex-direction: row-reverse;\n  height: 40px; }\n\n.tsync-badge-wrapper {\n  position: relative;\n  display: inline; }\n\n.tsync-badge-wrapper .tsync-tooltip {\n  position: absolute;\n  width: 132px;\n  color: #FFFFFF;\n  background: #191919;\n  text-align: center;\n  visibility: hidden;\n  padding: 10px; }\n\n.tsync-badge-wrapper .tsync-tooltip:after {\n  content: '';\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  margin-left: -8px;\n  width: 0;\n  height: 0;\n  border-bottom: 8px solid #191919;\n  border-right: 8px solid transparent;\n  border-left: 8px solid transparent; }\n\n.tsync-badge-wrapper:hover .tsync-tooltip {\n  visibility: visible;\n  opacity: 0.8;\n  top: 30px;\n  left: 50%;\n  margin-left: -76px;\n  z-index: 999; }\n", ""]);
 
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
+// exports
 
 
 /***/ })
