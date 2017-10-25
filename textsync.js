@@ -2577,7 +2577,8 @@ var TextSync = (function () {
         else if (!config.instanceLocator) {
             throw new Error('`instanceLocator` must be present in config when initialising TextSync.');
         }
-        this.logger = this.initLogger(config);
+        var logLevel = this.getLogLevel(config);
+        this.logger = new logger_1.Logger(logLevel);
         this.instanceLocator = config.instanceLocator;
         this.host = host || null;
         this.app = new PusherPlatform.Instance({
@@ -2585,7 +2586,7 @@ var TextSync = (function () {
             serviceVersion: 'v1',
             instance: this.instanceLocator,
             host: this.host,
-            logger: new PusherPlatform.ConsoleLogger(1)
+            logger: new PusherPlatform.ConsoleLogger(logLevel)
         });
     }
     TextSync.prototype.createEditor = function (options) {
@@ -2618,8 +2619,7 @@ var TextSync = (function () {
         var cachedDisplayStyle = containerElement.style.display;
         containerElement.style.display = 'none';
         var quillConfig = buildQuillConfig(validatedOptions);
-        var quill;
-        injectQuillCss(quillConfig)
+        return injectQuillCss(quillConfig)
             .then(function () {
             containerElement.style.display = cachedDisplayStyle;
             return initEditor(containerElement, validatedOptions, quillConfig);
@@ -2628,15 +2628,15 @@ var TextSync = (function () {
             var quillAdaptor = new quill_adaptor_1.default(quill, textSyncInstance, docId, notifier, _this.logger);
             // initialise TextSync
             textSyncInstance.start(quillAdaptor);
+            return new editor_1.default(quill);
         })
-            .catch(function () {
-            notifier.notify('Failed to load editor styles', undefined, true);
-            throw new Error('Failed to load editor styles');
+            .catch(function (err) {
+            notifier.notify('Failed to create textsync editor', undefined, true);
+            _this.logger.error(err);
+            throw new Error("There was a problem creating the textsync editor: " + err.message);
         });
-        var editor = new editor_1.default(quill);
-        return editor;
     };
-    TextSync.prototype.initLogger = function (config) {
+    TextSync.prototype.getLogLevel = function (config) {
         var logLevel;
         if (config.debug) {
             logLevel = logger_1.LogLevel.DEBUG;
@@ -2645,7 +2645,7 @@ var TextSync = (function () {
             logLevel =
                  true ? logger_1.LogLevel.ERROR : logger_1.LogLevel.INFO;
         }
-        return new logger_1.Logger(logLevel);
+        return logLevel;
     };
     return TextSync;
 }());
@@ -23036,11 +23036,15 @@ exports.default = prepareValidator;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+// mirroring the log levels in pusher-platform-js for simplicity, though not all
+// options are meaningful
 var LogLevel;
 (function (LogLevel) {
-    LogLevel[LogLevel["ERROR"] = 1] = "ERROR";
-    LogLevel[LogLevel["INFO"] = 2] = "INFO";
-    LogLevel[LogLevel["DEBUG"] = 3] = "DEBUG";
+    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
+    LogLevel[LogLevel["INFO"] = 3] = "INFO";
+    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
+    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
 })(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
 var Logger = (function () {
     function Logger(logLevel) {
