@@ -23063,7 +23063,7 @@ var Logger = (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        if (this.logLevel >= LogLevel.ERROR) {
+        if (this.logLevel <= LogLevel.ERROR) {
             console.error.apply(console, args);
         }
     };
@@ -23072,7 +23072,7 @@ var Logger = (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        if (this.logLevel >= LogLevel.INFO) {
+        if (this.logLevel <= LogLevel.INFO) {
             console.info.apply(console, args);
         }
     };
@@ -23081,7 +23081,7 @@ var Logger = (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        if (this.logLevel >= LogLevel.DEBUG) {
+        if (this.logLevel <= LogLevel.DEBUG) {
             console.debug.apply(console, args);
         }
     };
