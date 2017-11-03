@@ -2415,92 +2415,28 @@ var Logoot = (function () {
         return atoms;
         var _a;
     };
-    /**
-     * Insert atoms into the Logoot document model.
-     * Returns a list of indices describing where those atoms were inserted
-     * in the text domain (in the same order as the atoms were given.)
-     *
-     * N.B. Atoms might not be inserted at all in the case that the atom is
-     * already in the Logoot model. This can happen when insert operations are
-     * duplicated. In this case the index returned for that atom will be -1.
-     *
-     * @param {logoot.Atom[]} - Array of atoms to be inserted
-     *
-     * @return {number[]} - A list of indicies describing where the corresponding
-     * atom was inserted. If an atom is not inserted the corresponding index will
-     * be -1.
-     */
     Logoot.prototype.insertAtoms = function (atoms) {
         var initialAtomOrder = atoms.slice();
-        // Check that no atoms are duplicated in this batch. We support idempotency
-        // but not within an operation batch.
-        var existingAtoms = new Set();
-        for (var _i = 0, atoms_1 = atoms; _i < atoms_1.length; _i++) {
-            var atom = atoms_1[_i];
-            var atomString = atom.toString();
-            if (existingAtoms.has(atomString)) {
-                throw new Error('Duplicate atoms found in single batch');
-            }
-            existingAtoms.add(atomString);
-        }
-        // Insert atoms in correct place in sequence.
-        // This is done by linearly scanning through the sorted incoming atoms
-        // and existing sequence merging into a new, sorted, sequence.
         atoms.sort(function (a, b) { return a.compare(b); });
         var atomsPointer = 0;
         var seqPointer = 0;
-        var mergedSeq = [];
+        var indexMap = {};
+        var newSeq = [];
         while (atomsPointer < atoms.length || seqPointer < this.seq.length) {
             var atomsHead = atoms[atomsPointer];
             var seqHead = this.seq[seqPointer];
             if (!seqHead || (atomsHead && atomsHead.lt(seqHead))) {
-                mergedSeq.push(atomsHead);
+                newSeq.push(atomsHead);
+                indexMap[atomsHead.toString()] = atomsPointer + seqPointer - 1;
                 atomsPointer++;
             }
             else {
-                mergedSeq.push(seqHead);
+                newSeq.push(seqHead);
                 seqPointer++;
             }
         }
-        // Deduplicate atoms. We need to do this because insert operations can
-        // be duplicated on the wire and we need to support idempotency.
-        var deduplicatedSeq = [];
-        var duplicatedAtoms = new Set();
-        for (var i = 0; i < mergedSeq.length; i++) {
-            var currentAtom = mergedSeq[i];
-            var isLastAtom = i === mergedSeq.length - 1;
-            if (isLastAtom) {
-                deduplicatedSeq.push(currentAtom);
-                break;
-            }
-            var nextAtom = mergedSeq[i + 1];
-            var currentAtomDuplicated = currentAtom.compare(nextAtom) === 0;
-            if (currentAtomDuplicated) {
-                duplicatedAtoms.add(currentAtom.toString());
-            }
-            else {
-                deduplicatedSeq.push(currentAtom);
-            }
-        }
-        // Generate index list.
-        // Now that we have the new atoms in the correct places, we need to
-        // generate a list of indices denoting where each atom was placed.
-        // If the atom was removed in the deduplication process, the index should
-        // be -1.
-        var indexMap = {};
-        for (var i = 0; i < deduplicatedSeq.length; i++) {
-            var atom = deduplicatedSeq[i];
-            indexMap[atom.toString()] = i - 1;
-        }
-        var indices = initialAtomOrder.map(function (atom) {
-            if (duplicatedAtoms.has(atom.toString())) {
-                return -1;
-            }
-            else {
-                return indexMap[atom.toString()];
-            }
-        });
-        this.seq = deduplicatedSeq;
+        var indices = initialAtomOrder.map(function (atom) { return indexMap[atom.toString()]; });
+        this.seq = newSeq;
         return indices;
     };
     Logoot.prototype.deleteAtoms = function (idents) {
@@ -16550,9 +16486,6 @@ var LogootDoc = (function (_super) {
         for (var i = 0; i < indices.length; i++) {
             var op = ops[i];
             var runeIndex = indices[i];
-            if (runeIndex === -1) {
-                continue;
-            }
             var editorOp = {
                 opType: editorFormat.OpType.Insert,
                 index: runeIndex,
