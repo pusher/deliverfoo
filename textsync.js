@@ -24246,7 +24246,6 @@ var Badges = (function () {
     Badges.prototype.addToDOM = function (data, index) {
         this.logger.info('someone joined');
         var badgeWrapper = this.createBadge(data);
-        // if people use custom templates, catch for carriage returns...
         this.targetElement.appendChild(badgeWrapper);
         // transition
         setTimeout(function () {
@@ -24525,13 +24524,6 @@ var PresenceModel = (function () {
         if (joining.length === 0) {
             return;
         }
-        var alreadyJoined = joining.filter(function (op) {
-            return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
-        });
-        if (alreadyJoined.length > 0) {
-            this.logger.error('The following Site IDs were added to the presence model ' +
-                'but they already exist:', alreadyJoined);
-        }
         var justJoined = joining.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
         // add to data store
         justJoined.forEach(function (op) {
@@ -24552,11 +24544,6 @@ var PresenceModel = (function () {
         var _this = this;
         if (leaving.length === 0) {
             return;
-        }
-        var alreadyLeft = leaving.filter(function (op) { return !_this._collaboratorIds.hasOwnProperty(String(op.siteId)); });
-        if (alreadyLeft.length > 0) {
-            this.logger.error('Tried to remove the following Site IDs from the presence model ' +
-                'but they were missing:', alreadyLeft);
         }
         var justLeft = leaving.filter(function (op) {
             return _this._collaboratorIds.hasOwnProperty(String(op.siteId));
