@@ -2510,23 +2510,35 @@ var Logoot = (function () {
         var initialIdentOrder = idents.slice();
         idents.sort(function (a, b) { return a.compare(b); });
         var deletePointer = 0;
-        var indexMap = {};
+        var seqPointer = 0;
+        var indices = [];
         var newSeq = [];
-        for (var i = 0; i < this.seq.length; i++) {
+        // When deleting atoms, we don't actually use the initial logoot operation
+        // for anything so rather than keeping track of a map of logootOp -
+        // character index we can just keep track of the atoms we want to delete
+        while (deletePointer < idents.length || seqPointer < this.seq.length) {
             var identToDelete = idents[deletePointer];
-            var atomToCheck = this.seq[i];
+            var atomToCheck = this.seq[seqPointer];
             if (identToDelete && identToDelete.compare(atomToCheck.ident) === 0) {
-                indexMap[identToDelete.toString()] = i - deletePointer - 1;
+                indices.push(seqPointer - indices.length - 1);
+                deletePointer++;
+                seqPointer++;
+            }
+            else if (identToDelete &&
+                identToDelete.compare(atomToCheck.ident) === -1) {
+                // If the atom we're trying to delete is LESS than the current atom in
+                // the sequence it means we're past the point at which this atom would
+                // have been if it existed, without deleting it. This means that the
+                // atom we're trying to delete does not exist in this logoot doc. In
+                // this scenario we want to advance to the next atom to delete, but not
+                // move on the seqPointer
                 deletePointer++;
             }
             else {
                 newSeq.push(atomToCheck);
+                seqPointer++;
             }
         }
-        if (deletePointer < idents.length) {
-            throw new Error('Trying to delete atom that does not exist');
-        }
-        var indices = initialIdentOrder.map(function (ident) { return indexMap[ident.toString()]; });
         this.seq = newSeq;
         return indices;
     };
@@ -16578,7 +16590,6 @@ var LogootDoc = (function (_super) {
         var indices = this.deleteAtoms(identsToDelete);
         var editorOps = [];
         for (var i = 0; i < indices.length; i++) {
-            var op = ops[i];
             var runeIndex = indices[i];
             var editorOp = {
                 opType: editorFormat.OpType.Delete,
