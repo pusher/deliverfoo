@@ -2474,7 +2474,7 @@ var Logoot = (function () {
                 break;
             }
             var nextAtom = mergedSeq[i + 1];
-            var currentAtomDuplicated = currentAtom.compare(nextAtom) === 0;
+            var currentAtomDuplicated = currentAtom.toString() === nextAtom.toString();
             if (currentAtomDuplicated) {
                 duplicatedAtoms.add(currentAtom.toString());
             }
