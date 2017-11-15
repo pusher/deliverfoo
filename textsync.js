@@ -24465,10 +24465,12 @@ var PresenceModel = (function () {
      */
     PresenceModel.prototype.receivePresOps = function (presOps) {
         var _this = this;
-        if (!this.presenceConfig.onJoined || !this.presenceConfig.onLeft) {
-            if (!this.presenceConfig.showBadges) {
-                return;
-            }
+        var needCollaborators = (this.presenceConfig.showBadges
+            || this.presenceConfig.showCursors
+            || this.presenceConfig.onJoined
+            || this.presenceConfig.onLeft);
+        if (!needCollaborators) {
+            return;
         }
         var joiningCollaborators = format_1.filterByType(presOps, format_1.isAddOp);
         var leavingCollaborators = format_1.filterByType(presOps, format_1.isRemoveOp);
