@@ -1,4 +1,4 @@
-/*! TextSync client (development build) version a49a46987de9029c6489d06c8c61bdd080f2f8ac */
+/*! TextSync client (development build) version edd70ce217c9669bf0803a4c23dadc1820a0c23b */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
